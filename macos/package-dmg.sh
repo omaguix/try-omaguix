@@ -61,7 +61,7 @@ layout_source="$native_dir/dmg-layout.applescript"
 
 work_dir=$(mktemp -d /private/tmp/omarchy-dmg.XXXXXX)
 mounted=0
-working_volume_name="Try Omarchy ${work_dir##*/}"
+working_volume_name="Try Roguix ${work_dir##*/}"
 mount_dir="$work_dir/$working_volume_name"
 cleanup() {
   status=$?
@@ -104,7 +104,7 @@ osascript "$layout_source" "$mount_dir" "${app##*/}"
 
 # Finder references can use volume and window names. Keep both the volume
 # label and mount folder distinct until Finder has finished arranging it.
-diskutil rename "$mount_dir" "Try Omarchy" >/dev/null
+diskutil rename "$mount_dir" "Try Roguix" >/dev/null
 sync
 hdiutil detach "$mount_dir" >/dev/null
 mounted=0
@@ -117,7 +117,7 @@ hdiutil convert \
 if [[ -n $sign_identity ]]; then
   codesign \
     --sign "$sign_identity" \
-    --identifier dev.tryguix.native.disk-image \
+    --identifier dev.tryroguix.native.disk-image \
     --timestamp \
     "$output"
   codesign --verify --strict --verbose=2 "$output"
