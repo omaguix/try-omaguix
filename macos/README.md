@@ -10,9 +10,9 @@ Use the root Makefile for normal development:
 
 ```sh
 make runtime   # macos/.build/qemu-gpu-runtime
-make app       # dist/app.noindex/Try Omarchy.app
+make app       # dist/app.noindex/Try Guix.app
 make run
-make package   # signed and notarized dist/TryOmarchy-vX.Y.Z.dmg
+make package   # signed and notarized dist/TryGuix-vX.Y.Z.dmg
 make release   # prompt for version, tag, and build a signed/notarized DMG
 make release VERSION=vX.Y.Z  # explicit version without prompting
 make test
@@ -97,7 +97,7 @@ to `dist/`. The generated app lives inside `dist/app.noindex/`, which keeps a
 development build from appearing beside an installed copy in Command-Space.
 
 Normal app launches and `make run` maintain one stable user VM disk under
-`~/Library/Application Support/Try Omarchy/VM/v1`, reused across factory builds.
+`~/Library/Application Support/Try Guix/VM/v1`, reused across factory builds.
 Use `make reset` to replace it with the current factory or `make run-ephemeral`
 to test that factory without retaining its disk. Storage integration tests and
 specialized direct-script runs can opt into identity-keyed parallel disks by
@@ -114,15 +114,15 @@ Schema-2 disks created before boot kits use a one-time preserving migration.
 The first launcher pass reports that consent is required and exits before QEMU
 starts. The start menu then explains that the disk and data stay intact, the
 new factory is ignored for this VM, and the operation neither resets nor
-upgrades Omarchy. **Cancel** returns to the menu; **Continue** authorizes only
+upgrades Guix. **Cancel** returns to the menu; **Continue** authorizes only
 that retry. The recovery-capable initramfs then attaches the old disk read-only,
 exports its installed `/boot/Image`, `/boot/initramfs-linux.img`, and recorded
 base command line over a private 9p share, and powers off without entering the
 old userspace. The launcher validates and atomically stages that boot kit before
 the normal launch. Unsupported storage or boot ABIs, and ambiguous multiple
-legacy disks, still use the user-facing, confirmed Reset Omarchy flow.
+legacy disks, still use the user-facing, confirmed Reset Guix flow.
 That destructive flow keeps **Reset** disabled until the user types
-`Try Omarchy` exactly in a native sheet. Cancelling or dismissing the sheet
+`Try Guix` exactly in a native sheet. Cancelling or dismissing the sheet
 returns control without invoking the storage reset. During reset, the disabled
 button names the current phase: checking the VM, deleting it, then finishing
 the reset. The next launch prepares a new disk if needed, with its button
