@@ -250,7 +250,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
         let defaultDirectory = try #require(QEMUGPUStorageSpaceEstimate.dataDirectoryDisplayPath(
             environment: [:]
         ))
-        #expect(defaultDirectory == "~/Library/Application Support/Try Omarchy")
+        #expect(defaultDirectory == "~/Library/Application Support/Try Guix")
 
         let defaultDirectoryURL = try #require(QEMUGPUStorageSpaceEstimate.dataDirectoryURL(
             environment: [:]
@@ -597,7 +597,7 @@ struct MicrophoneLaunchDecisionTests {
 
 @Suite("Accessibility launch policy")
 struct AccessibilityLaunchDecisionTests {
-    @Test("an unavailable grant never blocks Omarchy startup")
+    @Test("an unavailable grant never blocks Guix startup")
     func unavailableStillLaunches() {
         let decision = AccessibilityLaunchDecision.make(for: .unavailable)
         #expect(decision.allowsLaunch)

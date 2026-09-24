@@ -117,7 +117,7 @@ hdiutil convert \
 if [[ -n $sign_identity ]]; then
   codesign \
     --sign "$sign_identity" \
-    --identifier dev.tryomarchy.native.disk-image \
+    --identifier dev.tryguix.native.disk-image \
     --timestamp \
     "$output"
   codesign --verify --strict --verbose=2 "$output"
