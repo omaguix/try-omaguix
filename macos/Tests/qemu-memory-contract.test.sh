@@ -249,6 +249,7 @@ qemu_persistent_storage_reset() {
 qemu_persistent_storage_grow_selected() {
   printf 'grow:%s\n' "$1" >>"$FAKE_STORAGE_LOG"
 }
+qemu_persistent_storage_configure_guest() { [[ $1 == direct ]]; }
 qemu_persistent_storage_select_existing() {
   printf 'select-existing\n' >>"$FAKE_STORAGE_LOG"
   QEMU_SELECTED_DISK="$FAKE_PERSISTENT_ROOT/rootfs.ext4"
