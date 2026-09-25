@@ -11,15 +11,9 @@ replace the existing multitouch touchscreen device.
 
 ## Guest configuration
 
-New factory users load `/usr/share/try-omarchy/pinch-input.lua` from their
-`~/.config/hypr/input.lua`. This disables tapping and disable-while-typing for
-the gesture device. Its synthetic contacts must not become tap clicks or be
-suppressed after keyboard input.
-
-App updates retain existing persistent guest disks. **Update and Launch** adds
-this scoped rule to an existing input file when it has no pinch override, running
-as the desktop user and retaining a recoverable backup. Existing device overrides
-are kept. The manual equivalent in `~/.config/hypr/input.lua` is:
+The gesture device needs tapping and disable-while-typing off: its synthetic
+contacts must not become tap clicks or be suppressed after keyboard input.
+Roguix does not ship this override yet; add it to `~/.config/hypr/input.lua`:
 
 ```lua
 hl.device({
