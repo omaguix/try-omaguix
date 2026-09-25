@@ -1377,9 +1377,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     }
 
     private func automaticStartSettingRow() -> NSView {
-        // Roguix has no in-guest settings entry yet, so the only way back to
-        // the launcher is from the Mac, running or not.
-        let detail = "Launch Roguix with your saved settings. Hold Option while opening the app to show the launcher."
+        let detail = virtualMachineRunning
+            ? "Launch Roguix with your saved settings. Open settings anytime from Omarchy’s Setup menu."
+            : "Launch Roguix with your saved settings. Hold Option while opening the app to show the launcher."
         return toggleSettingRow(
             titleText: "Skip launcher",
             detailText: detail,
