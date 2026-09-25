@@ -19,7 +19,7 @@ struct AppReleaseTests {
 
     private func payload(
         tag: String = "v0.5.0", draft: Bool = false, prerelease: Bool = false,
-        assetName: String = "TryOmarchy.dmg", assetState: String = "uploaded"
+        assetName: String = "TryRoguix.dmg", assetState: String = "uploaded"
     ) throws -> Data {
         try JSONSerialization.data(withJSONObject: [
             "tag_name": tag, "draft": draft, "prerelease": prerelease,
@@ -59,13 +59,13 @@ struct AppReleaseTests {
     @Test("only published stable releases with an uploaded Mac app are accepted")
     func releaseValidation() throws {
         let latest = try release()
-        #expect(latest.url.absoluteString == "https://github.com/omacom/try-omarchy/releases/tag/v0.5.0")
+        #expect(latest.url.absoluteString == "https://github.com/rofrol/try-roguix/releases/tag/v0.5.0")
         for data in [
             try payload(draft: true), try payload(prerelease: true),
             try payload(tag: "v0.5.0-beta"), try payload(tag: "0.5.0"),
             try payload(assetName: "source.zip"), try payload(assetState: "starter"),
-            try payload(assetName: "TryOmarchy-v0.4.0.dmg"),
-            try payload(assetName: "TryOmarchy-v0.5.0.dmg", assetState: "starter"),
+            try payload(assetName: "TryRoguix-v0.4.0.dmg"),
+            try payload(assetName: "TryRoguix-v0.5.0.dmg", assetState: "starter"),
         ] {
             #expect(throws: AppReleaseError.self) { try AppRelease.decode(data) }
         }
@@ -73,7 +73,7 @@ struct AppReleaseTests {
     }
 
     @Test("release downloads accept matching versioned names and legacy names", arguments: [
-        "TryOmarchy-v0.5.0.dmg", "TryOmarchy.dmg",
+        "TryRoguix-v0.5.0.dmg", "TryRoguix.dmg",
     ])
     func releaseDownloadNames(assetName: String) throws {
         let latest = try AppRelease.decode(payload(assetName: assetName))
