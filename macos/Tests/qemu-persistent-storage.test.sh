@@ -906,4 +906,36 @@ qemu_persistent_storage_fetch_compressed_source \
 assert_eq "$QEMU_DOWNLOADED_COMPRESSED_DISK" "$downloaded"
 unset QEMU_PERSISTENT_STORAGE_DOWNLOAD_PROTOCOLS
 
+# Launching removes what earlier app versions left: their factory images and
+# downloads, and other bundles' downloads, except an image whose lock an older
+# app's launch holds. This bundle's own download stays until it is expanded.
+images_root="$OMARCHY_QEMU_GPU_STATE_ROOT/guix/images"
+downloads_root=$(dirname "$downloaded")
+locks_root="$OMARCHY_QEMU_GPU_STATE_ROOT/guix/locks"
+identity_old=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+identity_busy=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+mkdir -m 700 "$images_root"
+printf old > "$images_root/$identity_old.raw"
+printf part > "$images_root/.$identity_old.download.zst"
+mkdir -m 700 "$images_root/.$identity_old.download.parts"
+printf part > "$downloads_root/.$identity_old.download.zst"
+printf busy > "$images_root/$identity_busy.raw"
+# The test holds the busy image's lock on its own descriptor, as a launch of
+# the older app would; the prune opens the lock file anew, so it conflicts.
+exec 6>>"$locks_root/$identity_busy.image.lock"
+/usr/bin/lockf -s 6
+qemu_persistent_storage_prune_images "$identity_download" 2>"$test_root/prune.log"
+assert test -f "$downloaded"
+assert test ! -e "$images_root/$identity_old.raw"
+assert test ! -e "$images_root/.$identity_old.download.zst"
+assert test ! -e "$images_root/.$identity_old.download.parts"
+assert test ! -e "$downloads_root/.$identity_old.download.zst"
+assert test -f "$images_root/$identity_busy.raw"
+assert grep -q "removed the unused base image eeeeeeeeeeee" "$test_root/prune.log"
+exec 6>&-
+qemu_persistent_storage_prune_images "$identity_download" 2>/dev/null
+assert test ! -e "$images_root"
+assert test -f "$downloaded"
+assert_fails qemu_persistent_storage_prune_images not-an-identity
+
 printf 'qemu-persistent-storage.test: PASS\n'

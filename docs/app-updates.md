@@ -3,7 +3,10 @@
 The Mac app, its bundled factory image, and an existing guest have separate
 versions. Package updates inside the guest do not update the Mac app or QEMU.
 Replacing the app preserves the existing VM and its paired boot files; it does
-not migrate that VM to the newest factory image.
+not migrate that VM to the newest factory image. A new VM's disk is decoded
+straight from the factory image, not an overlay of a kept copy, so the first
+launch of a new app removes the factory images earlier versions left behind
+(about 20 GB each) and other versions' unfinished downloads.
 
 ## Release checks
 

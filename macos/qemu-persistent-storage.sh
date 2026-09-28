@@ -850,6 +850,55 @@ qemu_persistent_storage_fetch_compressed_source() {
   QEMU_DOWNLOADED_COMPRESSED_DISK=$qps_download
 }
 
+# Remove what earlier app versions left in the workspace: their expanded
+# factory images (about 20 GB each) and unfinished downloads in images/, which
+# nothing uses since a new VM's disk is decoded straight from the factory, and
+# other bundles' downloads in downloads/. KEEP's own download stays until its
+# launch has expanded it. An image an older app's launch is still writing
+# holds its lock and is left alone.
+qemu_persistent_storage_prune_images() {
+  local qps_keep=${1:-}
+  local qps_images='' qps_entry='' qps_identity='' qps_lock_path='' qps_bytes=0
+
+  _qps_is_identity "$qps_keep" || {
+    _qps_fail 'bundle identity must be exactly 64 lowercase hexadecimal characters'
+    return 1
+  }
+  _qps_prepare_state_root || return 1
+  qps_images="$QEMU_PERSISTENT_STORAGE_ROOT/images"
+  for qps_entry in "$qps_images"/*.raw \
+    "$qps_images"/.*.download.zst "$qps_images"/.*.download.parts \
+    "$qps_images"/.*.initializing.?????? \
+    "$QEMU_PERSISTENT_STORAGE_ROOT"/downloads/.*.download.zst \
+    "$QEMU_PERSISTENT_STORAGE_ROOT"/downloads/.*.download.parts; do
+    [[ -e $qps_entry && ! -L $qps_entry ]] || continue
+    qps_identity=${qps_entry##*/}
+    qps_identity=${qps_identity#.}
+    qps_identity=${qps_identity%%.*}
+    _qps_is_identity "$qps_identity" || continue
+    [[ $(_qps_owner "$qps_entry") == $(id -u) ]] || continue
+    if [[ $qps_entry == "$qps_images"/* ]]; then
+      qps_lock_path="$QEMU_PERSISTENT_STORAGE_LOCKS_ROOT/$qps_identity.image.lock"
+      exec 7>>"$qps_lock_path" || continue
+      if ! /usr/bin/lockf -s -t 0 7; then
+        exec 7>&-
+        continue
+      fi
+    else
+      [[ $qps_identity != "$qps_keep" ]] || continue
+      qps_lock_path=''
+    fi
+    qps_bytes=$(/usr/bin/du -sk "$qps_entry" 2>/dev/null | awk '{ print $1 }')
+    /bin/rm -rf -- "$qps_entry"
+    if [[ -n $qps_lock_path ]]; then
+      /bin/rm -f -- "$qps_lock_path"
+      exec 7>&-
+    fi
+    _qps_error "removed the unused base image ${qps_identity:0:12} ($(( ${qps_bytes:-0} / 1024 )) MiB)"
+  done
+  [[ ! -d $qps_images || -L $qps_images ]] || /bin/rmdir "$qps_images" 2>/dev/null || true
+}
+
 _qps_remove_recognized_directory() {
   local qps_directory=$1
   local qps_identity=$2
