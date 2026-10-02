@@ -518,7 +518,8 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             startMenuWindow?.resetDidFinish(errorMessage: nil)
         } else {
             startMenuWindow?.resetDidFinish(
-                errorMessage: "The VM disk could not be reset. Try again, or reinstall the latest Try Roguix app."
+                errorMessage: StorageSpaceFailure.message(standardError: supervisor.recentStandardError)
+                    ?? "The VM disk could not be reset. Try again, or reinstall the latest Try Roguix app."
             )
         }
     }
@@ -1227,6 +1228,12 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                    mappings: portForwardingStore.load()
                ) {
                 startMenuWindow.launchDidFail(errorMessage: portFailure)
+                return
+            }
+            if presentation.showsStartupFailure,
+               let startMenuWindow,
+               let spaceFailure = StorageSpaceFailure.message(standardError: recentStandardError) {
+                startMenuWindow.launchDidFail(errorMessage: spaceFailure)
                 return
             }
             if presentation.requiresWorkspaceReset {
