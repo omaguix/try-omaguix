@@ -10,15 +10,15 @@ Use the root Makefile for normal development:
 
 ```sh
 make runtime   # macos/.build/qemu-gpu-runtime
-make app       # dist/app.noindex/Try Roguix.app
-make run
-make package   # signed and notarized dist/TryRoguix-vX.Y.Z.dmg
-make release   # prompt for version, tag, and build a signed/notarized DMG
-make release VERSION=vX.Y.Z  # explicit version without prompting
+make app       # build/dev.noindex/Try Roguix.app
+make install   # copy it to ~/Applications/Try Roguix.app
+make run       # install, then open the installed copy
+make package   # signed and notarized build/release.noindex/TryRoguix-vX.Y.Z.dmg
+make release   # signed and notarized build/release.noindex/TryRoguix-vX.Y.Z.dmg
 make test
 ```
 
-`make app` requires an existing `dist/guest/` and staged QEMU runtime. A full
+`make app` requires an existing `build/guix/` and staged QEMU runtime. A full
 `make build` creates both first.
 
 The staged runtime is a complete, checksum-pinned Apple Silicon closure built
@@ -60,7 +60,7 @@ signing and notarization:
 macos/build-app.sh \
   --configuration production \
   --dmg \
-  --guest-dir dist/guest \
+  --guest-dir build/guix \
   --sign-identity "Developer ID Application: Example (TEAMID)" \
   --notarize-profile try-omarchy
 ```
@@ -87,14 +87,15 @@ make run DEVELOPMENT_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
 `make package` uses `PACKAGE_SIGN_IDENTITY` and `PACKAGE_NOTARY_PROFILE`, which
 default to the configured release credentials. It fails instead of producing
 an unnotarized fallback.
-Production assembly goes to `dist/release.noindex/Try Omarchy.app`, leaving the
+Production assembly goes to `build/release.noindex/Try Roguix.app`, leaving the
 development bundle in place. Without an installed certificate, development
 stops with setup instructions instead of silently invalidating existing grants.
 Create an Apple Development certificate in Xcode to enable persistence, or use
 `DEVELOPMENT_SIGN_IDENTITY=-` when intentionally testing ad-hoc builds.
-Runtime caches are private to `macos/.build/`; user-facing output always goes
-to `dist/`. The generated app lives inside `dist/app.noindex/`, which keeps a
-development build from appearing beside an installed copy in Command-Space.
+Runtime caches are private to `macos/.build/`; builds go to `build/` and
+release assets to `dist/` (docs/architecture.md, "Build layout"). The
+generated app lives inside `build/dev.noindex/`, which keeps a development
+build from appearing beside the installed copy in Command-Space.
 
 Normal app launches and `make run` maintain one stable user VM disk under
 `~/Library/Application Support/Try Roguix/VM/v1/guix`, reused across factory
