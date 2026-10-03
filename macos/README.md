@@ -98,17 +98,17 @@ generated app lives inside `build/dev.noindex/`, which keeps a development
 build from appearing beside the installed copy in Command-Space.
 
 Normal app launches and `make run` maintain one stable user VM disk under
-`~/Library/Application Support/Try Roguix/VM/v1/guix`, reused across factory
-builds. Use `make reset` to replace it with the current factory or
-`make run-ephemeral` to test that factory without retaining its disk. Storage
-integration tests and specialized direct-script runs can opt into
-identity-keyed parallel disks by setting
-`OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`; the development app wrapper
-explicitly disables this mode. Each persistent disk keeps the identity of the
-factory that created it and boots through the runtime's UEFI firmware from its
-own GRUB and Guix System generations. App updates reuse the disk; the current
-bundled factory is selected only for a new, reset, or ephemeral VM, so an
-existing VM launches without first preparing the new factory disk.
+`~/Library/Application Support/Try Roguix/VM/v1/guix`, the same VM as a
+Finder launch, reused across factory builds. Use `make reset` to replace it
+with the current factory or `make run-ephemeral` to test that factory without
+retaining its disk. Storage integration tests and specialized development runs
+can opt into identity-keyed parallel disks by setting
+`OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1` (`make run-isolated`). Each
+persistent disk keeps the identity of the factory that created it and boots
+through the runtime's UEFI firmware from its own GRUB and Guix System
+generations. App updates reuse the disk; the current bundled factory is
+selected only for a new, reset, or ephemeral VM, so an existing VM launches
+without first preparing the new factory disk.
 
 Unsupported storage or boot ABIs, and ambiguous multiple legacy disks, use the
 user-facing, confirmed Reset Roguix flow.
