@@ -1,6 +1,69 @@
 # TODO
 
-## Command shortcuts in the guest
+## Next, in order
+
+### The VM window shrinks on every guest reboot
+
+Found 2026-10-03 while testing reboots: each guest reboot (`reboot(2)` in the
+guest) leaves the VM window about 75% of its previous size (227x202,
+171x160, 130x129 ... 22x48 points over ten reboots), with nobody touching it.
+The 0.75 factor matches `cocoa_initial_window_frame` in
+`qemu-cocoa-dynamic-display.patch`; check how a guest reset re-applies the
+initial frame.
+
+### Say why a launch did not happen
+
+Reported 2026-10-03 twice: "Try Roguix does not start". Cause: a Dock tile
+pinned to the old development build (`dist/app.noindex`), deleted by the
+build-layout change; clicking it did nothing and logged nothing. The tile now
+points to `~/Applications/Try Roguix.app`, and `make install` and
+docs/architecture.md say to pin that copy.
+
+The app could not have reported that, since it never ran. For failures after
+it starts: keep the launcher's stderr in `~/Library/Logs/Try Roguix/` and
+`os_log`, and replace the generic "couldn't start, reinstall" alert with the
+log's last lines. Lower priority than the restart hang.
+
+### Document chords that host tools take before the VM
+
+Write the user-facing note from "Background: Command-Space" below:
+Karabiner-Elements, Hammerspoon and AltTab may own a chord before QEMU's
+event tap sees it, so the guest gets another key or nothing; show the
+`frontmost_application_unless` exemption for the VM's QEMU path.
+
+### Send Command-Tab to Roguix
+
+Command-Tab is left to macOS on purpose (`qemu-cocoa-command-tab.patch`), so
+the keyboard can always leave the VM. Users who switch apps with AltTab want
+it in the guest. Add a persisted setting, off by default, "Send Command-Tab
+to Roguix" (start menu and settings), passed to QEMU's Cocoa display; with
+it on, keep a host-only release shortcut handled before forwarding and show
+it. Parallels' "Send macOS system shortcuts: Auto/Always/Never" is the
+precedent if this grows beyond Command-Tab.
+
+The release shortcut is the worker's choice among established ones (UTM and
+Parallels use Control-Option); state it in the menu and the docs.
+
+### Choose a VM instead of only resetting
+
+Found 2026-10-03: `make run` used to set `OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`
+and so created an identity-keyed disk beside `disks/current`; a Finder launch
+then refused to start ("multiple saved VMs were found; use Reset Roguix"),
+and Reset would erase both. `make run` no longer sets it (`make
+run-isolated` does). The launcher should still offer a choice: list each
+disk (factory image, size, last use, how it was created), keep the chosen
+one as `current` and archive the others outside the scanned tree, with
+Reset as one option rather than the only one. Adopt an identity disk
+automatically only when it is the single candidate.
+
+## Needs a decision
+
+- Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
+- Run the Accessibility diagnosis at your Mac, granting and revoking access in System Settings when asked? Checked: builds are signed ad hoc (`macos/build-app.sh`), so the cdhash hypothesis stands unproven; the release re-grant prompt below depends on its result.
+- Sign development builds with a persistent self-signed certificate kept in a dedicated build keychain? Checked: `build-app.sh` signs ad hoc; this creates a signing identity and keychain on your Mac.
+- Offer `qemu-cocoa-minimum-guest-size.patch` to Try Omarchy as a pull request (and report the window-size forwarding to QEMU after reproducing it unpatched)? Checked: the patch is separate (50887c6); sending it is outward-facing.
+
+### Background: Command-Space
 
 Reported 2026-10-03: Command-Space does nothing in the guest, and
 Command-Tab switches Mac apps.
@@ -23,13 +86,7 @@ F18 workaround, binding Cmd+Space in Hammerspoon directly after a logout
 Karabiner, Hammerspoon and AltTab: such tools may own a chord before the VM
 sees it.
 
-Command-Tab is left to macOS on purpose (`qemu-cocoa-command-tab.patch`), so
-the keyboard can always leave the VM. Users who switch apps with AltTab want
-it in the guest. Add a persisted setting, off by default, "Send Command-Tab
-to Roguix" (start menu and settings), passed to QEMU's Cocoa display; with
-it on, keep a host-only release shortcut handled before forwarding and show
-it. Parallels' "Send macOS system shortcuts: Auto/Always/Never" is the
-precedent if this grows beyond Command-Tab.
+### Background: the Accessibility grant
 
 The Accessibility grant still matters for the rest:
 
@@ -62,41 +119,7 @@ not yet proven.
   certificate would also keep grants across updates on other Macs, without
   solving Gatekeeper.
 
-## The VM window shrinks on every guest reboot
-
-Found 2026-10-03 while testing reboots: each guest reboot (`reboot(2)` in the
-guest) leaves the VM window about 75% of its previous size (227x202,
-171x160, 130x129 ... 22x48 points over ten reboots), with nobody touching it.
-The 0.75 factor matches `cocoa_initial_window_frame` in
-`qemu-cocoa-dynamic-display.patch`; check how a guest reset re-applies the
-initial frame.
-
-## Choose a VM instead of only resetting
-
-Found 2026-10-03: `make run` used to set `OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`
-and so created an identity-keyed disk beside `disks/current`; a Finder launch
-then refused to start ("multiple saved VMs were found; use Reset Roguix"),
-and Reset would erase both. `make run` no longer sets it (`make
-run-isolated` does). The launcher should still offer a choice: list each
-disk (factory image, size, last use, how it was created), keep the chosen
-one as `current` and archive the others outside the scanned tree, with
-Reset as one option rather than the only one. Adopt an identity disk
-automatically only when it is the single candidate.
-
-## Say why a launch did not happen
-
-Reported 2026-10-03 twice: "Try Roguix does not start". Cause: a Dock tile
-pinned to the old development build (`dist/app.noindex`), deleted by the
-build-layout change; clicking it did nothing and logged nothing. The tile now
-points to `~/Applications/Try Roguix.app`, and `make install` and
-docs/architecture.md say to pin that copy.
-
-The app could not have reported that, since it never ran. For failures after
-it starts: keep the launcher's stderr in `~/Library/Logs/Try Roguix/` and
-`os_log`, and replace the generic "couldn't start, reinstall" alert with the
-log's last lines. Lower priority than the restart hang.
-
-## Send the minimum guest size fix to Try Omarchy
+### Background: the minimum guest size fix upstream
 
 `qemu-cocoa-minimum-guest-size.patch` fixes a hang that upstream shares: its
 `qemu-cocoa-dynamic-display.patch` and QEMU's DEBUG EDK2 are the same, so a
