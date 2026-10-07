@@ -8,6 +8,13 @@ Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
 access in System Settings when asked. Follow the diagnosis steps and the
 release re-grant notes in "Background: the Accessibility grant".
 
+### The font on the shutdown screen looks terrible
+
+Requested 2026-10-07: "the font looks terrible during the shutdown, on the
+black screen". Boot messages look fine; the shutdown text appears after
+Hyprland exits, on a VT. Capture a screenshot of it first (blurry, too small,
+too large or wrong glyphs) and compare it with the boot screen.
+
 ## Proposed
 
 ### A fresh start gets half the initial window frame
