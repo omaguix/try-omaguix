@@ -37,6 +37,16 @@ The reset only helps when the stored requirement no longer matches the app
 grant. Proposal: reset only when `AXIsProcessTrusted()` is false although a
 row exists, and show one of the two (the prompt or Settings), not both.
 
+### Should the minimum guest size fix go to Try Omarchy at all?
+
+Requested 2026-10-07: "what do you think? Since the bug is upstream, in
+EDK2, and we made the PR to Try Omarchy? Ask the models." Consult the default
+models (consult skill) with the evidence in "Background: the minimum guest
+size fix upstream" and PR https://github.com/omacom/try-omarchy/pull/325:
+keep the PR as a temporary workaround (and add the EDK2 root cause and the
+removal condition to its description), replace it with an issue, or close
+it. Record the answer here; changing the PR is the maintainer's call.
+
 ## Proposed
 
 ### A fresh start gets half the initial window frame
