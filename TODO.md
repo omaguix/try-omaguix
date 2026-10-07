@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### Should the minimum guest size fix go to Try Omarchy at all?
-
-Requested 2026-10-07: "what do you think? Since the bug is upstream, in
-EDK2, and we made the PR to Try Omarchy? Ask the models." Consult the default
-models (consult skill) with the evidence in "Background: the minimum guest
-size fix upstream" and PR https://github.com/omacom/try-omarchy/pull/325:
-keep the PR as a temporary workaround (and add the EDK2 root cause and the
-removal condition to its description), replace it with an issue, or close
-it. Record the answer here; changing the PR is the maintainer's call.
-
 ## Proposed
 
 ### A fresh start gets half the initial window frame
@@ -32,6 +22,7 @@ folders the picker accepts. Unverified.
 
 ## Needs a decision
 
+- Update PR #325's description with the EDK2 root cause, the fix commit and the removal condition (draft in "Background: the minimum guest size fix upstream"), keeping the PR open as a temporary workaround? Options: update the description and keep 800x600 | update it and lower the clamp to 640x480 first (a new worker item, re-tested) | replace the PR with an issue | close it. Checked 2026-10-07: PR open, no comments or reviews; consulted sol and MiMo (round 20261007-193715-35ce), both chose keeping it with an edited description, and nobody chose an issue or closing it; see the Background for where they differed.
 - Start the builder VM (it needs a console login after a reboot) and free disk space, so a worker can build the guest with the bold console font (ter-v32n to ter-v32b, see "Background: the shutdown font")? Checked: the fix was verified live with setfont; the builder had no serial.sock and the Mac has 13 GB free (2026-10-07).
 - Check in the running app, with your keyboard, the Command-Tab setting (off: macOS switches apps; on: Roguix gets Super-Tab; Control-Option hands it back) the startup-failure alert with Show Log, the saved-VM chooser (Keep and Launch, Show in Finder), and Accessibility OPEN SETTINGS when not trusted (one window: the macOS prompt)? Checked: all four are covered by tests only (c5d56ca, d34583a, the chooser commit); the key routing needs a real keyboard and the Accessibility grant, the alert and the chooser clicks in the start menu.
 - Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
@@ -184,6 +175,56 @@ QEMU 11.2 and move the runtime to it as a whole (QEMU with its own
 firmware), then check a small-window reboot without the clamp and drop
 `qemu-cocoa-minimum-guest-size.patch`. Not chosen: building EDK2
 202411+ ourselves, or reporting the HVF stall upstream before 11.2 is out.
+
+Asked 2026-10-07: "what do you think? Since the bug is upstream, in EDK2,
+and we made the PR to Try Omarchy? Ask the models." The PR (open, no
+response yet) describes the ASSERT and the dynamic-display interaction but
+not that the bug is EDK2's, already fixed, or when the patch can go.
+Consulted sol and MiMo (round 20261007-193715-35ce).
+
+Recommendation: keep the PR as a temporary workaround and edit its
+description (draft below). Closing it leaves Try Omarchy's users with the
+hang until QEMU 11.2; an issue alone hands the same work to its maintainers,
+and they cannot swap the firmware on 11.1.x either because of the HVF stall.
+
+- Agreed (both): option (a); the removal condition is the firmware the app
+  actually loads containing 58035e8b5e, verified by a small-window reboot
+  under HVF, not the QEMU version number; backporting the whole newer
+  firmware to QEMU 11.1.x stable is unrealistic and would hit the HVF stall;
+  no new EDK2 report is needed.
+- Both questioned the 800x600 floor: EDK2's own floor is 640x480 and the
+  console needs 640x475, so 640x480 would cost less resolution; the patch
+  gives no reason for the margin. Changing it means a new patch revision and
+  re-test, so it is listed as an option.
+- Both said the HVF stall of edk2-stable202608 on QEMU 11.1.x (unpatched
+  Homebrew QEMU too, fine under TCG) is worth reporting now. That differs from
+  the decision above to wait for QEMU 11.2; left as decided unless the
+  maintainer reopens it.
+- sol only: ask QEMU stable for the single EDK2 fix rather than a new
+  firmware release (unusual for QEMU's bundled firmware; noted).
+- MiMo only: a window minimum size (`contentMinSize`, 320x240 points at 2x)
+  instead of a QEMU patch, which the PR should say why it did not use (it
+  keeps windows freely resizable with zoom-to-fit); cherry-picking
+  58035e8b5e onto edk2-stable202408 and building that firmware (still an
+  EDK2 build of our own, not chosen above).
+- Dismissed: MiMo's points-versus-pixels worry (the clamp divides 800x600 by
+  `backingScaleFactor`, so it is in pixels); both asked to state that the
+  reboot was not reproduced on upstream's guest, which the PR already says.
+
+Draft paragraph to add to PR #325's description, after "What changed and
+why":
+
+> The root cause is in EDK2, not in this repository or QEMU:
+> `OvmfPkg/VirtioGpuDxe` adopts the host's preferred mode with no lower
+> bound. Gerd Hoffmann fixed it in 58035e8b5e ("OvmfPkg/VirtioGpuDxe: ignore
+> display resolutions smaller than 640x480", first in edk2-stable202411).
+> QEMU 11.1.x still bundles edk2-stable202408; QEMU master moved to
+> edk2-stable202608, so the fix ships with QEMU 11.2. Swapping in the newer
+> firmware on QEMU 11.1.x is not an option: under HVF it stalls in BDS before
+> GRUB (also with unpatched Homebrew QEMU 11.1.2; it boots under TCG). This
+> patch is therefore a temporary workaround: drop it once the firmware the app
+> loads contains that commit (expected with the move to QEMU 11.2) and a guest
+> reboot in a window shrunk below 640x480 pixels boots under HVF without it.
 
 ### Background: the shutdown font
 
