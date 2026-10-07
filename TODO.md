@@ -45,6 +45,7 @@ resizable, so the size is divided by the Retina 2x backing scale. Unverified.
 
 ## Needs a decision
 
+- Check in the running app, with your keyboard, the Command-Tab setting (off: macOS switches apps; on: Roguix gets Super-Tab; Control-Option hands it back) and the startup-failure alert with Show Log? Checked: both are covered by tests only (2579d8d, 8bbee37 on the worker branches); the key routing needs a real keyboard and the Accessibility grant, the alert a click on Launch Roguix.
 - Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
 
 ### Background: Command-Space
