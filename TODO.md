@@ -8,12 +8,6 @@ Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
 access in System Settings when asked. Follow the diagnosis steps and the
 release re-grant notes in "Background: the Accessibility grant".
 
-### Offer the minimum guest size fix to Try Omarchy
-
-Decided 2026-10-07: open the pull request on Try Omarchy. See "Background:
-the minimum guest size fix upstream"; reporting to QEMU still needs a
-reproduction on unpatched QEMU first.
-
 ### Fix the old rootfs.ext4 names in Swift
 
 Requested 2026-10-07: "fix the old rootfs.ext4 names in Swift too". Found by
@@ -98,6 +92,9 @@ across rebuilds.
   solving Gatekeeper.
 
 ### Background: the minimum guest size fix upstream
+
+Offered 2026-10-07 as https://github.com/omacom/try-omarchy/pull/325; drop
+our `qemu-cocoa-minimum-guest-size.patch` once it lands upstream.
 
 `qemu-cocoa-minimum-guest-size.patch` fixes a hang that upstream shares: its
 `qemu-cocoa-dynamic-display.patch` and QEMU's DEBUG EDK2 are the same, so a
