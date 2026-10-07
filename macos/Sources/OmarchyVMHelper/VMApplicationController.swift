@@ -365,6 +365,9 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             retryBootFixes: { [weak self] in
                 self?.startVirtualMachine(reviewBootFixes: true)
             },
+            keepSavedVM: { [weak self] name in
+                self?.keepSavedVirtualMachine(name)
+            },
             launch: { [weak self] in
                 self?.startVirtualMachine()
             }
@@ -511,6 +514,61 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             childRunning = true
         } catch {
             startMenuWindow?.resetDidFinish(errorMessage: error.localizedDescription)
+        }
+    }
+
+    /// Runs the launcher's storage-only `--keep-saved-vm NAME` under the same
+    /// workspace a launch would use. Like reset, it never falls back to the
+    /// default data folder when the chosen one is unavailable.
+    private func keepSavedVirtualMachine(_ name: String) {
+        guard resolveStorageLocationAvailability() == .available else {
+            startMenuWindow?.launchDidAbort()
+            return
+        }
+        do {
+            let context = childLaunchContext()
+            if let reason = context.storageUnavailableReason {
+                startMenuWindow?.savedVMKeepDidFinish(archivePath: nil, errorMessage: reason)
+                return
+            }
+            activeStateRoot = context.stateRoot
+            try supervisor.start(
+                executableURL: launcherURL,
+                arguments: [SavedVMChoice.keepOption, name] + launchArguments(),
+                environment: QEMUGPURuntimeEnvironment.sanitizedForReset(context.environment)
+            ) { [weak self] status in
+                self?.keepSavedVirtualMachineDidExit(status: status)
+            }
+            childRunning = true
+        } catch {
+            startMenuWindow?.savedVMKeepDidFinish(archivePath: nil, errorMessage: error.localizedDescription)
+        }
+    }
+
+    private func keepSavedVirtualMachineDidExit(status: Int32) {
+        guard childRunning else { return }
+        childRunning = false
+        let wasStopping = lifecycle.isStopping
+        lifecycle.childExited()
+        let standardError = supervisor.recentStandardError
+        if applicationTerminationPending {
+            NSApp.reply(toApplicationShouldTerminate: true)
+        } else if wasStopping {
+            finish(status: status)
+        } else if status == 0 {
+            startMenuWindow?.savedVMKeepDidFinish(
+                archivePath: SavedVMChoice.archivePath(standardError: standardError),
+                errorMessage: nil
+            )
+        } else {
+            startMenuWindow?.savedVMKeepDidFinish(
+                archivePath: nil,
+                errorMessage: LauncherFailureReport.detail(
+                    summary: "Nothing was deleted.",
+                    standardError: standardError,
+                    logURL: supervisor.log?.url
+                )
+            )
         }
     }
 
@@ -1253,6 +1311,14 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                let startMenuWindow,
                let spaceFailure = StorageSpaceFailure.message(standardError: recentStandardError) {
                 startMenuWindow.launchDidFail(errorMessage: spaceFailure)
+                return
+            }
+            if presentation.requiresWorkspaceReset,
+               let candidates = SavedVMChoice.candidates(standardError: recentStandardError) {
+                startMenuWindow?.launchRequiresSavedVMChoice(
+                    candidates,
+                    bundledIdentity: bundledMetrics?.identity
+                )
                 return
             }
             if presentation.requiresWorkspaceReset {

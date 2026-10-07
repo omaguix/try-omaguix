@@ -289,6 +289,9 @@ qemu_persistent_storage_reset() {
   printf 'clear\n' >>"$FAKE_STORAGE_LOG"
   /bin/rm -f "$FAKE_PERSISTENT_ROOT/disk.raw"
 }
+qemu_persistent_storage_keep_saved_vm() {
+  printf 'keep %s\n' "$1" >>"$FAKE_STORAGE_LOG"
+}
 qemu_persistent_storage_select_existing() {
   printf 'select-existing\n' >>"$FAKE_STORAGE_LOG"
   QEMU_SELECTED_DISK="$FAKE_PERSISTENT_ROOT/disk.raw"
@@ -462,7 +465,8 @@ fi
 run_scenario() {
   local scenario=$1
   local expected_status=$2
-  local launcher_argument=$3
+  local launcher_arguments=()
+  read -r -a launcher_arguments <<<"$3"
   shift 3
   local scenario_dir="$test_root/$scenario"
   local actual_status=0
@@ -476,7 +480,7 @@ run_scenario() {
     FAKE_QEMU_LOG="$scenario_dir/qemu.log" \
     FAKE_QEMU_NESTED_LOG="$scenario_dir/nested.log" \
     "$@" \
-    "$launcher" ${launcher_argument:+"$launcher_argument"} \
+    "$launcher" ${launcher_arguments[@]+"${launcher_arguments[@]}"} \
     >"$scenario_dir/stdout" 2>"$scenario_dir/stderr"; then
     actual_status=0
   else
@@ -835,6 +839,13 @@ assert_contains "$(<"$test_root/reset-only/storage.log")" 'clear'
 [[ ! -e $test_root/reset-only/qemu.log ]] || fail 'reset-only launch started QEMU'
 [[ ! -e $persistent_root/disk.raw ]] || fail 'reset-only kept or created a disk'
 assert_not_contains "$(<"$test_root/reset-only/stderr")" tryomarchy.ssh_access
+
+# Keeping one of several saved VMs touches only storage and never boots.
+run_scenario keep-saved-vm 0 '--keep-saved-vm current' FAKE_HOST_KEYBOARD_FAIL=1
+[[ $(<"$test_root/keep-saved-vm/storage.log") == "keep current" ]] || fail "keep-saved-vm did not keep current"
+[[ ! -e $test_root/keep-saved-vm/qemu.log ]] || fail 'keeping a saved VM started QEMU'
+run_scenario keep-saved-vm-missing-name 64 --keep-saved-vm
+[[ ! -s $test_root/keep-saved-vm-missing-name/storage.log ]] || fail 'a missing VM name touched storage'
 
 # Dry runs must construct a bridge without requesting administrator access.
 run_scenario bridge-preview 0 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1 \

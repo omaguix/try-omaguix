@@ -58,6 +58,12 @@ enum StartMenuPresentation {
 
     static let incompatibleWorkspaceDetail = "The saved VM uses a storage or boot format this version can’t use, or its data folder contains multiple saved VMs. Reset Roguix to create a compatible VM. Resetting permanently erases everything in the VM."
 
+    static let savedVMChoiceDetail = "This data folder holds more than one saved VM, so Roguix doesn’t know which to start. Keep one to launch it: the others are moved, unchanged, to an archive folder in the same data folder, which Roguix no longer uses or resets. Or reset Roguix to erase all of them and start fresh."
+
+    static func resetErasesSavedVMs(count: Int) -> String {
+        " This data folder holds \(count) saved VMs, and Reset erases all of them. Choose one to keep instead if you want to keep any."
+    }
+
     static func microphone(
         state: MicrophoneAuthorizationState,
         requestInFlight: Bool

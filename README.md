@@ -111,7 +111,9 @@ corresponding sections of [docs/legacy-try-omarchy.md](docs/legacy-try-omarchy.m
 The VM lives in `~/Library/Application Support/Try Roguix/VM/v1/guix/`: the
 verified factory image under `images/` and the VM's own disk under
 `disks/current/`. Updating the app never replaces an existing VM; **Reset Roguix**
-on the start menu erases it and starts again from the factory image.
+on the start menu erases it and starts again from the factory image. When
+the folder holds several saved VMs, the start menu asks which to keep and
+moves the others, unchanged, to `archive/`, which Roguix no longer uses.
 
 ## The runtime
 

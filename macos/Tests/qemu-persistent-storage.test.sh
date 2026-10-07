@@ -131,6 +131,7 @@ cleanup() {
   if [[ $qemu_pid =~ ^[0-9]+$ ]]; then
     kill -TERM "$qemu_pid" 2>/dev/null || true
   fi
+  /usr/bin/chflags -R nouchg "$test_root" 2>/dev/null || true
   /bin/rm -rf "$test_root"
 }
 trap cleanup EXIT HUP INT TERM
@@ -549,6 +550,104 @@ assert test ! -e "$legacy_newest_b"
 assert test -f "$invalid_legacy/unrecognized.txt"
 assert grep -Fq "\"bundleIdentity\":\"$identity_c\"" "${multi_newest_disk%/*}/metadata.json"
 qemu_persistent_storage_release_lock
+
+# Choosing between several saved VMs. A launch lists every candidate for the
+# start menu; keeping one makes it `current` and renames the others into
+# archive/, which no launch or reset scans. Nothing is copied or deleted.
+make_saved_vm() {
+  local storage_key=$1
+  local identity=$2
+  local marker=$3
+  export OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=$storage_key
+  qemu_persistent_storage_select \
+    persistent "$identity" "$source_disk" "$source_sha" "$source_bytes" ''
+  printf '%s' "$marker" | dd of="$QEMU_SELECTED_DISK" bs=1 seek=900 conv=notrunc >/dev/null 2>&1
+  qemu_persistent_storage_release_lock
+  export OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=0
+}
+saved_vm_marker() {
+  dd if="$1" bs=1 skip=900 count="${#2}" 2>/dev/null
+}
+select_existing_logged() {
+  qemu_persistent_storage_select_existing "$1" 2>"$2"
+}
+
+# A single identity-keyed disk is adopted as `current` without asking.
+export OMARCHY_QEMU_GPU_STATE_ROOT="$test_root/choose-single-state"
+choose_disks="$OMARCHY_QEMU_GPU_STATE_ROOT/guix/disks"
+make_saved_vm 1 "$identity_a" only-identity
+qemu_persistent_storage_select_existing "$identity_b"
+assert_eq "$QEMU_SELECTED_DISK" "$choose_disks/current/disk.raw"
+assert_eq "$(saved_vm_marker "$QEMU_SELECTED_DISK" only-identity)" only-identity
+assert test ! -e "$choose_disks/$identity_a"
+qemu_persistent_storage_release_lock
+
+# `current` beside an identity-keyed disk: the launch lists both and stops.
+export OMARCHY_QEMU_GPU_STATE_ROOT="$test_root/choose-state"
+choose_root="$OMARCHY_QEMU_GPU_STATE_ROOT/guix"
+choose_disks="$choose_root/disks"
+make_saved_vm 0 "$identity_a" current-data
+make_saved_vm 1 "$identity_b" identity-b-data
+make_saved_vm 1 "$identity_c" identity-c-data
+/usr/bin/touch -t 202601020304.05 "$choose_disks/$identity_b/disk.raw"
+assert_status "$QEMU_PERSISTENT_STORAGE_INCOMPATIBLE_STATUS" \
+  select_existing_logged "$identity_a" "$test_root/choose.stderr"
+choose_report=$(<"$test_root/choose.stderr")
+assert grep -Eq "^\[qemu-gpu\] Saved VM: current $identity_a 2 $source_bytes [0-9]+ [0-9]+$" <<<"$choose_report"
+assert grep -Eq "^\[qemu-gpu\] Saved VM: $identity_b $identity_b 2 $source_bytes [0-9]+ $(/usr/bin/stat -f '%m' "$choose_disks/$identity_b/disk.raw")$" <<<"$choose_report"
+assert grep -Eq "^\[qemu-gpu\] Saved VM: $identity_c $identity_c " <<<"$choose_report"
+assert grep -Fxq '[qemu-gpu] Saved VMs: 3' <<<"$choose_report"
+assert grep -Fq 'choose the one to keep' <<<"$choose_report"
+
+# A move that fails part-way puts back every disk already moved.
+/usr/bin/chflags uchg "$choose_disks/$identity_b"
+assert_fails qemu_persistent_storage_keep_saved_vm "$identity_c"
+/usr/bin/chflags nouchg "$choose_disks/$identity_b"
+assert_eq "$(saved_vm_marker "$choose_disks/current/disk.raw" current-data)" current-data
+assert_eq "$(saved_vm_marker "$choose_disks/$identity_b/disk.raw" identity-b-data)" identity-b-data
+assert_eq "$(saved_vm_marker "$choose_disks/$identity_c/disk.raw" identity-c-data)" identity-c-data
+assert_eq "$(find "$choose_root/archive" -mindepth 1 | wc -l | tr -d '[:space:]')" 0
+# A saved VM another launch has open is never moved.
+exec 8>>"$choose_root/locks/$identity_b.lock"
+/usr/bin/lockf -s -t 0 8
+assert_fails qemu_persistent_storage_keep_saved_vm "$identity_c"
+exec 8>&-
+assert test -f "$choose_disks/current/disk.raw"
+assert test -f "$choose_disks/$identity_b/disk.raw"
+assert test -f "$choose_disks/$identity_c/disk.raw"
+assert_fails qemu_persistent_storage_keep_saved_vm "$identity_bad"
+assert_fails qemu_persistent_storage_keep_saved_vm ../current
+
+# Keeping an identity-keyed disk makes it `current`; the rest are archived.
+qemu_persistent_storage_keep_saved_vm "$identity_c" 2>"$test_root/keep.stderr"
+choose_archive=$(sed -n 's/^\[qemu-gpu\] Archived saved VMs: //p' "$test_root/keep.stderr")
+[[ $choose_archive == "$choose_root/archive/saved-vms-"* ]] || fail "unexpected archive: $choose_archive"
+assert_eq "$(saved_vm_marker "$choose_disks/current/disk.raw" identity-c-data)" identity-c-data
+assert grep -Fq "\"bundleIdentity\":\"$identity_c\"" "$choose_disks/current/metadata.json"
+assert_eq "$(saved_vm_marker "$choose_archive/current/disk.raw" current-data)" current-data
+assert_eq "$(saved_vm_marker "$choose_archive/$identity_b/disk.raw" identity-b-data)" identity-b-data
+assert_eq "$(find "$choose_disks" -mindepth 1 -maxdepth 1 | wc -l | tr -d '[:space:]')" 1
+assert_eq "$(/usr/bin/stat -f '%Lp' "$choose_root/archive")" 700
+# The archive is no longer scanned: the next launch takes the kept VM.
+qemu_persistent_storage_select_existing "$identity_a"
+assert_eq "$QEMU_SELECTED_DISK" "$choose_disks/current/disk.raw"
+assert_eq "$QEMU_PERSISTENT_STORAGE_IDENTITY" "$identity_c"
+qemu_persistent_storage_release_lock
+
+# Keeping `current` archives only the others, and Reset still erases only
+# what is in disks/, never an archive.
+make_saved_vm 1 "$identity_a" identity-a-data
+qemu_persistent_storage_keep_saved_vm current 2>"$test_root/keep-current.stderr"
+second_archive=$(sed -n 's/^\[qemu-gpu\] Archived saved VMs: //p' "$test_root/keep-current.stderr")
+assert test -n "$second_archive"
+assert_eq "$(saved_vm_marker "$choose_disks/current/disk.raw" identity-c-data)" identity-c-data
+assert_eq "$(saved_vm_marker "$second_archive/$identity_a/disk.raw" identity-a-data)" identity-a-data
+qemu_persistent_storage_keep_saved_vm current 2>"$test_root/keep-nothing.stderr"
+assert_fails grep -Fq 'Archived saved VMs' "$test_root/keep-nothing.stderr"
+qemu_persistent_storage_reset "$identity_a"
+assert test ! -e "$choose_disks/current"
+assert_eq "$(saved_vm_marker "$choose_archive/current/disk.raw" current-data)" current-data
+assert_eq "$(saved_vm_marker "$second_archive/$identity_a/disk.raw" identity-a-data)" identity-a-data
 
 export OMARCHY_QEMU_GPU_STATE_ROOT="$test_root/state"
 export OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1

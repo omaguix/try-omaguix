@@ -2,18 +2,6 @@
 
 ## Next, in order
 
-### Choose a VM instead of only resetting
-
-Found 2026-10-03: `make run` used to set `OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`
-and so created an identity-keyed disk beside `disks/current`; a Finder launch
-then refused to start ("multiple saved VMs were found; use Reset Roguix"),
-and Reset would erase both. `make run` no longer sets it (`make
-run-isolated` does). The launcher should still offer a choice: list each
-disk (factory image, size, last use, how it was created), keep the chosen
-one as `current` and archive the others outside the scanned tree, with
-Reset as one option rather than the only one. Adopt an identity disk
-automatically only when it is the single candidate.
-
 ### Sign development builds with a persistent certificate
 
 Decided 2026-10-07: yes. Sign development builds with a persistent local

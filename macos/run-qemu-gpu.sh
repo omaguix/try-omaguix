@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: macos/run-qemu-gpu.sh [--ephemeral | --reset-storage | --reset-storage-only] [GUEST_DIR]" >&2
+  echo "Usage: macos/run-qemu-gpu.sh [--ephemeral | --reset-storage | --reset-storage-only | --keep-saved-vm NAME] [GUEST_DIR]" >&2
   exit 64
 }
 
@@ -14,6 +14,7 @@ fail() {
 
 storage_mode=persistent
 reset_only=0
+keep_saved_vm=''
 # QEMU 11's HVF backend requires Apple's in-hypervisor GICv3.
 qemu_machine='virt,accel=hvf,gic-version=3'
 
@@ -30,6 +31,11 @@ case ${1:-} in
     storage_mode=reset
     reset_only=1
     shift
+    ;;
+  --keep-saved-vm)
+    (( $# >= 2 )) || usage
+    keep_saved_vm=$2
+    shift 2
     ;;
   --*) usage ;;
 esac
@@ -297,6 +303,11 @@ fi
 # shellcheck source=qemu-persistent-storage.sh
 source "$storage_library"
 QEMU_PERSISTENT_STORAGE_HELPER=$native_bridge
+if [[ -n $keep_saved_vm ]]; then
+  # The start menu's choice between several saved VMs; nothing is launched.
+  qemu_persistent_storage_keep_saved_vm "$keep_saved_vm" || exit $?
+  exit 0
+fi
 # shellcheck source=qemu-port-forwarding.sh
 source "$port_forwarding_library"
 source "$script_dir/qemu-networking.sh"

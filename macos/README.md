@@ -118,8 +118,21 @@ rotates the same way. When the VM stops during startup without a more specific
 explanation, the alert quotes the log's last lines and **Show Log** reveals it
 in Finder.
 
-Unsupported storage or boot ABIs, and ambiguous multiple legacy disks, use the
-user-facing, confirmed Reset Roguix flow.
+When the data folder holds more than one saved VM (`disks/current` beside an
+identity-keyed disk from `make run-isolated`, or several identity-keyed disks),
+a launch stops and lists them: how each was created, its factory image, size
+and last use. The user keeps one, or resets. Keeping runs the launcher's
+storage-only `--keep-saved-vm NAME`, which locks every listed disk, makes the
+chosen one `disks/current` and renames the others into
+`archive/saved-vms-<UTC time>/` beside `disks/`, on the same volume. Nothing is
+copied or deleted, a failed rename puts back the ones already made, and no
+launch or reset scans the archive; the user deletes it when it is no longer
+needed. A single identity-keyed disk is still adopted as `current` without
+asking.
+
+Unsupported storage or boot ABIs use the user-facing, confirmed Reset Roguix
+flow, which is also the chooser's other option; with several saved VMs Reset
+erases all of them, and its confirmation says so.
 That destructive flow keeps **Reset** disabled until the user types
 `Try Roguix` exactly in a native sheet. Cancelling or dismissing the sheet
 returns control without invoking the storage reset. During reset, the disabled

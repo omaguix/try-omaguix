@@ -34,6 +34,9 @@ QPS_METADATA_IDENTITY=''
 QPS_METADATA_SOURCE_SHA=''
 QPS_METADATA_SOURCE_BYTES=''
 QPS_RECORDED_EXISTING_BYTES=''
+QPS_SAVED_VM_NAMES=()
+QPS_SAVED_VM_FIRST_FD=200
+QPS_SAVED_VM_NEXT_FD=$QPS_SAVED_VM_FIRST_FD
 # The guest is a GPT disk booted by the runtime's UEFI firmware. Its state
 # lives in a `guix` subdirectory of the state root, where Try Roguix has always
 # kept it (the root itself once held Try Omarchy's Arch VM).
@@ -1209,8 +1212,7 @@ _qps_migrate_legacy_single_workspace() {
     _qps_validate_recorded_workspace "$qps_final" || return 1
     if [[ $qps_mode == persistent ]] && \
       _qps_has_recognized_legacy_workspace; then
-      _qps_incompatible \
-        'multiple saved VMs were found; use Reset Roguix to return to one supported disk'
+      _qps_multiple_saved_vms
       return $?
     fi
     return 0
@@ -1260,8 +1262,7 @@ _qps_migrate_legacy_single_workspace() {
     return 1
   }
   if [[ $qps_mode == persistent && $qps_valid_count -gt 1 ]]; then
-    _qps_incompatible \
-      'multiple saved VMs were found; use Reset Roguix to return to one supported disk'
+    _qps_multiple_saved_vms
     return $?
   fi
   [[ -n $qps_selected ]] || {
@@ -1298,6 +1299,243 @@ _qps_migrate_legacy_single_workspace() {
     _qps_error "migrated legacy workspace $qps_selected_name and preserved $((qps_count - 1)) other workspace(s)"
   else
     _qps_error 'migrated the existing VM disk into the single user workspace'
+  fi
+}
+
+# The saved VMs a launch could use: `current` and every identity-keyed disk
+# whose metadata names its own directory. Others are left alone everywhere.
+_qps_saved_vm_candidates() {
+  local qps_candidate=''
+  local qps_candidate_name=''
+
+  QPS_SAVED_VM_NAMES=()
+  if [[ -d $QEMU_PERSISTENT_STORAGE_DISKS_ROOT/current && ! -L $QEMU_PERSISTENT_STORAGE_DISKS_ROOT/current ]] && \
+    _qps_validate_recorded_workspace "$QEMU_PERSISTENT_STORAGE_DISKS_ROOT/current" 2>/dev/null; then
+    QPS_SAVED_VM_NAMES+=(current)
+  fi
+  for qps_candidate in "$QEMU_PERSISTENT_STORAGE_DISKS_ROOT"/*; do
+    [[ -d $qps_candidate && ! -L $qps_candidate ]] || continue
+    qps_candidate_name=${qps_candidate##*/}
+    [[ $qps_candidate_name =~ ^[0-9a-f]{64}$ ]] || continue
+    if _qps_validate_recorded_workspace "$qps_candidate" 2>/dev/null && \
+      [[ $QPS_METADATA_IDENTITY == "$qps_candidate_name" ]]; then
+      QPS_SAVED_VM_NAMES+=("$qps_candidate_name")
+    fi
+  done
+}
+
+# One line per saved VM for the start menu's chooser, then their count, so a
+# reader can tell a complete list from a truncated one:
+#   [qemu-gpu] Saved VM: NAME IDENTITY SCHEMA BYTES ALLOCATED_BYTES MODIFIED_EPOCH
+#   [qemu-gpu] Saved VMs: COUNT
+_qps_report_saved_vm_candidates() {
+  local qps_name=''
+  local qps_directory=''
+  local qps_blocks=''
+  local qps_mtime=''
+
+  _qps_saved_vm_candidates
+  for qps_name in ${QPS_SAVED_VM_NAMES[@]+"${QPS_SAVED_VM_NAMES[@]}"}; do
+    qps_directory="$QEMU_PERSISTENT_STORAGE_DISKS_ROOT/$qps_name"
+    _qps_validate_recorded_workspace "$qps_directory" 2>/dev/null || return 1
+    qps_blocks=$(/usr/bin/stat -f '%b' "$qps_directory/$QPS_DISK_NAME" 2>/dev/null)
+    qps_mtime=$(/usr/bin/stat -f '%m' "$qps_directory/$QPS_DISK_NAME" 2>/dev/null)
+    [[ $qps_blocks =~ ^[0-9]+$ && $qps_mtime =~ ^[0-9]+$ ]] || return 1
+    printf '[qemu-gpu] Saved VM: %s %s %s %s %s %s\n' \
+      "$qps_name" "$QPS_METADATA_IDENTITY" "$QPS_METADATA_SCHEMA" \
+      "$QPS_RECORDED_EXISTING_BYTES" "$((qps_blocks * 512))" "$qps_mtime" >&2
+  done
+  printf '[qemu-gpu] Saved VMs: %s\n' "${#QPS_SAVED_VM_NAMES[@]}" >&2
+}
+
+_qps_multiple_saved_vms() {
+  _qps_report_saved_vm_candidates || true
+  _qps_incompatible \
+    'multiple saved VMs were found; choose the one to keep, or use Reset Roguix'
+}
+
+# Locks an identity-keyed saved VM on descriptor FD, as a launch of that disk
+# would lock it. These descriptors start at QPS_SAVED_VM_FIRST_FD: 7 and 9
+# have their own roles, and bash saves descriptors it redirects from 10 up,
+# so a low number could be one bash closes behind our back. 200 + 30 stays
+# under macOS's default limit of 256 open files.
+_qps_lock_saved_vm() {
+  local qps_fd=$1
+  local qps_name=$2
+  local qps_lock_path="$QEMU_PERSISTENT_STORAGE_LOCKS_ROOT/$qps_name.lock"
+
+  if [[ -e $qps_lock_path || -L $qps_lock_path ]]; then
+    _qps_assert_private_regular_file "$qps_lock_path" 'saved VM lock' || return 1
+  fi
+  eval "exec $qps_fd>>\"\$qps_lock_path\"" || {
+    _qps_fail "cannot open saved VM lock: $qps_lock_path"
+    return 1
+  }
+  if ! chmod 600 "$qps_lock_path" || \
+    ! _qps_assert_private_regular_file "$qps_lock_path" 'saved VM lock' || \
+    ! _qps_fd_matches_path "$qps_fd" "$qps_lock_path"; then
+    eval "exec $qps_fd>&-"
+    _qps_fail "saved VM lock changed while it was opened: $qps_lock_path"
+    return 1
+  fi
+  if ! /usr/bin/lockf -s -t 0 "$qps_fd"; then
+    eval "exec $qps_fd>&-"
+    _qps_fail "saved VM ${qps_name:0:12} is already open"
+    return 1
+  fi
+}
+
+_qps_unlock_saved_vms() {
+  local qps_fd=$QPS_SAVED_VM_FIRST_FD
+  while (( qps_fd < QPS_SAVED_VM_NEXT_FD )); do
+    eval "exec $qps_fd>&-"
+    ((qps_fd += 1))
+  done
+  QPS_SAVED_VM_NEXT_FD=$QPS_SAVED_VM_FIRST_FD
+}
+
+# Keep one saved VM (`current` or an identity-keyed disk) as `current` and
+# move every other saved VM to archive/<UTC time>/ in the same data folder,
+# outside the disks/ tree that launches and resets scan. Every move is a rename
+# on the same volume: nothing is copied or deleted, and a failed move renames
+# back the ones already made. Prints the archive's path when it moved any.
+qemu_persistent_storage_keep_saved_vm() {
+  local qps_keep=${1:-}
+  local qps_name=''
+  local qps_found=0
+  local qps_seen=''
+  local qps_archive_root=''
+  local qps_archive=''
+  local qps_index=0
+  local qps_done=0
+  local qps_undo_failed=0
+  local qps_from=()
+  local qps_to=()
+
+  [[ $qps_keep == current || $qps_keep =~ ^[0-9a-f]{64}$ ]] || {
+    _qps_fail 'the saved VM to keep must be current or a 64-character identity'
+    return 1
+  }
+  [[ ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 0 ]] || {
+    _qps_fail 'choosing a saved VM applies only to the single user workspace'
+    return 1
+  }
+  _qps_prepare_state_root || return 1
+  _qps_acquire_lock current || return 1
+
+  _qps_saved_vm_candidates
+  for qps_name in ${QPS_SAVED_VM_NAMES[@]+"${QPS_SAVED_VM_NAMES[@]}"}; do
+    [[ $qps_name != "$qps_keep" ]] || qps_found=1
+  done
+  (( qps_found )) || {
+    qemu_persistent_storage_release_lock
+    _qps_fail 'the chosen saved VM is no longer in the data folder'
+    return 1
+  }
+  (( ${#QPS_SAVED_VM_NAMES[@]} <= 30 )) || {
+    qemu_persistent_storage_release_lock
+    _qps_fail 'too many saved VMs to choose from; move some out of the data folder'
+    return 1
+  }
+  QPS_SAVED_VM_NEXT_FD=$QPS_SAVED_VM_FIRST_FD
+  for qps_name in "${QPS_SAVED_VM_NAMES[@]}"; do
+    [[ $qps_name != current ]] || continue
+    if ! _qps_lock_saved_vm "$QPS_SAVED_VM_NEXT_FD" "$qps_name"; then
+      _qps_unlock_saved_vms
+      qemu_persistent_storage_release_lock
+      return 1
+    fi
+    ((QPS_SAVED_VM_NEXT_FD += 1))
+  done
+  # What was listed before locking must still be exactly what is there.
+  qps_seen="${QPS_SAVED_VM_NAMES[*]}"
+  _qps_saved_vm_candidates
+  _qps_validate_recorded_workspace "$QEMU_PERSISTENT_STORAGE_DISKS_ROOT/$qps_keep" 2>/dev/null || true
+  if [[ "${QPS_SAVED_VM_NAMES[*]}" != "$qps_seen" ]] || \
+    [[ $QPS_METADATA_SCHEMA != "$QEMU_PERSISTENT_STORAGE_SCHEMA" ]]; then
+    _qps_unlock_saved_vms
+    qemu_persistent_storage_release_lock
+    if [[ "${QPS_SAVED_VM_NAMES[*]}" != "$qps_seen" ]]; then
+      _qps_fail 'the saved VMs changed while choosing; try again'
+      return 1
+    fi
+    _qps_incompatible 'the chosen saved VM uses an unsupported storage format'
+    return $?
+  fi
+
+  for qps_name in "${QPS_SAVED_VM_NAMES[@]}"; do
+    [[ $qps_name != "$qps_keep" ]] || continue
+    qps_from+=("$QEMU_PERSISTENT_STORAGE_DISKS_ROOT/$qps_name")
+    qps_to+=("archive/$qps_name")
+  done
+  if [[ $qps_keep != current ]]; then
+    qps_from+=("$QEMU_PERSISTENT_STORAGE_DISKS_ROOT/$qps_keep")
+    qps_to+=("$QEMU_PERSISTENT_STORAGE_DISKS_ROOT/current")
+  fi
+
+  if (( ${#qps_from[@]} > 0 )) && [[ ${qps_to[0]} == archive/* ]]; then
+    qps_archive_root="$QEMU_PERSISTENT_STORAGE_ROOT/archive"
+    if [[ ! -e $qps_archive_root && ! -L $qps_archive_root ]]; then
+      mkdir -m 700 "$qps_archive_root" 2>/dev/null || true
+    fi
+    qps_archive="$qps_archive_root/saved-vms-$(date -u '+%Y%m%d-%H%M%S')"
+    if ! _qps_assert_private_directory "$qps_archive_root" 'saved VM archive' || \
+      ! mkdir -m 700 "$qps_archive"; then
+      _qps_unlock_saved_vms
+      qemu_persistent_storage_release_lock
+      _qps_fail "cannot create the saved VM archive: $qps_archive"
+      return 1
+    fi
+    # A rename, never a copy: the archive must be on the disks' own volume.
+    if [[ $(/usr/bin/stat -f '%d' "$qps_archive") != \
+      $(/usr/bin/stat -f '%d' "$QEMU_PERSISTENT_STORAGE_DISKS_ROOT") ]]; then
+      /bin/rmdir "$qps_archive"
+      _qps_unlock_saved_vms
+      qemu_persistent_storage_release_lock
+      _qps_fail 'the saved VM archive is not on the same volume as the saved VMs'
+      return 1
+    fi
+  fi
+
+  for ((qps_index = 0; qps_index < ${#qps_from[@]}; qps_index++)); do
+    [[ ${qps_to[qps_index]} != archive/* ]] || \
+      qps_to[qps_index]="$qps_archive/${qps_to[qps_index]#archive/}"
+    if [[ -e ${qps_to[qps_index]} || -L ${qps_to[qps_index]} ]] || \
+      ! /bin/mv "${qps_from[qps_index]}" "${qps_to[qps_index]}"; then
+      break
+    fi
+    qps_done=$((qps_index + 1))
+  done
+  if (( qps_done < ${#qps_from[@]} )); then
+    _qps_error "cannot move ${qps_from[qps_done]} to ${qps_to[qps_done]}"
+    for ((qps_index = qps_done - 1; qps_index >= 0; qps_index--)); do
+      if [[ -e ${qps_from[qps_index]} || -L ${qps_from[qps_index]} ]] || \
+        ! /bin/mv "${qps_to[qps_index]}" "${qps_from[qps_index]}"; then
+        qps_undo_failed=1
+        _qps_error "could not move ${qps_to[qps_index]} back to ${qps_from[qps_index]}"
+      fi
+    done
+    [[ -z $qps_archive ]] || /bin/rmdir "$qps_archive" 2>/dev/null || true
+    _qps_fsync "$QEMU_PERSISTENT_STORAGE_DISKS_ROOT" || true
+    _qps_unlock_saved_vms
+    qemu_persistent_storage_release_lock
+    if (( qps_undo_failed )); then
+      _qps_fail 'some saved VMs could not be moved back; nothing was deleted'
+    else
+      _qps_fail 'no saved VM was moved'
+    fi
+    return 1
+  fi
+  _qps_fsync "$QEMU_PERSISTENT_STORAGE_DISKS_ROOT" ${qps_archive:+"$qps_archive" "$qps_archive_root"} || {
+    _qps_unlock_saved_vms
+    qemu_persistent_storage_release_lock
+    _qps_fail 'cannot flush the saved VM moves'
+    return 1
+  }
+  _qps_unlock_saved_vms
+  qemu_persistent_storage_release_lock
+  if [[ -n $qps_archive ]]; then
+    printf '[qemu-gpu] Archived saved VMs: %s\n' "$qps_archive" >&2
   fi
 }
 

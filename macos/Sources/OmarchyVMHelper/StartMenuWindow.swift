@@ -184,6 +184,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     private let bootFixCacheURL: () -> URL?
     private let bootFixIdentity: () -> String?
     private let retryBootFixes: () -> Void
+    private let keepSavedVM: (String) -> Void
     private let launch: () -> Void
     private let appVersionLabel: String
     private let appReleaseActionTitle: () -> String
@@ -228,6 +229,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     }
     private var prelaunchControlsLocked: Bool { controlsBusy || virtualMachineRunning }
     private var pendingResetSpaceEstimate: String?
+    private var pendingKeptSavedVM: SavedVMCandidate?
     private var resetConfirmationPrompt: ResetConfirmationPrompt?
     private weak var startMenuScrollView: NSScrollView?
     private var preferredContentHeight: CGFloat = 832
@@ -288,6 +290,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         bootFixCacheURL: @escaping () -> URL? = { nil },
         bootFixIdentity: @escaping () -> String? = { GuestBootFixCache.bundledIdentity },
         retryBootFixes: @escaping () -> Void = {},
+        keepSavedVM: @escaping (String) -> Void = { _ in },
         launch: @escaping () -> Void
     ) {
         self.accessibilityStatus = accessibilityStatus
@@ -305,6 +308,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         self.chooseStorageLocation = chooseStorageLocation
         self.useDefaultStorageLocation = useDefaultStorageLocation
         self.resetStorage = resetStorage
+        self.keepSavedVM = keepSavedVM
         self.sharedFolderStatus = sharedFolderStatus
         self.chooseSharedFolder = chooseSharedFolder
         self.setSharedFolderEnabled = setSharedFolderEnabled
@@ -634,6 +638,90 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         alert.informativeText = StartMenuPresentation.incompatibleWorkspaceDetail
         alert.addButton(withTitle: "OK")
         alert.beginSheetModal(for: window)
+    }
+
+    /// The data folder holds several saved VMs. Keeping one continues the
+    /// launch with it; Reset erases all of them, after its usual confirmation.
+    func launchRequiresSavedVMChoice(_ candidates: [SavedVMCandidate], bundledIdentity: String?) {
+        guard launchInProgress else { return }
+        launchInProgress = false
+        show()
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Choose the saved VM to keep"
+        alert.informativeText = StartMenuPresentation.savedVMChoiceDetail
+        let choices = SavedVMChoiceView(
+            candidates: candidates,
+            bundledIdentity: bundledIdentity
+        )
+        alert.accessoryView = choices
+        let keep = alert.addButton(withTitle: "Keep and Launch")
+        keep.isEnabled = choices.selectedCandidate != nil
+        choices.selectionChanged = { [weak keep, weak choices] in
+            keep?.isEnabled = choices?.selectedCandidate != nil
+        }
+        alert.addButton(withTitle: "Reset Roguix…")
+        alert.addButton(withTitle: "Cancel")
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard let self else { return }
+            switch response {
+            case .alertFirstButtonReturn:
+                guard let candidate = choices.selectedCandidate else { return }
+                pendingKeptSavedVM = candidate
+                launchInProgress = true
+                diskDownloadPercent = nil
+                render()
+                keepSavedVM(candidate.name)
+            case .alertSecondButtonReturn:
+                // Let the choice sheet close before the reset sheet opens.
+                DispatchQueue.main.async { [weak self] in
+                    self?.confirmReset(savedVMCount: candidates.count)
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    /// The launcher kept the chosen VM. Say where the others went, then launch
+    /// it unless the user would rather look at the archive first.
+    func savedVMKeepDidFinish(archivePath: String?, errorMessage: String?) {
+        guard launchInProgress, let candidate = pendingKeptSavedVM else { return }
+        pendingKeptSavedVM = nil
+        let alert = NSAlert()
+        guard errorMessage == nil else {
+            launchInProgress = false
+            render()
+            alert.alertStyle = .critical
+            alert.messageText = "The saved VM couldn’t be kept"
+            alert.informativeText = errorMessage ?? ""
+            alert.addButton(withTitle: "OK")
+            alert.beginSheetModal(for: window)
+            return
+        }
+        guard let archivePath else {
+            launch()
+            return
+        }
+        launchInProgress = false
+        render()
+        alert.alertStyle = .informational
+        alert.messageText = "Saved VM kept"
+        alert.informativeText = SavedVMChoice.keptMessage(
+            for: candidate,
+            archivePath: archivePath,
+            homeDirectory: FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+        )
+        alert.addButton(withTitle: "Launch")
+        alert.addButton(withTitle: "Show in Finder")
+        alert.beginSheetModal(for: window) { [weak self] response in
+            if response == .alertSecondButtonReturn {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: archivePath, isDirectory: true)])
+            } else {
+                self?.launchOmarchy()
+            }
+        }
     }
 
     func launchDidFail(errorMessage: String) {
@@ -1818,7 +1906,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         )
     }
 
-    private func confirmReset() {
+    private func confirmReset(savedVMCount: Int? = nil) {
         guard canResetStorage,
               !prelaunchControlsLocked,
               !resetInProgress,
@@ -1845,6 +1933,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         if !location.isDefault, let displayPath = location.displayPath {
             let volume = location.volumeName.map { "\($0), " } ?? ""
             detail += " The VM being erased is the one stored at \(volume)\(displayPath)."
+        }
+        if let savedVMCount {
+            detail += StartMenuPresentation.resetErasesSavedVMs(count: savedVMCount)
         }
         if let estimate {
             detail += " Resetting may free up to \(estimate) of disk space."
