@@ -2,13 +2,6 @@
 
 ## Next, in order
 
-### Document chords that host tools take before the VM
-
-Write the user-facing note from "Background: Command-Space" below:
-Karabiner-Elements, Hammerspoon and AltTab may own a chord before QEMU's
-event tap sees it, so the guest gets another key or nothing; show the
-`frontmost_application_unless` exemption for the VM's QEMU path.
-
 ### Send Command-Tab to Roguix
 
 Command-Tab is left to macOS on purpose (`qemu-cocoa-command-tab.patch`), so

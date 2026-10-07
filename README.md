@@ -73,7 +73,10 @@ goes straight to Hyprland.
 The desktop is Omarchy's: **Super+Return** opens a terminal, **Super+Space**
 the Omarchy menu, **Super+Alt+Space** the app launcher, **Super+W** closes a
 window. Command acts as Super while the VM window is focused, except
-Command-Tab, which stays with the Mac's app switcher. Omarchy's
+Command-Tab, which stays with the Mac's app switcher. Host tools such as
+Karabiner-Elements, Hammerspoon or AltTab can take a chord before the VM sees
+it; [docs/mac-keyboard.md](docs/mac-keyboard.md#host-tools-that-take-a-chord-first)
+shows how to exempt the VM window. Omarchy's
 Install, Remove and Update menus manage Guix packages and the Guix system
 configuration. [docs/omarchy-packages.md](docs/omarchy-packages.md) lists
 where Roguix's applications differ from Omarchy's. A VM created before the

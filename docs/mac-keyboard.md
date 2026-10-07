@@ -47,6 +47,33 @@ hl.config({
 
 Save, then run `hyprctl reload` and `hyprctl configerrors`.
 
+## Host tools that take a chord first
+
+Command acts as Super through QEMU's event tap, which sees a key only after
+host tools that sit earlier in the input path. Karabiner-Elements remaps keys
+in its virtual keyboard driver, and Hammerspoon hotkeys and AltTab's shortcut
+are registered system-wide, so a chord they own reaches the guest as another
+key or not at all. For example, a Karabiner rule that turns Command-Space
+into F18 for a launcher makes the guest receive F18 instead of Super+Space.
+
+Exempt the VM window in the Karabiner rule by adding a condition to its
+manipulator. The window belongs to the bundled QEMU process, which has no
+bundle identifier, so match its executable path:
+
+```json
+"conditions": [
+  {
+    "type": "frontmost_application_unless",
+    "file_paths": ["^.*/Try Roguix\\.app/Contents/Resources/runtime/bin/Try Roguix$"]
+  }
+]
+```
+
+Check the path in Karabiner-EventViewer's frontmost application view while
+the VM window is focused. Hammerspoon hotkeys and AltTab's shortcut need the
+same treatment: disable them, or scope them so they do not fire while the VM
+window is frontmost, when the guest should receive that chord.
+
 ## Validation
 
 `make test` checksums the Cocoa patch, compiles the ISO swap helper, and
