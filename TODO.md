@@ -8,6 +8,16 @@ Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
 access in System Settings when asked. Follow the diagnosis steps and the
 release re-grant notes in "Background: the Accessibility grant".
 
+### Is the minimum guest size hang an upstream QEMU (or EDK2) problem?
+
+Requested 2026-10-07: "isn't https://github.com/omacom/try-omarchy/pull/325
+a problem further upstream, i.e. QEMU? Ask the models." Find out where the
+fix belongs: QEMU's Cocoa UI forwarding a too-small preferred mode,
+virtio-gpu keeping it across reset, EDK2's DEBUG GraphicsConsoleDxe ASSERT,
+or Try Omarchy's dynamic-display patch; consult the default models (consult
+skill) and report with evidence. Reproducing on unpatched QEMU is the check
+"Background: the minimum guest size fix upstream" already asks for.
+
 ## Proposed
 
 ### A fresh start gets half the initial window frame
