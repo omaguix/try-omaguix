@@ -510,6 +510,18 @@ pull-request description, omitting fields that do not apply:
 - Remaining uncertainty or required human decision:
 ```
 
+## Building and Running in a Worktree
+
+`make app` embeds the guest from the checkout's own `build/guix`
+(`GUEST_DIST` is an `override`, so a command-line value is ignored). A new
+worktree has no `build/`; clone the main checkout's packaged guest into it
+first: `mkdir -p build && cp -c -R <main checkout>/build/guix build/guix`
+(an APFS clone, no extra space).
+
+`make run-isolated` opens the start menu and waits for a click on **Launch
+Roguix**, so an unattended check must not leave it waiting: start the VM in
+a way that needs no click, or say that the in-app step stayed unchecked.
+
 ## Long-Running Work
 
 Run builder VM work that takes more than a minute (image and system builds,
