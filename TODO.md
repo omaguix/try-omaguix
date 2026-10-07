@@ -66,6 +66,16 @@ Decided 2026-10-07: open the pull request on Try Omarchy. See "Background:
 the minimum guest size fix upstream"; reporting to QEMU still needs a
 reproduction on unpatched QEMU first.
 
+## Proposed
+
+### A fresh start gets half the initial window frame
+
+Found 2026-10-07 while verifying the reboot-shrink fix: a fresh windowed
+start opens at 648x397 points, half of the ~1296x729 that
+`cocoa_initial_window_frame` intends (75% of the screen), before and after
+that fix. Likely cause: when the view is first attached the window is not yet
+resizable, so the size is divided by the Retina 2x backing scale. Unverified.
+
 ## Needs a decision
 
 - Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
