@@ -2,15 +2,6 @@
 
 ## Next, in order
 
-### The VM window shrinks on every guest reboot
-
-Found 2026-10-03 while testing reboots: each guest reboot (`reboot(2)` in the
-guest) leaves the VM window about 75% of its previous size (227x202,
-171x160, 130x129 ... 22x48 points over ten reboots), with nobody touching it.
-The 0.75 factor matches `cocoa_initial_window_frame` in
-`qemu-cocoa-dynamic-display.patch`; check how a guest reset re-applies the
-initial frame.
-
 ### Say why a launch did not happen
 
 Reported 2026-10-03 twice: "Try Roguix does not start". Cause: a Dock tile

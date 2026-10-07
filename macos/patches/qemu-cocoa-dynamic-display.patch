@@ -1,7 +1,23 @@
 diff --git a/ui/cocoa.m b/ui/cocoa.m
 --- a/ui/cocoa.m
 +++ b/ui/cocoa.m
-@@ -692,7 +692,7 @@
+@@ -670,9 +670,13 @@
+     } else if ([[self window] styleMask] & NSWindowStyleMaskFullScreen) {
+         [[self window] setContentSize:[self fixAspectRatio:[self screenSafeAreaSize]]];
+         [[self window] center];
+-    } else {
+-        [[self window] setContentSize:[self fixAspectRatio:[self frame].size]];
+     }
++    /*
++     * A resizable window keeps the size the user left it at: the guest's mode
++     * follows the window (updateUIInfo), not the reverse. Fitting the window
++     * into itself at each new guest aspect ratio only ever shrinks it, and a
++     * guest reboot passes through firmware modes of other ratios.
++     */
+ }
+ 
+ - (void) updateScale
+@@ -692,7 +696,7 @@
  {
      /* Must be called with the BQL, i.e. via updateUIInfo */
      NSSize frameSize;
@@ -10,7 +26,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
  
      if (!qemu_console_is_graphic(dcl.con)) {
          return;
-@@ -701,25 +701,45 @@
+@@ -701,25 +705,45 @@
      if ([self window]) {
          NSDictionary *description = [[[self window] screen] deviceDescription];
          CGDirectDisplayID display = [[description objectForKey:@"NSScreenNumber"] unsignedIntValue];
@@ -64,7 +80,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      } else {
          frameSize = [self frame].size;
          info.width_mm = 0;
-@@ -728,8 +748,17 @@
+@@ -728,8 +752,17 @@
  
      info.xoff = 0;
      info.yoff = 0;
@@ -84,7 +100,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
  
      qemu_console_set_ui_info(dcl.con, &info, TRUE);
  }
-@@ -1308,6 +1337,23 @@
+@@ -1308,6 +1341,23 @@
  - (void)adjustSpeed:(id)sender;
  @end
  
@@ -108,7 +124,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
  @implementation QemuCocoaAppController
  #ifdef CONFIG_OPENGL
  - (id) initWithCGL:(BOOL)cgl
-@@ -1321,7 +1367,7 @@
+@@ -1321,7 +1371,7 @@
  
      self = [super init];
      if (self) {
@@ -117,7 +133,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
  
          // create a view and add it to the window
  #ifdef CONFIG_OPENGL
-@@ -1413,17 +1459,28 @@
+@@ -1413,17 +1463,28 @@
  
  - (void)windowDidChangeScreen:(NSNotification *)notification
  {

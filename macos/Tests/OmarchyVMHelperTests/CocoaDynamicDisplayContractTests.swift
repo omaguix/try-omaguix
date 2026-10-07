@@ -17,6 +17,18 @@ struct CocoaDynamicDisplayContractTests {
         #expect(!patch.contains("1080.0 / MAX(backingScale"))
     }
 
+    @Test("A resizable window keeps its size when the guest's mode changes")
+    func resizableWindowKeepsItsSize() throws {
+        let patch = try source(named: "patches/qemu-cocoa-dynamic-display.patch")
+
+        // Fitting the window to each new guest surface only shrinks it, so
+        // every guest reboot (firmware, then kernel modes) left it smaller.
+        #expect(patch.contains(
+            "-        [[self window] setContentSize:[self fixAspectRatio:[self frame].size]];"
+        ))
+        #expect(patch.contains("A resizable window keeps the size the user left it at"))
+    }
+
     private func source(named relativePath: String) throws -> String {
         let testFile = URL(fileURLWithPath: #filePath)
         let macosDirectory = testFile
