@@ -33,7 +33,7 @@ folders the picker accepts. Unverified.
 ## Needs a decision
 
 - Start the builder VM (it needs a console login after a reboot) and free disk space, so a worker can build the guest with the bold console font (ter-v32n to ter-v32b, see "Background: the shutdown font")? Checked: the fix was verified live with setfont; the builder had no serial.sock and the Mac has 13 GB free (2026-10-07).
-- Check in the running app, with your keyboard, the Command-Tab setting (off: macOS switches apps; on: Roguix gets Super-Tab; Control-Option hands it back) the startup-failure alert with Show Log, and the saved-VM chooser (Keep and Launch, Show in Finder)? Checked: all three are covered by tests only (c5d56ca, d34583a, the chooser commit); the key routing needs a real keyboard and the Accessibility grant, the alert and the chooser clicks in the start menu.
+- Check in the running app, with your keyboard, the Command-Tab setting (off: macOS switches apps; on: Roguix gets Super-Tab; Control-Option hands it back) the startup-failure alert with Show Log, the saved-VM chooser (Keep and Launch, Show in Finder), and Accessibility OPEN SETTINGS when not trusted (one window: the macOS prompt)? Checked: all four are covered by tests only (c5d56ca, d34583a, the chooser commit); the key routing needs a real keyboard and the Accessibility grant, the alert and the chooser clicks in the start menu.
 - Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
 
 ### Background: Command-Space
