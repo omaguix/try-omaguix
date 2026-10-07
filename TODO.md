@@ -2,21 +2,6 @@
 
 ## Next, in order
 
-### Open Settings in the start menu resets the grant and asks twice
-
-Approved 2026-10-07 ("move the OPEN SETTINGS proposal to Next, in order").
-
-Found 2026-10-07 while diagnosing the Accessibility grant: the start menu's
-Accessibility OPEN SETTINGS runs `tccutil reset Accessibility
-dev.tryroguix.native` (`AccessibilityPermissionRepair`), then
-`AXIsProcessTrustedWithOptions` with the prompt, then opens System Settings
-0.6 s later, so macOS's "would like to control this Mac" dialog and the
-Settings window appear together, and a grant that was on is switched off.
-The reset only helps when the stored requirement no longer matches the app
-(an ad-hoc update); with the certificate-signed build it destroys a working
-grant. Proposal: reset only when `AXIsProcessTrusted()` is false although a
-row exists, and show one of the two (the prompt or Settings), not both.
-
 ### Should the minimum guest size fix go to Try Omarchy at all?
 
 Requested 2026-10-07: "what do you think? Since the bug is upstream, in

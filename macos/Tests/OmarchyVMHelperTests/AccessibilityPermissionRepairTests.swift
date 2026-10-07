@@ -50,4 +50,40 @@ struct AccessibilityPermissionRepairTests {
         ))
         #expect(try String(contentsOf: arguments, encoding: .utf8) == "reset\nAccessibility\n\(identifier)\n")
     }
+
+    /// Runs `request` with injected AX and reset functions, recording which
+    /// actions ran and in what order.
+    private func run(trusted: Bool, resetSucceeds: Bool) -> (
+        outcome: AccessibilityPermissionRepair.Outcome, actions: [String]
+    ) {
+        var actions: [String] = []
+        let outcome = AccessibilityPermissionRepair.request(
+            isTrusted: { trusted },
+            resetStaleEntry: { actions.append("reset"); return resetSucceeds },
+            prompt: { actions.append("prompt") },
+            openSettings: { actions.append("settings") }
+        )
+        return (outcome, actions)
+    }
+
+    @Test("a trusted app is never reset and nothing is shown", arguments: [true, false])
+    func trustedAppKeepsItsGrant(resetSucceeds: Bool) {
+        let result = run(trusted: true, resetSucceeds: resetSucceeds)
+        #expect(result.outcome == .alreadyTrusted)
+        #expect(result.actions.isEmpty)
+    }
+
+    @Test("an untrusted app's stale row is reset, then only the prompt is shown")
+    func untrustedAppPrompts() {
+        let result = run(trusted: false, resetSucceeds: true)
+        #expect(result.outcome == .prompted)
+        #expect(result.actions == ["reset", "prompt"])
+    }
+
+    @Test("when the reset fails, only System Settings is shown")
+    func failedResetOpensSettings() {
+        let result = run(trusted: false, resetSucceeds: false)
+        #expect(result.outcome == .openedSettings)
+        #expect(result.actions == ["reset", "settings"])
+    }
 }

@@ -1228,19 +1228,19 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
     }
 
     private func requestOptionalAccessibilityPermission() {
-        guard !AXIsProcessTrusted() else { return }
-        // A replacement app can leave a disabled TCC row tied to the old
-        // code signature. Reset only our own decision so the prompt below
-        // registers the executable that is installed now.
-        _ = AccessibilityPermissionRepair.resetStaleEntry()
-        let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
-        _ = AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
-        guard let settingsURL = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ) else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            NSWorkspace.shared.open(settingsURL)
-        }
+        _ = AccessibilityPermissionRepair.request(
+            isTrusted: { AXIsProcessTrusted() },
+            prompt: {
+                let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+                _ = AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
+            },
+            openSettings: {
+                guard let settingsURL = URL(
+                    string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+                ) else { return }
+                NSWorkspace.shared.open(settingsURL)
+            }
+        )
     }
 
     private func childDidExit(status: Int32) {
