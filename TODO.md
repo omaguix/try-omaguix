@@ -21,6 +21,17 @@ Decided 2026-10-07: open the pull request on Try Omarchy. See "Background:
 the minimum guest size fix upstream"; reporting to QEMU still needs a
 reproduction on unpatched QEMU first.
 
+### Fix the old rootfs.ext4 names in Swift
+
+Requested 2026-10-07: "fix the old rootfs.ext4 names in Swift too". Found by
+the saved-VM chooser worker: `QEMUGPUStorageSpaceEstimate.recordedPersistentDisk`
+(disk-space estimates) looks for `rootfs.ext4` and kind
+`omarchy-qemu-persistent-disk`, while `qemu-persistent-storage.sh` writes
+`disk.raw` and `roguix-qemu-persistent-disk`, and `storageRootURL` does not
+append the `guix` subdirectory. The same `rootfs.ext4` is in
+`VMApplicationController.swift` (~line 502) and `GuestIntegrationStatus.swift`
+(~line 57).
+
 ## Proposed
 
 ### A fresh start gets half the initial window frame
