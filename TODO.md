@@ -15,6 +15,19 @@ black screen". Boot messages look fine; the shutdown text appears after
 Hyprland exits, on a VT. Capture a screenshot of it first (blurry, too small,
 too large or wrong glyphs) and compare it with the boot screen.
 
+Consulted 2026-10-07 (sol, MiMo, DeepSeek; unverified): all three put first
+that after Hyprland drops DRM master, fbcon repaints at a mode other than the
+boot's `video=Virtual-1:2560x1440M` (the window-sized mode
+roguix-display-sync left, not a multiple of 16x32), or at 2560x1440 that
+zoom-to-fit then scales by a non-integer factor with linear filtering. To
+tell guest from host: a QMP `screendump` during the shutdown (sharp there,
+blurry on screen means the Cocoa scaling), and in the guest, before and after
+`hyprctl dispatch exit`, `fgconsole`, `/sys/class/graphics/fb0/virtual_size`,
+the DRM connector's active mode and `setfont -C /dev/ttyN -O` (which font the
+shown VT has). Candidate fixes, by cause: restore the boot mode when Hyprland
+stops, nearest-neighbor filtering in the Cocoa patch, or `setfont` on the
+VT shown at shutdown.
+
 ## Proposed
 
 ### A fresh start gets half the initial window frame
