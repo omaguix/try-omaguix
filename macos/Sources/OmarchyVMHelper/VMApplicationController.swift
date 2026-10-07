@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Darwin
 import Foundation
+import os
 
 @MainActor
 final class HostPowerNotificationObserver {
@@ -46,6 +47,10 @@ final class HostPowerNotificationObserver {
 
 @MainActor
 final class VMApplicationController: NSObject, NSApplicationDelegate {
+    // A Finder launch sends this process's stderr to /dev/null; the unified
+    // log keeps the input warnings next to QEMU's launcher log lines.
+    private static let inputLog = Logger(subsystem: "dev.tryroguix.native", category: "input")
+
     private let launcherURL: URL
     private let initialArguments: [String]
     private let baseEnvironment: [String: String]
@@ -408,11 +413,16 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         pendingHostSleepControlFailure = nil
         do {
             if isDisposable { _ = try disposableWorkspace.prepare() }
+            let accessibilityTrusted = AXIsProcessTrusted()
+            Self.inputLog.notice(
+                "Accessibility trusted: \(accessibilityTrusted ? "yes" : "no", privacy: .public)"
+            )
             let accessibilityDecision = AccessibilityLaunchDecision.make(
-                for: AXIsProcessTrusted() ? .authorized : .unavailable
+                for: accessibilityTrusted ? .authorized : .unavailable
             )
             if let warning = accessibilityDecision.warning {
                 fputs("[input-bridge] \(warning)\n", stderr)
+                Self.inputLog.warning("\(warning, privacy: .public)")
             }
             guard accessibilityDecision.allowsLaunch else {
                 throw HelperError.io("accessibility policy unexpectedly prevented launch")

@@ -2,12 +2,6 @@
 
 ## Next, in order
 
-### Diagnose the Accessibility grant
-
-Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
-access in System Settings when asked. Follow the diagnosis steps and the
-release re-grant notes in "Background: the Accessibility grant".
-
 ### The font on the shutdown screen looks terrible
 
 Requested 2026-10-07: "the font looks terrible during the shutdown, on the
@@ -29,6 +23,19 @@ stops, nearest-neighbor filtering in the Cocoa patch, or `setfont` on the
 VT shown at shutdown.
 
 ## Proposed
+
+### Open Settings in the start menu resets the grant and asks twice
+
+Found 2026-10-07 while diagnosing the Accessibility grant: the start menu's
+Accessibility OPEN SETTINGS runs `tccutil reset Accessibility
+dev.tryroguix.native` (`AccessibilityPermissionRepair`), then
+`AXIsProcessTrustedWithOptions` with the prompt, then opens System Settings
+0.6 s later, so macOS's "would like to control this Mac" dialog and the
+Settings window appear together, and a grant that was on is switched off.
+The reset only helps when the stored requirement no longer matches the app
+(an ad-hoc update); with the certificate-signed build it destroys a working
+grant. Proposal: reset only when `AXIsProcessTrusted()` is false although a
+row exists, and show one of the two (the prompt or Settings), not both.
 
 ### A fresh start gets half the initial window frame
 
@@ -85,12 +92,33 @@ only logs a warning. Releases, and development builds made without
 `make signing-identity`, are signed ad hoc, so their designated requirement
 is the cdhash (`codesign -d -r-` shows `designated => cdhash H"..."`): every
 rebuild or update is a new identity for TCC, and the earlier grant no longer
-applies, even if System Settings still shows it on. This is the leading
-hypothesis, not yet proven. Development builds signed with the local
-identity have `certificate leaf = H"..."` instead, which stays the same
-across rebuilds.
+applies, even if System Settings still shows it on. Development builds
+signed with the local identity have `certificate leaf = H"..."` instead,
+which stays the same across rebuilds.
 
-- Diagnose: run only `~/Applications/Try Roguix.app`; check the start
+Diagnosed 2026-10-07 with the maintainer at the Mac (macOS 27): the
+hypothesis holds. QEMU's stderr (the launcher log) now has `[event-tap]`
+lines (the grant as QEMU sees it, tap creation, enabled state, re-enabling,
+the first event, captured Command chords) and the helper logs
+`Accessibility trusted` to os_log (`dev.tryroguix.native`, category
+`input`). Evidence:
+
+- The installed build from 2026-10-03 was ad hoc
+  (`designated => cdhash H"3c8d9c09..."`); its row was off and the start
+  menu showed No.
+- Certificate-signed build, granted once: `Accessibility trusted: yes`,
+  `Created the tap; enabled: yes`, and Command-Space (key code 49) and
+  Command-Return (36) `captured for the guest`; Roguix's menu and terminal
+  opened. TCC: `authValue=2, authReason=4`.
+- Rebuilt with `FORCE=1` (new cdhash, same certificate requirement) and
+  reinstalled: still trusted without asking again, Command-Space captured.
+- Ad-hoc build (`DEVELOPMENT_SIGN_IDENTITY=-`) over the same row: denied,
+  `authValue=0`; tccd logged `Failed to match existing code requirement`
+  with the stored `certificate leaf` requirement against the new cdhash.
+- With the grant in place the tap was never disabled by macOS and no
+  chords escaped, so secure input and re-enabling were not the cause.
+
+- Diagnose (done 2026-10-07, see above): run only `~/Applications/Try Roguix.app`; check the start
   menu's Accessibility row, the `[input-bridge]` warning, and TCC denials
   (`log stream --predicate 'subsystem == "com.apple.TCC"'`). Log in the
   process that installs the tap: `AXIsProcessTrusted()`, tap creation,

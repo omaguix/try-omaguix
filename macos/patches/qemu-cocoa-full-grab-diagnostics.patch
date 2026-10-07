@@ -1,0 +1,145 @@
+From: Try Roguix contributors
+Subject: [PATCH] cocoa: log the full grab tap's state
+
+Applies after the other Try Roguix Cocoa patches.
+
+Command chords reach the guest as Super only through the full-grab
+CGEventTap, and every way it fails is silent: without the Accessibility
+grant the tap is never created, macOS can disable it later, and a chord can
+reach the tap but still be left to macOS. Log, on QEMU's stderr (the
+launcher log), what macOS reports about the grant before the tap is
+created, whether it was created and enabled, when the first event arrives,
+each time macOS disables it and whether re-enabling worked, and which
+Command chords were captured or left to macOS. Only Command chords are
+logged, by key code and never ordinary typing, and each kind only a few
+times per run.
+
+--- a/ui/cocoa.m
++++ b/ui/cocoa.m
+@@ -441,6 +441,7 @@
+ - (BOOL) isMouseGrabbed;
+ - (BOOL) isKeyboardCaptured;
+ - (void) reenableEventTap;
++- (BOOL) isEventTapEnabled;
+ - (void) raiseAllKeys;
+ - (void) endPinchLocked;
+ - (void) resetPinchLocked:(bool)running;
+@@ -486,13 +487,51 @@
+     } else if (flags == 0 && command_tab_release_armed) {
+         command_tab_release_armed = false;
+         command_tab_released = true;
++    }
++}
++
++/*
++ * System-shortcut capture fails silently: without the Accessibility grant
++ * the tap is never created, macOS may disable it later, and a chord can
++ * reach the tap but still go back to macOS. Say which one happened in the
++ * launcher log (QEMU's stderr). Only Command chords are logged, by key
++ * code, never ordinary typing, and each kind only a few times per run.
++ */
++static bool cocoa_tap_should_log(unsigned int count)
++{
++    /* The first few, then every power of two. */
++    return count <= 4 || (count & (count - 1)) == 0;
++}
++
++static void cocoa_tap_log_command_chord(CGEventType type, CGEventRef cgEvent,
++                                        bool window_key, bool captured)
++{
++    static unsigned int captured_count, released_count;
++    unsigned int *count = captured ? &captured_count : &released_count;
++
++    if (type != kCGEventKeyDown ||
++        !(CGEventGetFlags(cgEvent) & kCGEventFlagMaskCommand)) {
++        return;
+     }
++    if (cocoa_tap_should_log(++*count)) {
++        fprintf(stderr,
++                "[event-tap] Command chord key code %lld %s (window key: %s, #%u)\n",
++                CGEventGetIntegerValueField(cgEvent, kCGKeyboardEventKeycode),
++                captured ? "captured for the guest" : "left to macOS",
++                window_key ? "yes" : "no", *count);
++    }
+ }
+ 
+ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void *userInfo)
+ {
+     QemuCocoaView *view = userInfo;
++    static bool callback_logged;
+ 
++    if (!callback_logged) {
++        callback_logged = true;
++        fprintf(stderr, "[event-tap] First event reached the tap.\n");
++    }
++
+     /*
+      * macOS owns the tap's lifetime. A callback that returns too slowly
+      * gets the tap disabled with kCGEventTapDisabledByTimeout, and a tap
+@@ -503,7 +542,15 @@
+      */
+     if (type == kCGEventTapDisabledByTimeout ||
+         type == kCGEventTapDisabledByUserInput) {
++        static unsigned int disabled_count;
++
+         [view reenableEventTap];
++        if (cocoa_tap_should_log(++disabled_count)) {
++            fprintf(stderr,
++                    "[event-tap] macOS disabled the tap (%s, #%u); enabled again: %s\n",
++                    type == kCGEventTapDisabledByTimeout ? "timeout" : "user input",
++                    disabled_count, [view isEventTapEnabled] ? "yes" : "no");
++        }
+         return cgEvent;
+     }
+ 
+@@ -529,9 +576,12 @@
+     NSEvent *event = [NSEvent eventWithCGEvent:cgEvent];
+     if ([view isKeyboardCaptured] && [view handleEvent:event]) {
+         COCOA_DEBUG("Global events tap: qemu handled the event, capturing!\n");
++        cocoa_tap_log_command_chord(type, cgEvent,
++                                    [[view window] isKeyWindow], true);
+         return NULL;
+     }
+     COCOA_DEBUG("Global events tap: qemu did not handle the event, letting it through...\n");
++    cocoa_tap_log_command_chord(type, cgEvent, [[view window] isKeyWindow], false);
+ 
+     return cgEvent;
+ }
+@@ -1010,6 +1060,16 @@
+ {
+     COCOA_DEBUG("QemuCocoaView: setFullGrab\n");
+ 
++    /*
++     * An active HID tap needs the Accessibility grant of this process's
++     * responsible app; say what macOS reports before creating it.
++     */
++    fprintf(stderr,
++            "[event-tap] Accessibility trusted: %s; post-event access: %s; listen-event access: %s\n",
++            AXIsProcessTrusted() ? "yes" : "no",
++            CGPreflightPostEventAccess() ? "yes" : "no",
++            CGPreflightListenEventAccess() ? "yes" : "no");
++
+     CGEventMask mask = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
+     eventsTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault,
+                                  mask, handleTapEvent, self);
+@@ -1018,6 +1078,8 @@
+         return;
+     } else {
+         COCOA_DEBUG("Global events tap created! Will capture system key combos.\n");
++        fprintf(stderr, "[event-tap] Created the tap; enabled: %s\n",
++                [self isEventTapEnabled] ? "yes" : "no");
+     }
+ 
+     CFRunLoopRef runLoop = CFRunLoopGetCurrent();
+@@ -1691,6 +1753,11 @@
+     }
+ }
+ 
++- (BOOL) isEventTapEnabled
++{
++    return eventsTap && CGEventTapIsEnabled(eventsTap);
++}
++
+ /*
+  * Makes the target think all down keys are being released.
+  * This prevents a stuck key problem, since we will not see
