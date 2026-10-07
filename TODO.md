@@ -2,19 +2,6 @@
 
 ## Next, in order
 
-### Send Command-Tab to Roguix
-
-Command-Tab is left to macOS on purpose (`qemu-cocoa-command-tab.patch`), so
-the keyboard can always leave the VM. Users who switch apps with AltTab want
-it in the guest. Add a persisted setting, off by default, "Send Command-Tab
-to Roguix" (start menu and settings), passed to QEMU's Cocoa display; with
-it on, keep a host-only release shortcut handled before forwarding and show
-it. Parallels' "Send macOS system shortcuts: Auto/Always/Never" is the
-precedent if this grows beyond Command-Tab.
-
-The release shortcut is the worker's choice among established ones (UTM and
-Parallels use Control-Option); state it in the menu and the docs.
-
 ### Choose a VM instead of only resetting
 
 Found 2026-10-03: `make run` used to set `OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`

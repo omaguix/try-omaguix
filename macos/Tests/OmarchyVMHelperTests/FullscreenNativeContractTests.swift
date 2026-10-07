@@ -12,7 +12,7 @@ struct FullscreenNativeContractTests {
         #expect(runner.contains("cocoa_full_screen=off\n    cocoa_immersive=off"))
         #expect(runner.contains("OMARCHY_QEMU_GPU_IMMERSIVE must be 0 or 1"))
         #expect(runner.contains(
-            "full-screen=$cocoa_full_screen,full-grab=on,immersive=$cocoa_immersive,swap-opt-cmd=off"
+            "full-screen=$cocoa_full_screen,full-grab=on,immersive=$cocoa_immersive,send-command-tab=$cocoa_send_command_tab,swap-opt-cmd=off"
         ))
         #expect(!runner.contains("cocoa_full_grab"))
     }
@@ -96,10 +96,40 @@ struct FullscreenNativeContractTests {
         #expect(fullGrab.lowerBound < reenable.lowerBound)
     }
 
+    @Test("Runner sends Command-Tab to the guest only when asked")
+    func runnerCommandTabMapping() throws {
+        let runner = try source(named: "run-qemu-gpu.sh")
+
+        #expect(runner.contains("case ${OMARCHY_QEMU_GPU_SEND_COMMAND_TAB:-0} in"))
+        #expect(runner.contains("1) cocoa_send_command_tab=on ;;"))
+        #expect(runner.contains("0) cocoa_send_command_tab=off ;;"))
+        #expect(runner.contains("OMARCHY_QEMU_GPU_SEND_COMMAND_TAB must be 0 or 1"))
+        #expect(runner.contains("grep -Fq 'send-command-tab=on|off'"))
+    }
+
     @Test("Command-Tab reaches the macOS app switcher despite full grab")
     func commandTabPassesThrough() throws {
         let patch = try source(named: "patches/qemu-cocoa-command-tab.patch")
         let builder = try source(named: "build-qemu-gpu-runtime.sh")
+
+        // The option is off unless the runner turns it on.
+        #expect(patch.contains("'*send-command-tab': 'bool'"))
+        #expect(patch.contains("[,send-command-tab=on|off]"))
+        #expect(patch.contains(
+            "send_command_tab = opts->u.cocoa.has_send_command_tab &&\n"
+                + "+                       opts->u.cocoa.send_command_tab;"
+        ))
+        #expect(patch.contains("(!send_command_tab || command_tab_released)"))
+
+        // The release chord is Control and Option alone, tracked before
+        // Command-Tab is routed, and it lasts until the window resigns key.
+        #expect(patch.contains("kCGEventFlagMaskControl | kCGEventFlagMaskAlternate"))
+        #expect(patch.contains("command_tab_released = true;"))
+        let tracking = try #require(patch.range(of: "trackCommandTabRelease(type, cgEvent);"))
+        let routing = try #require(patch.range(of: "(!send_command_tab || command_tab_released)"))
+        #expect(tracking.lowerBound < routing.lowerBound)
+        let resignKey = try #require(patch.range(of: "[cocoaView raiseAllKeys];\n+    command_tab_released = false;"))
+        #expect(routing.lowerBound < resignKey.lowerBound)
 
         // Both the key down and its key up must bypass the guest, or the
         // guest sees a Tab release without its press.

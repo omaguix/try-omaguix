@@ -1,7 +1,8 @@
 From: Try Roguix contributors
 Subject: [PATCH] cocoa: leave Command-Tab to the macOS application switcher
 
-Applies after the full-grab-focus and full-grab-reenable patches.
+Applies after the immersive-mode, full-grab-focus and full-grab-reenable
+patches.
 
 With Accessibility permission, full grab's HID event tap takes every Command
 chord while the VM window is key, so Command-Tab becomes Super-Tab in the
@@ -10,26 +11,144 @@ does. Let Command-Tab and Command-Shift-Tab through the tap untouched, as
 any other Mac app does. The guest has seen Command go down as Super; the
 switch makes the window resign key, and windowDidResignKey releases it.
 
+Users who switch guest windows with Super-Tab can opt in with
+send-command-tab=on. Command-Tab then reaches the guest, and pressing and
+releasing Control-Option on its own (the release chord UTM and Parallels
+use) hands it back to macOS until the window resigns key, so the keyboard
+can still leave the VM. The tap tracks that chord before it decides where
+Command-Tab goes, and the guest still sees Control and Option as usual.
+
+diff --git a/qapi/ui.json b/qapi/ui.json
+index e76aa4c..78028e2 100644
+--- a/qapi/ui.json
++++ b/qapi/ui.json
+@@ -1441,6 +1441,12 @@
+ #     AppKit's standard fullscreen auto-hide behavior.  This does not
+ #     affect keyboard capture.  (default: on)
+ #
++# @send-command-tab: Send Command-Tab and Command-Shift-Tab to the
++#     guest as Super-Tab while full grab captures the keyboard,
++#     instead of leaving them to the macOS application switcher.
++#     Pressing and releasing Control-Option alone returns Command-Tab
++#     to macOS until the window loses focus.  (default: off)
++#
+ # @swap-opt-cmd: Swap the Option and Command keys so that their key
+ #     codes match their position on non-Mac keyboards and you can use
+ #     Meta/Super and Alt where you expect them.  (default: off)
+@@ -1459,6 +1465,7 @@
+       '*left-command-key': 'bool',
+       '*full-grab': 'bool',
+       '*immersive': 'bool',
++      '*send-command-tab': 'bool',
+       '*swap-opt-cmd': 'bool',
+       '*zoom-to-fit': 'bool',
+       '*zoom-interpolation': 'bool'
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 6be4717..45a88b6 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -2259,6 +2259,7 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
+ #endif
+ #if defined(CONFIG_COCOA)
+     "-display cocoa[,full-grab=on|off][,immersive=on|off][,swap-opt-cmd=on|off]\n"
++    "              [,send-command-tab=on|off]\n"
+     "              [,show-cursor=on|off][,left-command-key=on|off]\n"
+     "              [,full-screen=on|off][,zoom-to-fit=on|off]\n"
+ #endif
 diff --git a/ui/cocoa.m b/ui/cocoa.m
-index 4a8dd1d..0b97d4d 100644
+index 8f1f6fd..ce26809 100644
 --- a/ui/cocoa.m
 +++ b/ui/cocoa.m
-@@ -429,6 +429,18 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
+@@ -110,6 +110,9 @@ static int left_command_key_enabled = 1;
+ static bool swap_opt_cmd;
+ static bool full_grab_enabled;
+ static bool immersive_mode_enabled = true;
++static bool send_command_tab;
++static bool command_tab_released;
++static bool command_tab_release_armed;
+ static NSMenuItem *fullScreenMenuItem;
+ 
+ static bool zoom_interpolation;
+@@ -360,6 +363,38 @@ static void handleAnyDeviceErrors(Error * err)
+ 
+ QemuCocoaView *cocoaView;
+ 
++/*
++ * With send-command-tab=on, pressing and releasing Control-Option on its
++ * own hands Command-Tab back to macOS until the VM window resigns key, so
++ * the keyboard can still leave the VM. A chord that adds any other key,
++ * such as Control-Option-T, does not count, and the guest still sees the
++ * modifiers as usual.
++ */
++static void trackCommandTabRelease(CGEventType type, CGEventRef cgEvent)
++{
++    const CGEventFlags chord = kCGEventFlagMaskControl | kCGEventFlagMaskAlternate;
++    const CGEventFlags watched = chord | kCGEventFlagMaskCommand |
++                                 kCGEventFlagMaskShift;
++
++    if (type == kCGEventKeyDown) {
++        command_tab_release_armed = false;
++        return;
++    }
++    if (type != kCGEventFlagsChanged) {
++        return;
++    }
++
++    CGEventFlags flags = CGEventGetFlags(cgEvent) & watched;
++    if (flags == chord) {
++        command_tab_release_armed = true;
++    } else if (flags & ~chord) {
++        command_tab_release_armed = false;
++    } else if (flags == 0 && command_tab_release_armed) {
++        command_tab_release_armed = false;
++        command_tab_released = true;
++    }
++}
++
+ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void *userInfo)
+ {
+     QemuCocoaView *view = userInfo;
+@@ -378,6 +413,25 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
          return cgEvent;
      }
  
++    if (send_command_tab && [[view window] isKeyWindow]) {
++        trackCommandTabRelease(type, cgEvent);
++    }
++
 +    /*
 +     * Command-Tab and Command-Shift-Tab stay with the macOS application
 +     * switcher, as in a browser or any other app, so the user can always
 +     * leave the VM from the keyboard. Switching away makes the window
-+     * resign key, which releases the guest's Super key again.
++     * resign key, which releases the guest's Super key again. With
++     * send-command-tab=on they reach the guest as Super-Tab instead, until
++     * the user presses the release chord.
 +     */
 +    if ((type == kCGEventKeyDown || type == kCGEventKeyUp) &&
 +        CGEventGetIntegerValueField(cgEvent, kCGKeyboardEventKeycode) == kVK_Tab &&
-+        (CGEventGetFlags(cgEvent) & kCGEventFlagMaskCommand)) {
++        (CGEventGetFlags(cgEvent) & kCGEventFlagMaskCommand) &&
++        (!send_command_tab || command_tab_released)) {
 +        return cgEvent;
 +    }
 +
      NSEvent *event = [NSEvent eventWithCGEvent:cgEvent];
      if ([view isKeyboardCaptured] && [view handleEvent:event]) {
          COCOA_DEBUG("Global events tap: qemu handled the event, capturing!\n");
+@@ -1587,6 +1641,8 @@ static NSRect cocoa_initial_window_frame(void)
+     COCOA_DEBUG("%s\n", __func__);
+     [cocoaView ungrabMouse];
+     [cocoaView raiseAllKeys];
++    command_tab_released = false;
++    command_tab_release_armed = false;
+ }
+ 
+ /* We abstract the method called by the Enter Fullscreen menu item
+@@ -2661,6 +2717,8 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
+                         opts->u.cocoa.full_grab;
+     immersive_mode_enabled = !opts->u.cocoa.has_immersive ||
+                              opts->u.cocoa.immersive;
++    send_command_tab = opts->u.cocoa.has_send_command_tab &&
++                       opts->u.cocoa.send_command_tab;
+ 
+     /* if fullscreen mode is to be used */
+     if (opts->has_full_screen && opts->full_screen) {

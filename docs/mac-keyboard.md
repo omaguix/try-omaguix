@@ -47,6 +47,25 @@ hl.config({
 
 Save, then run `hyprctl reload` and `hyprctl configerrors`.
 
+## Command-Tab
+
+Command-Tab and Command-Shift-Tab stay with the macOS app switcher by
+default, so the keyboard can always leave the VM. The **Send Command-Tab to
+Roguix** setting (start menu and settings, off by default, applied on the
+next start) sends them to the guest as Super-Tab and Super-Shift-Tab instead,
+for switching guest windows.
+
+With it on, press and release **Control-Option** on its own to hand
+Command-Tab back to macOS; the next Command-Tab then switches Mac apps.
+Forwarding resumes once the VM window has lost focus and you return to it.
+The chord is the one UTM and Parallels use to release the keyboard. A chord
+that adds another key, such as Control-Option-T, does not count, and the
+guest still receives Control and Option as usual.
+
+The launcher passes the setting as `OMARCHY_QEMU_GPU_SEND_COMMAND_TAB`, which
+becomes the Cocoa display's `send-command-tab=on|off` from
+`macos/patches/qemu-cocoa-command-tab.patch`.
+
 ## Host tools that take a chord first
 
 Command acts as Super through QEMU's event tap, which sees a key only after
@@ -76,8 +95,9 @@ window is frontmost, when the guest should receive that chord.
 
 ## Validation
 
-`make test` checksums the Cocoa patch, compiles the ISO swap helper, and
-runs the guest Lua overlay. The upstream QEMU pin is unchanged. Review
+`make test` checksums the Cocoa patches, compiles the ISO swap helper, and
+runs the guest Lua overlay. Review `command_tab_patch_sha256` against
+`macos/patches/qemu-cocoa-command-tab.patch` the same way. The upstream QEMU pin is unchanged. Review
 `iso_swap_patch_sha256` in `macos/build-qemu-gpu-runtime.sh` against
 `macos/patches/qemu-cocoa-iso-section-grave-swap.patch`. `make runtime`
 applies the patch after the existing Cocoa series.

@@ -140,7 +140,8 @@ case " $* " in
       '-action reboot=reset|shutdown' \
       '-action shutdown=poweroff|pause' \
       'full-grab=on|off' \
-      'immersive=on|off'
+      'immersive=on|off' \
+      'send-command-tab=on|off'
     ;;
   *' -machine virt -netdev help '*) printf '%s\n' user ;;
   *' -machine virt -audiodev help '*) printf '%s\n' sdl ;;

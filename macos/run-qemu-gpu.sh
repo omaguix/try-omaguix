@@ -129,6 +129,9 @@ grep -Fq 'full-grab=on|off' <<<"$qemu_help" || {
 grep -Fq 'immersive=on|off' <<<"$qemu_help" || {
   fail "staged QEMU cannot select its fullscreen presentation"
 }
+grep -Fq 'send-command-tab=on|off' <<<"$qemu_help" || {
+  fail "staged QEMU cannot choose who receives Command-Tab"
+}
 qemu_netdevs=$("$qemu_bin" -machine virt -netdev help 2>&1) || {
   fail "cannot inspect staged QEMU network backends"
 }
@@ -809,6 +812,12 @@ case ${OMARCHY_QEMU_GPU_IMMERSIVE:-1} in
   *) fail "OMARCHY_QEMU_GPU_IMMERSIVE must be 0 or 1" ;;
 esac
 
+case ${OMARCHY_QEMU_GPU_SEND_COMMAND_TAB:-0} in
+  1) cocoa_send_command_tab=on ;;
+  0) cocoa_send_command_tab=off ;;
+  *) fail "OMARCHY_QEMU_GPU_SEND_COMMAND_TAB must be 0 or 1" ;;
+esac
+
 # Diagnostics for HVF memory-mapping crashes: log every HVF map, unmap and
 # protect to this file, so a crash report can be matched to the ranges before it.
 hvf_trace_log=${OMARCHY_QEMU_GPU_HVF_TRACE_LOG:-}
@@ -896,9 +905,10 @@ qemu_args=(
   # Cocoa forwards its live backing-pixel dimensions and the current host
   # display refresh rate through Virtio GPU EDID. Its accessibility-backed
   # Full grab keeps every Command chord with the focused guest in either
-  # presentation mode. Immersive launches Full Screen and hard-hides the Mac
-  # menu bar and Dock; otherwise Cocoa opens a centered, resizable window.
-  -display "cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=$cocoa_full_screen,full-grab=on,immersive=$cocoa_immersive,swap-opt-cmd=off"
+  # presentation mode, except Command-Tab, which stays with macOS unless
+  # send-command-tab is on. Immersive launches Full Screen and hard-hides the
+  # Mac menu bar and Dock; otherwise Cocoa opens a centered, resizable window.
+  -display "cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=$cocoa_full_screen,full-grab=on,immersive=$cocoa_immersive,send-command-tab=$cocoa_send_command_tab,swap-opt-cmd=off"
   -device 'virtio-keyboard-pci,romfile='
   -device 'virtio-tablet-pci,romfile='
   -device 'virtio-pinch-pci,romfile='

@@ -180,4 +180,12 @@ struct StartMenuPresentationTests {
             == "Roguix opens in a window with the Mac menu bar and Dock available.")
     }
 
+    @Test("Command-Tab guidance names the release shortcut in both states")
+    func commandTabGuidance() {
+        #expect(StartMenuPresentation.commandTabReleaseShortcut == "Control-Option")
+        #expect(StartMenuPresentation.commandTabDetail(isEnabled: true)
+            == "Roguix gets Command-Tab as Super-Tab. Press and release Control-Option to switch Mac apps with it.")
+        #expect(StartMenuPresentation.commandTabDetail(isEnabled: false)
+            == "Command-Tab switches Mac apps. When on, Roguix gets it and Control-Option hands it back.")
+    }
 }

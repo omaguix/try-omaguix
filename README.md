@@ -73,7 +73,11 @@ goes straight to Hyprland.
 The desktop is Omarchy's: **Super+Return** opens a terminal, **Super+Space**
 the Omarchy menu, **Super+Alt+Space** the app launcher, **Super+W** closes a
 window. Command acts as Super while the VM window is focused, except
-Command-Tab, which stays with the Mac's app switcher. Host tools such as
+Command-Tab, which stays with the Mac's app switcher. Turn on **Send
+Command-Tab to Roguix** in the start menu or settings to switch guest windows
+with it instead; then press and release **Control-Option** to hand Command-Tab
+back to the Mac until you leave the VM window
+([docs/mac-keyboard.md](docs/mac-keyboard.md#command-tab)). Host tools such as
 Karabiner-Elements, Hammerspoon or AltTab can take a chord before the VM sees
 it; [docs/mac-keyboard.md](docs/mac-keyboard.md#host-tools-that-take-a-chord-first)
 shows how to exempt the VM window. Omarchy's
@@ -124,7 +128,7 @@ GIC, and fixes two audio problems found along the way.
 | Python build deps | Host interpreter | Pinned `setuptools`, `wheel`, `pip` wheels | QEMU 11.1 builds `qemu.qmp`, and Python 3.12+ dropped `setuptools` |
 | Render patch source | Downloaded from the startergo tarball | Vendored in `macos/patches/` | That tree is unmaintained since 2026-01-14; the archive is no longer fetched at all |
 | Cocoa keyboard capture | Capture follows the mouse grab | Capture follows the key window | An absolute-pointing guest drops the grab as soon as virtio-tablet binds, leaking host Command chords mid-session |
-| Command-Tab | Captured as Super-Tab | Left to the macOS app switcher | Full grab otherwise leaves no keyboard way out of the VM |
+| Command-Tab | Captured as Super-Tab | Left to the macOS app switcher unless **Send Command-Tab to Roguix** is on; then Control-Option hands it back | Full grab otherwise leaves no keyboard way out of the VM |
 
 ### What it fixes
 

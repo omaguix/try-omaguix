@@ -288,4 +288,11 @@ enum StartMenuPresentation {
             : "Roguix opens in a window with the Mac menu bar and Dock available."
     }
 
+    static let commandTabReleaseShortcut = "Control-Option"
+
+    static func commandTabDetail(isEnabled: Bool) -> String {
+        isEnabled
+            ? "Roguix gets Command-Tab as Super-Tab. Press and release \(commandTabReleaseShortcut) to switch Mac apps with it."
+            : "Command-Tab switches Mac apps. When on, Roguix gets it and \(commandTabReleaseShortcut) hands it back."
+    }
 }

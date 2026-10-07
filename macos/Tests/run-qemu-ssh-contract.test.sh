@@ -156,7 +156,8 @@ case " $* " in
       '-add-fd fd=fd,set=set[,opaque=opaque]' \
       '-action reboot=reset|shutdown' \
       'full-grab=on|off' \
-      'immersive=on|off'
+      'immersive=on|off' \
+      'send-command-tab=on|off'
     if [[ ${FAKE_QEMU_MISSING_SHUTDOWN:-0} != 1 ]]; then
       printf '%s\n' '-action shutdown=poweroff|pause'
     fi
@@ -517,7 +518,7 @@ assert_not_contains "$disabled_qemu" hostfwd
 assert_not_contains "$disabled_qemu" tryomarchy.ssh_access
 assert_keyboard_lockstep "$test_root/disabled/qemu.log" iso
 assert_contains "$disabled_qemu" \
-  'cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=on,full-grab=on,immersive=on,swap-opt-cmd=off'
+  'cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=on,full-grab=on,immersive=on,send-command-tab=off,swap-opt-cmd=off'
 assert_contains "$disabled_qemu" \
   'socket,id=omarchy-authentication-bridge,path='
 assert_contains "$disabled_qemu" \
@@ -724,7 +725,14 @@ assert_contains "$(<"$test_root/audio-failure/stderr")" 'native audio bridge exi
 run_scenario non-immersive 0 '' OMARCHY_QEMU_GPU_IMMERSIVE=0
 non_immersive_qemu=$(<"$test_root/non-immersive/qemu.log")
 assert_contains "$non_immersive_qemu" \
-  'cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=off,full-grab=on,immersive=off,swap-opt-cmd=off'
+  'cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=off,full-grab=on,immersive=off,send-command-tab=off,swap-opt-cmd=off'
+
+run_scenario send-command-tab 0 '' OMARCHY_QEMU_GPU_SEND_COMMAND_TAB=1
+assert_contains "$(<"$test_root/send-command-tab/qemu.log")" \
+  'cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=on,full-grab=on,immersive=on,send-command-tab=on,swap-opt-cmd=off'
+run_scenario send-command-tab-invalid 1 '' OMARCHY_QEMU_GPU_SEND_COMMAND_TAB=yes
+assert_contains "$(<"$test_root/send-command-tab-invalid/stderr")" \
+  'OMARCHY_QEMU_GPU_SEND_COMMAND_TAB must be 0 or 1'
 
 run_scenario hvf-trace 0 '' OMARCHY_QEMU_GPU_HVF_TRACE_LOG=/private/tmp/omarchy-hvf-trace.log
 assert_line_pair "$test_root/hvf-trace/qemu.log" -trace hvf_vm_map

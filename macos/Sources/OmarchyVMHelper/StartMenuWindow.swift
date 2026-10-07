@@ -175,6 +175,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     private var networkEditor: NetworkEditor?
     private let immersiveMode: () -> Bool
     private let setImmersiveMode: (Bool) -> Void
+    private let sendsCommandTab: () -> Bool
+    private let setSendsCommandTab: (Bool) -> Void
     private let startAutomatically: () -> Bool
     private let setStartAutomatically: (Bool) -> String?
     private let presentStartupSaveError: (NSAlert, NSWindow) -> Void
@@ -233,6 +235,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     private(set) var resourceEditor: VMResourceEditor?
     private(set) var usbDeviceEditor: USBDeviceEditor?
     private weak var immersiveCaption: NSTextField?
+    private weak var commandTabCaption: NSTextField?
     private var accessibilityRow: StartMenuPermissionRow?
     private var microphoneRow: StartMenuPermissionRow?
     private var cameraRow: StartMenuPermissionRow?
@@ -273,6 +276,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         networkIdentity: VMNetworkIdentityAccess = .unavailable,
         immersiveMode: @escaping () -> Bool = { true },
         setImmersiveMode: @escaping (Bool) -> Void = { _ in },
+        sendsCommandTab: @escaping () -> Bool = { false },
+        setSendsCommandTab: @escaping (Bool) -> Void = { _ in },
         startAutomatically: @escaping () -> Bool = { false },
         setStartAutomatically: @escaping (Bool) -> String? = { _ in nil },
         presentStartupSaveError: @escaping (NSAlert, NSWindow) -> Void = { $0.beginSheetModal(for: $1) },
@@ -317,6 +322,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         self.networkIdentity = networkIdentity
         self.immersiveMode = immersiveMode
         self.setImmersiveMode = setImmersiveMode
+        self.sendsCommandTab = sendsCommandTab
+        self.setSendsCommandTab = setSendsCommandTab
         self.startAutomatically = startAutomatically
         self.setStartAutomatically = setStartAutomatically
         self.presentStartupSaveError = presentStartupSaveError
@@ -801,6 +808,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
             minimumHeight: 90
         )
         let immersiveRow = immersiveSettingRow(isEnabled: immersiveMode())
+        let commandTabRow = commandTabSettingRow(isEnabled: sendsCommandTab())
         let selectedResources = resources()
         let resourceRow = permissionRow(
             symbolName: "cpu",
@@ -868,7 +876,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         if let storageRow {
             integrationRowViews.append(storageRow)
         }
-        integrationRowViews.append(contentsOf: [resourceRow, networkingRow, portForwardingRow, usbRow, immersiveRow, automaticStartSettingRow()])
+        integrationRowViews.append(contentsOf: [resourceRow, networkingRow, portForwardingRow, usbRow, immersiveRow, commandTabRow, automaticStartSettingRow()])
 
         var permissionRowsAndSeparators: [NSView] = []
         for (index, row) in permissionRowViews.enumerated() {
@@ -1020,7 +1028,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         restart.isEnabled = !controlsBusy
         let restartCaption = NSTextField(wrappingLabelWithString: shutdownInProgress
             ? "Waiting for Roguix to shut down. Finish saving your work inside Roguix."
-            : "CPU, memory, shared folder, networking, port forwarding, and immersive mode changes apply when Try Roguix next starts. Restart to apply them now.")
+            : "CPU, memory, shared folder, networking, port forwarding, immersive mode, and Command-Tab changes apply when Try Roguix next starts. Restart to apply them now.")
         restartCaption.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
         restartCaption.textColor = OmarchyStartMenuTheme.muted
         restartCaption.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -1390,6 +1398,20 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
             action: #selector(changeImmersiveMode(_:))
         )
         immersiveCaption = setting.caption
+        return setting.row
+    }
+
+    private func commandTabSettingRow(isEnabled: Bool) -> NSView {
+        let setting = toggleSettingRow(
+            titleText: "Send Command-Tab to Roguix",
+            detailText: StartMenuPresentation.commandTabDetail(isEnabled: isEnabled),
+            symbolName: "command",
+            identifier: "command-tab",
+            accessibilityLabel: "Send Command-Tab to Roguix",
+            isEnabled: isEnabled,
+            action: #selector(changeSendsCommandTab(_:))
+        )
+        commandTabCaption = setting.caption
         return setting.row
     }
 
@@ -1764,8 +1786,26 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         guard !controlsBusy, !resetInProgress else { return }
         let isEnabled = sender.state == .on
         setImmersiveMode(isEnabled)
-        let detailText = StartMenuPresentation.immersiveDetail(isEnabled: isEnabled)
-        immersiveCaption?.stringValue = detailText
+        showToggleDetail(
+            StartMenuPresentation.immersiveDetail(isEnabled: isEnabled),
+            in: immersiveCaption,
+            for: sender
+        )
+    }
+
+    @objc private func changeSendsCommandTab(_ sender: NSButton) {
+        guard !controlsBusy, !resetInProgress else { return }
+        let isEnabled = sender.state == .on
+        setSendsCommandTab(isEnabled)
+        showToggleDetail(
+            StartMenuPresentation.commandTabDetail(isEnabled: isEnabled),
+            in: commandTabCaption,
+            for: sender
+        )
+    }
+
+    private func showToggleDetail(_ detailText: String, in caption: NSTextField?, for sender: NSButton) {
+        caption?.stringValue = detailText
         (sender as? OmarchyToggleButton)?.refreshAppearance()
         sender.setAccessibilityHelp(detailText)
         NSAccessibility.post(

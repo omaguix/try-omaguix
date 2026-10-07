@@ -232,6 +232,33 @@ struct StartMenuStartupTests {
         }
     }
 
+    @Test("Send Command-Tab starts off, saves a change and shows the release shortcut")
+    func commandTabToggle() throws {
+        _ = NSApplication.shared
+        var sendsCommandTab = false
+        let menu = makeMenu(
+            storageState: { .defaultLocation },
+            sendsCommandTab: { sendsCommandTab },
+            setSendsCommandTab: { sendsCommandTab = $0 }
+        )
+        defer { menu.dismiss() }
+        menu.prepareForPresentation(visibleFrame: nil)
+        let content = try #require(menu.window.contentView)
+        let toggle = try #require(descendant(
+            withIdentifier: "command-tab-toggle", in: content
+        ) as? NSButton)
+        let caption = try #require(descendant(
+            withIdentifier: "command-tab-caption", in: content
+        ) as? NSTextField)
+        #expect(toggle.state == .off)
+        #expect(caption.stringValue == StartMenuPresentation.commandTabDetail(isEnabled: false))
+
+        toggle.performClick(nil)
+        #expect(sendsCommandTab)
+        #expect(caption.stringValue == StartMenuPresentation.commandTabDetail(isEnabled: true))
+        #expect(caption.stringValue.contains(StartMenuPresentation.commandTabReleaseShortcut))
+    }
+
     private func makeMenu(
         storageState: @escaping () -> StorageLocationMenuState,
         startAutomatically: @escaping () -> Bool = { false },
@@ -241,6 +268,8 @@ struct StartMenuStartupTests {
         bootFixCacheURL: @escaping () -> URL? = { nil },
         bootFixIdentity: @escaping () -> String? = { nil },
         retryBootFixes: @escaping () -> Void = {},
+        sendsCommandTab: @escaping () -> Bool = { false },
+        setSendsCommandTab: @escaping (Bool) -> Void = { _ in },
         launch: @escaping () -> Void = {}
     ) -> StartMenuWindow {
         StartMenuWindow(
@@ -267,6 +296,8 @@ struct StartMenuStartupTests {
             portForwardingStatus: { [] },
             immersiveMode: { true },
             setImmersiveMode: { _ in },
+            sendsCommandTab: sendsCommandTab,
+            setSendsCommandTab: setSendsCommandTab,
             startAutomatically: startAutomatically,
             setStartAutomatically: setStartAutomatically,
             presentStartupSaveError: presentStartupSaveError,
