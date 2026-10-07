@@ -8,11 +8,9 @@ Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
 access in System Settings when asked. Follow the diagnosis steps and the
 release re-grant notes in "Background: the Accessibility grant".
 
-## Proposed
-
 ### Ship firmware with the VirtioGpuDxe fix and drop the clamp patch
 
-From "Background: the minimum guest size fix upstream": the hang is fixed in
+Approved 2026-10-07 ("do the newer firmware item"). From "Background: the minimum guest size fix upstream": the hang is fixed in
 EDK2 since edk2-stable202411 and QEMU master ships edk2-stable202608
 firmware (e7764c7cda), not yet in a QEMU release. Either take that
 `edk2-aarch64-code.fd` now (a build input: pin, checksum and
@@ -22,6 +20,8 @@ once a small-window reboot of the real Roguix guest (firmware, GRUB, kernel)
 works with the firmware actually loaded. Unchecked: whether
 edk2-stable202608 boots Roguix; in a bare test without a variable store it
 stopped after setting up its console.
+
+## Proposed
 
 ### A fresh start gets half the initial window frame
 
