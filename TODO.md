@@ -22,9 +22,9 @@ shown VT has). Candidate fixes, by cause: restore the boot mode when Hyprland
 stops, nearest-neighbor filtering in the Cocoa patch, or `setfont` on the
 VT shown at shutdown.
 
-## Proposed
-
 ### Open Settings in the start menu resets the grant and asks twice
+
+Approved 2026-10-07 ("move the OPEN SETTINGS proposal to Next, in order").
 
 Found 2026-10-07 while diagnosing the Accessibility grant: the start menu's
 Accessibility OPEN SETTINGS runs `tccutil reset Accessibility
@@ -36,6 +36,8 @@ The reset only helps when the stored requirement no longer matches the app
 (an ad-hoc update); with the certificate-signed build it destroys a working
 grant. Proposal: reset only when `AXIsProcessTrusted()` is false although a
 row exists, and show one of the two (the prompt or Settings), not both.
+
+## Proposed
 
 ### A fresh start gets half the initial window frame
 
