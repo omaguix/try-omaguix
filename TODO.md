@@ -8,19 +8,6 @@ Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
 access in System Settings when asked. Follow the diagnosis steps and the
 release re-grant notes in "Background: the Accessibility grant".
 
-### Ship firmware with the VirtioGpuDxe fix and drop the clamp patch
-
-Approved 2026-10-07 ("do the newer firmware item"). From "Background: the minimum guest size fix upstream": the hang is fixed in
-EDK2 since edk2-stable202411 and QEMU master ships edk2-stable202608
-firmware (e7764c7cda), not yet in a QEMU release. Either take that
-`edk2-aarch64-code.fd` now (a build input: pin, checksum and
-`prepare-qemu-gpu-runtime.sh`, which takes it from the QEMU source) or wait
-for the move to QEMU 11.2; then drop `qemu-cocoa-minimum-guest-size.patch`
-once a small-window reboot of the real Roguix guest (firmware, GRUB, kernel)
-works with the firmware actually loaded. Unchecked: whether
-edk2-stable202608 boots Roguix; in a bare test without a variable store it
-stopped after setting up its console.
-
 ## Proposed
 
 ### A fresh start gets half the initial window frame
@@ -159,5 +146,15 @@ ships.
 
 So no report to QEMU or EDK2 is needed. PR #325 stays useful for Try
 Omarchy while it ships QEMU 11.1.x firmware and becomes unnecessary with QEMU
-11.2's; "Ship firmware with the VirtioGpuDxe fix and drop the clamp patch"
-under Proposed covers our side.
+11.2's.
+
+Tried 2026-10-07 (approved item "Ship firmware with the VirtioGpuDxe fix and
+drop the clamp patch"): QEMU master's edk2-stable202608 firmware (e7764c7cda)
+stalls in BDS under HVF on QEMU 11.1.x and never reaches GRUB, with our QEMU
+and with unpatched Homebrew QEMU 11.1.2 (1 and 4 vCPUs, with and without the
+GPU, `-bios` or pflash with aarch64 vars); under TCG it boots Roguix to the
+initrd, and the old firmware boots under HVF. Decided 2026-10-07: wait for
+QEMU 11.2 and move the runtime to it as a whole (QEMU with its own
+firmware), then check a small-window reboot without the clamp and drop
+`qemu-cocoa-minimum-guest-size.patch`. Not chosen: building EDK2
+202411+ ourselves, or reporting the HVF stall upstream before 11.2 is out.
