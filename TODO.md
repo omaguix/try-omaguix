@@ -56,12 +56,28 @@ one as `current` and archive the others outside the scanned tree, with
 Reset as one option rather than the only one. Adopt an identity disk
 automatically only when it is the single candidate.
 
+### Sign development builds with a persistent certificate
+
+Decided 2026-10-07: yes. Sign development builds with a persistent local
+self-signed code-signing certificate kept in a dedicated build keychain, so
+the designated requirement is the certificate and an Accessibility grant
+survives rebuilds. See "Background: the Accessibility grant".
+
+### Diagnose the Accessibility grant
+
+Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
+access in System Settings when asked. Follow the diagnosis steps and the
+release re-grant notes in "Background: the Accessibility grant".
+
+### Offer the minimum guest size fix to Try Omarchy
+
+Decided 2026-10-07: open the pull request on Try Omarchy. See "Background:
+the minimum guest size fix upstream"; reporting to QEMU still needs a
+reproduction on unpatched QEMU first.
+
 ## Needs a decision
 
-- Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
-- Run the Accessibility diagnosis at your Mac, granting and revoking access in System Settings when asked? Checked: builds are signed ad hoc (`macos/build-app.sh`), so the cdhash hypothesis stands unproven; the release re-grant prompt below depends on its result.
-- Sign development builds with a persistent self-signed certificate kept in a dedicated build keychain? Checked: `build-app.sh` signs ad hoc; this creates a signing identity and keychain on your Mac.
-- Offer `qemu-cocoa-minimum-guest-size.patch` to Try Omarchy as a pull request (and report the window-size forwarding to QEMU after reproducing it unpatched)? Checked: the patch is separate (50887c6); sending it is outward-facing.
+- Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
 
 ### Background: Command-Space
 
