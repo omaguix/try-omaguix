@@ -18,6 +18,14 @@ start opens at 648x397 points, half of the ~1296x729 that
 that fix. Likely cause: when the view is first attached the window is not yet
 resizable, so the size is divided by the Retina 2x backing scale. Unverified.
 
+### The data-folder picker looks for the storage marker in the wrong place
+
+Found 2026-10-07 by the layout worker: the picker looks for the
+`.omarchy-qemu-storage` marker in the chosen folder, while
+`qemu-persistent-storage.sh` writes it in `<folder>/guix/`, so choosing an
+existing Roguix folder again is probably rejected as not empty. Changes which
+folders the picker accepts. Unverified.
+
 ## Needs a decision
 
 - Check in the running app, with your keyboard, the Command-Tab setting (off: macOS switches apps; on: Roguix gets Super-Tab; Control-Option hands it back) the startup-failure alert with Show Log, and the saved-VM chooser (Keep and Launch, Show in Finder)? Checked: all three are covered by tests only (c5d56ca, d34583a, the chooser commit); the key routing needs a real keyboard and the Accessibility grant, the alert and the chooser clicks in the start menu.
