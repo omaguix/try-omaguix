@@ -2,12 +2,6 @@
 
 ## Next, in order
 
-### Update PR #325's description with the EDK2 root cause
-
-Decided 2026-10-07: keep https://github.com/omacom/try-omarchy/pull/325 open
-as a temporary workaround with the 800x600 clamp, and add the draft paragraph
-from "Background: the minimum guest size fix upstream" to its description.
-
 ### A fresh start gets half the initial window frame
 
 Approved 2026-10-07.
@@ -244,8 +238,8 @@ and they cannot swap the firmware on 11.1.x either because of the HVF stall.
   `backingScaleFactor`, so it is in pixels); both asked to state that the
   reboot was not reproduced on upstream's guest, which the PR already says.
 
-Draft paragraph to add to PR #325's description, after "What changed and
-why":
+Paragraph added to PR #325's description on 2026-10-08, at the end of "What
+changed and why":
 
 > The root cause is in EDK2, not in this repository or QEMU:
 > `OvmfPkg/VirtioGpuDxe` adopts the host's preferred mode with no lower
