@@ -2,14 +2,6 @@
 
 ## Next, in order
 
-### Link the EDK2 fix commit in PR #325
-
-Requested 2026-10-08: "why not link it in the PR?" In the description of
-https://github.com/omacom/try-omarchy/pull/325, make 58035e8b5e a link to
-https://github.com/tianocore/edk2/commit/58035e8b5e11cfe2b9e6428d14c7817b6b1c83a2
-(and the QEMU commit e7764c7cda to its commit page, if it is named), keeping
-the rest of the body unchanged.
-
 ## Proposed
 
 ### Handing Command-Tab back with Control-Option depends on timing
@@ -244,6 +236,14 @@ changed and why":
 > patch is therefore a temporary workaround: drop it once the firmware the app
 > loads contains that commit (expected with the move to QEMU 11.2) and a guest
 > reboot in a window shrunk below 640x480 pixels boots under HVF without it.
+
+Linked on 2026-10-08 (requested: "why not link it in the PR?"): in that
+paragraph 58035e8b5e links to its EDK2 commit, edk2-stable202411 and
+edk2-stable202408 to their EDK2 release pages, and "moved to
+edk2-stable202608" to QEMU's e7764c7cda ("edk2: update binaries to
+edk2-stable202608", the prebuilt firmware QEMU ships; b8f0e2d4f4 two minutes
+earlier only updates the `roms/edk2` submodule). The rest of the description
+is unchanged.
 
 ### Background: the shutdown font
 
