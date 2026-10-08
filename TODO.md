@@ -2,9 +2,9 @@
 
 ## Next, in order
 
-## Proposed
-
 ### Handing Command-Tab back with Control-Option depends on timing
+
+Approved 2026-10-08.
 
 Found 2026-10-08 in the in-app check (main 2c39093, macOS 27.0.1): with Send
 Command-Tab to Roguix on, Command-Tab reaches the guest as Super-Tab, as the
@@ -19,6 +19,8 @@ release would make it reproducible. Cause unknown.
 
 ### Name the macOS 27 privacy list in the Accessibility texts
 
+Approved 2026-10-08.
+
 Found 2026-10-08: on macOS 27.0.1 the list that grants Try Roguix control of
 the computer is System Settings > Privacy & Security > Device Control and Data
 Access; the maintainer found no Accessibility entry under Privacy & Security.
@@ -29,9 +31,13 @@ macOS prompt.
 
 ### The guest ignores the window size at the login screen on a fresh disk
 
+Approved 2026-10-08.
+
 Found 2026-10-08 by the initial-window worker: on a fresh disk the guest
 stays at 2560x1440 at the login screen instead of following the window size
 (before and after the initial-window fix). Unverified beyond that run.
+
+## Proposed
 
 ## Needs a decision
 
