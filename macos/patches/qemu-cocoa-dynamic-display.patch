@@ -133,7 +133,21 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
  
          // create a view and add it to the window
  #ifdef CONFIG_OPENGL
-@@ -1413,17 +1463,28 @@
+@@ -1349,6 +1399,13 @@
+             ? [NSString stringWithUTF8String:qemu_name]
+             : @"QEMU"];
+         [window setContentView:cocoaView];
++        /*
++         * Attaching the view fits the still fixed-size window to a guest
++         * surface that does not exist yet: the placeholder is this frame in
++         * points, read as pixels, which halves it on a Retina screen.
++         * Zoom-to-fit makes the window resizable later and keeps this size.
++         */
++        [window setContentSize:frame.size];
+         [window makeKeyAndOrderFront:self];
+         [window center];
+         [window setDelegate: self];
+@@ -1413,17 +1470,28 @@
  
  - (void)windowDidChangeScreen:(NSNotification *)notification
  {

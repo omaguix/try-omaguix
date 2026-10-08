@@ -29,6 +29,19 @@ struct CocoaDynamicDisplayContractTests {
         #expect(patch.contains("A resizable window keeps the size the user left it at"))
     }
 
+    @Test("A fresh window opens at the initial frame, not half of it")
+    func freshWindowKeepsTheInitialFrame() throws {
+        let patch = try source(named: "patches/qemu-cocoa-dynamic-display.patch")
+
+        // Attaching the view sizes the still fixed-size window to the
+        // placeholder surface divided by the Retina backing scale.
+        #expect(patch.contains("""
+                     [window setContentView:cocoaView];
+            +        /*
+            """))
+        #expect(patch.contains("+        [window setContentSize:frame.size];"))
+    }
+
     private func source(named relativePath: String) throws -> String {
         let testFile = URL(fileURLWithPath: #filePath)
         let macosDirectory = testFile

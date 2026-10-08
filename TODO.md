@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### A fresh start gets half the initial window frame
-
-Approved 2026-10-07.
-
-Found 2026-10-07 while verifying the reboot-shrink fix: a fresh windowed
-start opens at 648x397 points, half of the ~1296x729 that
-`cocoa_initial_window_frame` intends (75% of the screen), before and after
-that fix. Likely cause: when the view is first attached the window is not yet
-resizable, so the size is divided by the Retina 2x backing scale. Unverified.
-
 ### The data-folder picker looks for the storage marker in the wrong place
 
 Approved 2026-10-07.
