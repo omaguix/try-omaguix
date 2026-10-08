@@ -2,18 +2,6 @@
 
 ## Next, in order
 
-### The data-folder picker looks for the storage marker in the wrong place
-
-Approved 2026-10-07.
-
-Found 2026-10-07 by the layout worker: the picker looks for the
-`.omarchy-qemu-storage` marker in the chosen folder, while
-`qemu-persistent-storage.sh` writes it in `<folder>/guix/`, so choosing an
-existing Roguix folder again is probably rejected as not empty. Changes which
-folders the picker accepts. Confirmed in the app 2026-10-08: picking a folder
-holding only `guix/` with a valid marker, two saved VMs, `images/` and
-`locks/` is refused with "This folder already has files in it".
-
 ### Link the EDK2 fix commit in PR #325
 
 Requested 2026-10-08: "why not link it in the PR?" In the description of

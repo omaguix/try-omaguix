@@ -171,7 +171,8 @@ Phase changes come from the launcher process and are also announced to VoiceOver
 The start menu can move that workspace to any APFS folder the user picks; the
 folder is used exactly as chosen, never with a folder created inside it — a
 folder with other files already in it, or a drive's top level, is refused
-instead of restructured. The choice is stored in `UserDefaults` and published
+instead of restructured. A folder Roguix already uses, recognized by the
+launcher's `.omarchy-qemu-storage` marker in its `guix/`, can be picked again. The choice is stored in `UserDefaults` and published
 to the launcher as `OMARCHY_QEMU_GPU_STATE_ROOT`. An inherited value of that
 variable still wins, so the development and test override keeps working
 unchanged. Reset composes its environment exactly as a launch does, so it

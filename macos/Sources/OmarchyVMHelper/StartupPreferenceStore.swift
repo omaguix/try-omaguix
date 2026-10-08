@@ -10,7 +10,9 @@ final class StartupPreferenceStore {
         guard let storageRoot else { return false }
         if let pending = pendingChoices[storageRoot] { return pending }
         let url = storageRoot.appendingPathComponent(Self.fileName)
-        guard StorageLocationPolicy.hasValidRootMarker(in: storageRoot),
+        guard StorageLocationPolicy.hasValidRootMarker(
+            at: storageRoot.appendingPathComponent(StorageLocationPolicy.rootMarkerName, isDirectory: false)
+        ),
               isPrivateEntry(storageRoot, type: S_IFDIR, permissions: 0o700),
               isPrivateEntry(url, type: S_IFREG, permissions: 0o600),
               let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
@@ -42,7 +44,9 @@ final class StartupPreferenceStore {
     }
 
     private func write(_ enabled: Bool, storageRoot: URL) throws {
-        guard StorageLocationPolicy.hasValidRootMarker(in: storageRoot),
+        guard StorageLocationPolicy.hasValidRootMarker(
+            at: storageRoot.appendingPathComponent(StorageLocationPolicy.rootMarkerName, isDirectory: false)
+        ),
               isPrivateEntry(storageRoot, type: S_IFDIR, permissions: 0o700) else {
             throw HelperError.io("The VM workspace is unavailable or is not private to this user.")
         }

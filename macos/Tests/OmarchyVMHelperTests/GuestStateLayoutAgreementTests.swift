@@ -36,6 +36,35 @@ struct GuestStateLayoutAgreementTests {
         #expect(cache.deletingLastPathComponent().resolvingSymlinksInPath().path == launcherDirectory)
     }
 
+    /// Confirmed in the app on 2026-10-08: the picker looked for the marker in
+    /// the chosen folder itself, so a folder the launcher had laid out was
+    /// refused as "already has files in it".
+    @Test("the picker accepts a folder the launcher laid out, and only by its marker")
+    func pickerAcceptsLauncherLayout() throws {
+        let stateRoot = try temporaryStateRoot()
+        defer { try? FileManager.default.removeItem(at: stateRoot) }
+        _ = try layOutWorkspace(in: stateRoot)
+        let container = stateRoot.resolvingSymlinksInPath().path
+        // Far more than the probe reports free, so acceptance also proves the
+        // picker found the saved VM and skipped the new-VM space floor.
+        let metrics = BundledGuestMetrics(
+            identity: Self.identity,
+            sourceDiskBytes: 1 << 40,
+            workingDiskBytes: 1 << 40
+        )
+        let probe = LayoutVolumeProbe()
+
+        let resolution = try StorageLocationPolicy.validate(container, metrics: metrics, probe: probe)
+        #expect(resolution.stateRoot == container)
+        #expect(resolution.spaceWarning == nil)
+
+        // Without the marker the same files are just a folder with content in it.
+        try FileManager.default.removeItem(at: GuestStateLayout.rootMarker(inStateRoot: stateRoot))
+        #expect(throws: StorageLocationPolicyError.notEmpty(container)) {
+            try StorageLocationPolicy.validate(container, metrics: metrics, probe: probe)
+        }
+    }
+
     @Test("the layout names match the launcher's constants")
     func layoutConstants() throws {
         let library = try String(contentsOf: Self.library, encoding: .utf8)
@@ -76,6 +105,20 @@ struct GuestStateLayoutAgreementTests {
         process.waitUntilExit()
         try #require(process.terminationStatus == 0)
         return directory
+    }
+
+    private struct LayoutVolumeProbe: VolumeProbing {
+        func capabilities(at url: URL) throws -> VolumeCapabilities {
+            VolumeCapabilities(
+                typeName: VolumeCapabilities.apfsTypeName,
+                volumeName: "Test Drive",
+                supportsCloning: true,
+                supportsSparseFiles: true,
+                isLocal: true,
+                isInternal: true,
+                availableBytes: 0
+            )
+        }
     }
 
     private func temporaryStateRoot() throws -> URL {

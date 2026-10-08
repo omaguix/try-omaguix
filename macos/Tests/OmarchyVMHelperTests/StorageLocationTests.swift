@@ -60,13 +60,19 @@ private func temporaryDirectory() throws -> URL {
 /// test pass on a folder the real app cannot use.
 @discardableResult
 private func writeValidRootMarker(in container: URL) throws -> URL {
-    let marker = container.appendingPathComponent(
-        StorageLocationPolicy.rootMarkerName,
-        isDirectory: false
-    )
+    let marker = try rootMarkerURL(in: container)
     try Data("\(StorageLocationPolicy.rootMarkerContent)\n".utf8).write(to: marker)
     try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: marker.path)
     return marker
+}
+
+/// Where the launcher keeps the marker, with its directory created as
+/// `_qps_prepare_state_root` leaves it.
+private func rootMarkerURL(in container: URL) throws -> URL {
+    let directory = GuestStateLayout.directory(inStateRoot: container)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+    return GuestStateLayout.rootMarker(inStateRoot: container)
 }
 
 /// Writes a persistent-disk directory in the canonical form accepted by both
@@ -156,6 +162,23 @@ struct StorageLocationPolicyTests {
         }
     }
 
+    @Test("a marker beside the files rather than in the launcher's directory does not make a workspace")
+    func misplacedMarkerIsContent() throws {
+        let container = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: container) }
+        let marker = container.appendingPathComponent(StorageLocationPolicy.rootMarkerName)
+        try Data("\(StorageLocationPolicy.rootMarkerContent)\n".utf8).write(to: marker)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: marker.path)
+
+        #expect(throws: StorageLocationPolicyError.notEmpty(container.path)) {
+            try StorageLocationPolicy.validate(
+                container.path,
+                metrics: metrics,
+                probe: FakeVolumeProbe(result: volume())
+            )
+        }
+    }
+
     @Test("rejects a bare volume root even when it is empty")
     func rejectsVolumeRoot() throws {
         let container = try temporaryDirectory()
@@ -201,10 +224,7 @@ struct StorageLocationPolicyTests {
     func rejectsDamagedWorkspaceMarker(kind: String) throws {
         let container = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: container) }
-        let marker = container.appendingPathComponent(
-            StorageLocationPolicy.rootMarkerName,
-            isDirectory: false
-        )
+        let marker = try rootMarkerURL(in: container)
 
         switch kind {
         case "empty":
@@ -244,7 +264,7 @@ struct StorageLocationPolicyTests {
     func damagedMarkerDoesNotBypassVolumeRootCheck() throws {
         let container = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: container) }
-        try Data().write(to: container.appendingPathComponent(StorageLocationPolicy.rootMarkerName))
+        try Data().write(to: try rootMarkerURL(in: container))
 
         // A valid marker skips both the volume-root and emptiness guards; an
         // invalid one must not inherit that exemption.

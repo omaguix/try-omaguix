@@ -63,7 +63,7 @@ struct StorageMarkerAgreementTests {
                 ofItemAtPath: marker.path
             )
 
-            let swiftAccepts = StorageLocationPolicy.hasValidRootMarker(in: container)
+            let swiftAccepts = StorageLocationPolicy.hasValidRootMarker(at: marker)
             let shellAccepts = try launcherAccepts(marker: marker, library: library)
 
             #expect(
@@ -98,7 +98,7 @@ struct StorageMarkerAgreementTests {
         )
         try FileManager.default.createSymbolicLink(at: marker, withDestinationURL: real)
 
-        #expect(StorageLocationPolicy.hasValidRootMarker(in: container) == false)
+        #expect(StorageLocationPolicy.hasValidRootMarker(at: marker) == false)
         #expect(try launcherAccepts(marker: marker, library: library) == false)
     }
 

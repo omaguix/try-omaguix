@@ -124,7 +124,7 @@ enum StorageLocationPolicyError: LocalizedError, Equatable {
         case .notEmpty(let path):
             "This folder already has files in it: \(path). Roguix only uses an empty folder, so it never mixes its virtual machine with anything else stored there. Choose or create an empty folder instead."
         case .invalidWorkspaceMarker(let path):
-            "This folder looks like a Roguix workspace, but its \"\(StorageLocationPolicy.rootMarkerName)\" file is damaged, so the VM here cannot be opened safely: \(path). Delete that file to reuse the folder as an empty one, or choose a different folder."
+            "This folder looks like a Roguix workspace, but its \"\(GuestStateLayout.subdirectory)/\(StorageLocationPolicy.rootMarkerName)\" file is damaged, so the VM here cannot be opened safely: \(path). Delete that file to reuse the folder as an empty one, or choose a different folder."
         case .volumeUnreadable(let path):
             "Try Roguix could not read the disk that holds \(path)."
         case .notLocalVolume(let volume):
@@ -161,6 +161,13 @@ enum GuestStateLayout {
     static func directory(inStateRoot stateRoot: URL) -> URL {
         stateRoot.appendingPathComponent(subdirectory, isDirectory: true)
     }
+
+    /// The marker `_qps_prepare_state_root` writes inside `directory`, which
+    /// is what makes a state root an existing Roguix workspace.
+    static func rootMarker(inStateRoot stateRoot: URL) -> URL {
+        directory(inStateRoot: stateRoot)
+            .appendingPathComponent(StorageLocationPolicy.rootMarkerName, isDirectory: false)
+    }
 }
 
 /// Mirrors the launcher's own state-root checks so the start menu can explain a
@@ -193,7 +200,7 @@ enum StorageLocationPolicy {
 
     /// Finder- or filesystem-owned entries that don't count as real content
     /// when deciding whether a picked folder is empty enough to use directly.
-    private static let ignorableEntries: Set<String> = [".DS_Store", ".localized", "Icon\r", rootMarkerName]
+    private static let ignorableEntries: Set<String> = [".DS_Store", ".localized", "Icon\r"]
 
     /// Whether the marker is one this app would itself have written.
     ///
@@ -202,9 +209,7 @@ enum StorageLocationPolicy {
     /// named `.omarchy-qemu-storage` exists would let the picker accept a folder
     /// the launcher then refuses, moving the failure from a message the user can
     /// act on to one the shell script prints mid-launch.
-    static func hasValidRootMarker(in container: URL) -> Bool {
-        let marker = container.appendingPathComponent(rootMarkerName, isDirectory: false)
-
+    static func hasValidRootMarker(at marker: URL) -> Bool {
         var information = stat()
         guard Darwin.lstat(marker.path, &information) == 0 else { return false }
         guard (information.st_mode & S_IFMT) == S_IFREG else { return false }
@@ -227,10 +232,9 @@ enum StorageLocationPolicy {
 
     /// Whether anything at all occupies the marker path, valid or not. A folder
     /// carrying a damaged marker must be rejected outright rather than falling
-    /// through to the emptiness check, which ignores the marker name and would
-    /// wave the folder through with a misleading explanation.
-    private static func hasRootMarkerEntry(in container: URL) -> Bool {
-        let marker = container.appendingPathComponent(rootMarkerName, isDirectory: false)
+    /// through to the emptiness check, which would call the folder merely
+    /// "not empty" and hide what is actually wrong with it.
+    private static func hasRootMarkerEntry(at marker: URL) -> Bool {
         var information = stat()
         return Darwin.lstat(marker.path, &information) == 0
     }
@@ -282,8 +286,9 @@ enum StorageLocationPolicy {
         }
 
         let containerURL = URL(fileURLWithPath: container, isDirectory: true)
-        let isExistingWorkspace = hasValidRootMarker(in: containerURL)
-        if !isExistingWorkspace, hasRootMarkerEntry(in: containerURL) {
+        let marker = GuestStateLayout.rootMarker(inStateRoot: containerURL)
+        let isExistingWorkspace = hasValidRootMarker(at: marker)
+        if !isExistingWorkspace, hasRootMarkerEntry(at: marker) {
             // The launcher would refuse this folder too, but only after the user
             // committed to it. Say so now, while they can still pick another.
             throw StorageLocationPolicyError.invalidWorkspaceMarker(container)
