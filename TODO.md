@@ -2,15 +2,6 @@
 
 ## Next, in order
 
-### Check the new start-menu and keyboard behavior in the app, with the maintainer
-
-Approved 2026-10-07 ("now, guide me"). Install the current main build and
-walk the maintainer through, one step at a time: the Command-Tab setting
-(off: macOS switches apps; on: Roguix gets Super-Tab; Control-Option hands
-it back), the startup-failure alert with Show Log, the saved-VM chooser (Keep
-and Launch, Show in Finder) and Accessibility OPEN SETTINGS when not trusted
-(one window: the macOS prompt). All four are covered by tests only.
-
 ### Update PR #325's description with the EDK2 root cause
 
 Decided 2026-10-07: keep https://github.com/omacom/try-omarchy/pull/325 open
@@ -35,9 +26,34 @@ Found 2026-10-07 by the layout worker: the picker looks for the
 `.omarchy-qemu-storage` marker in the chosen folder, while
 `qemu-persistent-storage.sh` writes it in `<folder>/guix/`, so choosing an
 existing Roguix folder again is probably rejected as not empty. Changes which
-folders the picker accepts. Unverified.
+folders the picker accepts. Confirmed in the app 2026-10-08: picking a folder
+holding only `guix/` with a valid marker, two saved VMs, `images/` and
+`locks/` is refused with "This folder already has files in it".
 
 ## Proposed
+
+### Handing Command-Tab back with Control-Option depends on timing
+
+Found 2026-10-08 in the in-app check (main 2c39093, macOS 27.0.1): with Send
+Command-Tab to Roguix on, Command-Tab reaches the guest as Super-Tab, as the
+`[event-tap] ... captured for the guest` lines confirm. After pressing and
+releasing Control-Option alone, the next Command-Tab switches Mac apps only
+if the maintainer waits a moment first, and not always even then. The patch
+(`macos/patches/qemu-cocoa-command-tab.patch`) has no delay: it arms on the
+Control-Option flags-changed event and releases on the one with no flags, so
+some event or flag sequence is not what it expects. The release itself is not
+logged, so the log cannot show which presses counted; logging the arm and
+release would make it reproducible. Cause unknown.
+
+### Name the macOS 27 privacy list in the Accessibility texts
+
+Found 2026-10-08: on macOS 27.0.1 the list that grants Try Roguix control of
+the computer is System Settings > Privacy & Security > Device Control and Data
+Access; the maintainer found no Accessibility entry under Privacy & Security.
+The start menu and docs say Accessibility, the name older macOS versions use,
+so the wording should follow the running macOS version; which version renamed
+it is unverified. The OPEN SETTINGS flow itself works there: one window, the
+macOS prompt.
 
 ## Needs a decision
 
