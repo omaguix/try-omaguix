@@ -47,6 +47,12 @@ so the wording should follow the running macOS version; which version renamed
 it is unverified. The OPEN SETTINGS flow itself works there: one window, the
 macOS prompt.
 
+### The guest ignores the window size at the login screen on a fresh disk
+
+Found 2026-10-08 by the initial-window worker: on a fresh disk the guest
+stays at 2560x1440 at the login screen instead of following the window size
+(before and after the initial-window fix). Unverified beyond that run.
+
 ## Needs a decision
 
 - Start the builder VM (it needs a console login after a reboot) and free disk space, so a worker can build the guest with the bold console font (ter-v32n to ter-v32b, see "Background: the shutdown font")? Checked: the fix was verified live with setfont; the builder had no serial.sock and the Mac has 13 GB free (2026-10-07).
