@@ -24,6 +24,14 @@ folders the picker accepts. Confirmed in the app 2026-10-08: picking a folder
 holding only `guix/` with a valid marker, two saved VMs, `images/` and
 `locks/` is refused with "This folder already has files in it".
 
+### Link the EDK2 fix commit in PR #325
+
+Requested 2026-10-08: "why not link it in the PR?" In the description of
+https://github.com/omacom/try-omarchy/pull/325, make 58035e8b5e a link to
+https://github.com/tianocore/edk2/commit/58035e8b5e11cfe2b9e6428d14c7817b6b1c83a2
+(and the QEMU commit e7764c7cda to its commit page, if it is named), keeping
+the rest of the body unchanged.
+
 ## Proposed
 
 ### Handing Command-Tab back with Control-Option depends on timing
