@@ -16,6 +16,8 @@ guest side or in the pointer path. Cause unknown; reproduce first.
 
 ### The font on the shutdown screen looks terrible
 
+Decided 2026-10-09 for the paused build: resume the builder and, while the build waits, remove old `/root/*.raw` image GC roots, `guix gc` and `fstrim -av` inside it; keep the VM disk and the factory image.
+
 Approved 2026-10-09: the builder logs in without the maintainer and 49 GB are free after compacting it. Switch `%roguix-console-font` from ter-v32n to ter-v32b, build the guest in the builder, `make guix-package`, and check boot, setup and shutdown in the app.
 
 Requested 2026-10-07: "the font looks terrible during the shutdown, on the
@@ -60,11 +62,19 @@ shutdown also shows the Roguix logo and Hyprland's startup log, which
 `start-hyprland` printed there, with the shutdown lines written over its
 last line.
 
-## Proposed
+### Clean the builder right after each export
+
+Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. An image build grows the builder's qcow2 by about
+40 GiB and nothing gives it back until someone runs `guix gc` and
+`fstrim`. Document (or script around `vm-run`) one step after a verified
+export: remove the `/root/<name>.raw` GC root, `guix gc` (check
+`guix gc --list-roots` for older image roots and the ungrafted system),
+then `fstrim -av`. Old image roots under `/root` each pin a 20 GiB image in
+the store plus its `partition.img`.
 
 ### Materialize the factory image sparsely
 
-Proposed 2026-10-09 (see "Background: large VM files"). The pinned
+Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09 (see "Background: large VM files"). The pinned
 `zstd` 1.5.7 writes zeros as data with `-d -o FILE`: a 200 MB file of zeros
 came out fully allocated, and 40 KB with `--sparse`. The current factory
 image holds 8.65 GiB of all-zero MiB chunks (free space of the image's ext4),
@@ -78,7 +88,7 @@ still shares its blocks.
 
 ### Pass the VM's TRIM through to the Mac
 
-Proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
+Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
 and no `discard=` (QEMU's default `ignore`), and the guest runs no `fstrim`,
 so files deleted in the guest never give space back: `disk.raw` only grows.
 Add `discard=unmap` to the `-drive` in `macos/run-qemu-gpu.sh` and a weekly
@@ -88,15 +98,7 @@ trim took the qcow2 from 59 to 25 GiB allocated), but verify it with the
 app's own runtime first: on a disposable clone, write and delete a large
 file in the guest, trim, and check the host's allocated size.
 
-### Clean the builder right after each export
-
-Proposed 2026-10-09. An image build grows the builder's qcow2 by about
-40 GiB and nothing gives it back until someone runs `guix gc` and
-`fstrim`. Document (or script around `vm-run`) one step after a verified
-export: remove the `/root/<name>.raw` GC root, `guix gc` (check
-`guix gc --list-roots` for older image roots and the ungrafted system),
-then `fstrim -av`. Old image roots under `/root` each pin a 20 GiB image in
-the store plus its `partition.img`.
+## Proposed
 
 ### Build the image with a smaller --image-size
 
@@ -119,7 +121,6 @@ no capacity (same APFS volume) and changes how the builder is started.
 
 ## Needs a decision
 
-- What to delete now so the paused image build can finish: resume the builder and, while the build waits, remove old `/root/*.raw` image GC roots, `guix gc` and `fstrim -av` inside it (returns freed qcow2 blocks to the Mac), keeping the VM disk and the factory image? Options: clean inside the builder, keep the VM disk and factory image | also delete the factory image (about 0.3 GiB back; a later reset re-extracts it in full) | free unrelated files on the Mac instead | delete nothing. Checked 2026-10-09: no local APFS snapshots; the VM disk is a clone of the factory image (only 0.27 GiB of its first 20 GiB differ), so `du`'s 41 GB for the pair is about 21 GiB on disk; which old image roots exist in the builder was not checked (no `vm-run` while it is paused).
 
 ### Background: large VM files
 
