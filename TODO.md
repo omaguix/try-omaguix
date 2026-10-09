@@ -2,6 +2,16 @@
 
 ## Next, in order
 
+### Does Try Omarchy punch holes in the factory image's zero blocks?
+
+Requested 2026-10-09: "so Try Omarchy does not punch holes in zero blocks?
+Look in git remotes/upstream/main. Ask the models." Compare upstream's
+materialization of the factory image (`upstream/main`,
+`macos/qemu-persistent-storage.sh` and the helper) with ours after 8b72456:
+does upstream decode sparsely or punch holes, how much its images allocate,
+and whether our fix (or a smaller one) is worth offering upstream. Consult
+the default models; record the answer, offer nothing without approval.
+
 ### Build the image with a smaller --image-size
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
