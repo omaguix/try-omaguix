@@ -2,14 +2,6 @@
 
 ## Next, in order
 
-### Drop the old image GC root in the builder
-
-Approved 2026-10-09 (chosen with the models, see "Background: choosing the
-next proposals"). The builder disk stays at about 39 GiB after the last
-export because an older image's GC root under `/root` still pins it; remove
-the old image roots (keeping the time-machine and ungrafted roots), `guix gc`
-and `fstrim -av`, and report the space won. Shut the builder down after.
-
 ### The factory image still comes out almost fully allocated
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
@@ -161,6 +153,10 @@ app's data folder under `VM/v1/guix/`.
   20 GiB differ from the factory image, plus 0.73 GiB written beyond it, so
   it owns about 1 GiB of its own. Attached without `discard`, so it never
   shrinks. Deletable: no, it is the user's VM.
+- 2026-10-09: removing the last old image root (`/root/b38-image.raw`,
+  superseded by the exported image), `guix gc` (43 GiB freed, `/` from
+  35 to 13 GB used) and `fstrim -av` took the builder disk from 39 GiB
+  to 12 GiB allocated (`du -h`).
 
 ### Background: Command-Space
 
