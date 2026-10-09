@@ -2,19 +2,6 @@
 
 ## Next, in order
 
-### What gliff means for Roguix
-
-Requested 2026-10-10: "https://github.com/omacom/gliff — ask the models".
-gliff is Omarchy's remote desktop for Hyprland over ssh (H.264 4:4:4 on the
-GPU, a private screen that follows the client window, the client's keyboard
-layout, a two-way clipboard with files, reconnection). Find out read-only
-whether and how it matters for Roguix and Try Roguix: as a way to show the
-guest instead of (or beside) QEMU's Cocoa display, against our display,
-clipboard, keyboard and resize work, whether a macOS client exists or is
-planned, what packaging it in Guix would take, and what upstream Try
-Omarchy does with it. Consult the default models and record a short answer
-with options; adopt nothing without approval.
-
 ### Super+Space sometimes needs a second press to open the menu
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
@@ -59,6 +46,17 @@ toggles) and measure press-to-map latency.
 Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
 
 ## Proposed
+
+### List gliff as not provided at the next Omarchy bump
+
+Proposed 2026-10-10 (see "Background: gliff"). Omarchy 9d48fc402e
+(2026-10-09) installs gliff by default (`omarchy-base.packages` and a
+migration) and adds a status-only "Remote session" bar indicator. The pinned
+Omarchy (c668141, 2026-09-15) predates it. When the pin moves past it, add
+gliff to `docs/omarchy-packages.md` as not provided (no Guix package; its
+upstream package is x86_64 only), check that the indicator stays dark and
+quiet with no `gliff-server` installed, and leave the migration to the seed,
+which marks shipped migrations done. Docs only, with the bump.
 
 ### Offer Try Omarchy the zero-block punch
 
@@ -105,6 +103,53 @@ removed by hand). The export could also remove the other `/root/*.raw`
 roots that point to a `-disk-image` store item.
 
 ## Needs a decision
+
+### Background: gliff
+
+Should Roguix adopt gliff in any form before upstream ships a macOS client?
+Options: no, record only (recommended) | a time-boxed CPU-tier test of `gliff-server` in the guest against a Linux GTK client | package `gliff-server` for Guix now
+
+Requested 2026-10-10 ("ask the models"); investigated read-only, consulted
+sol and MiMo (round 20261010-000628-72e6). gliff (omacom/gliff, MIT, Rust,
+v0.3.0 of 2026-10-09) is a Hyprland remote desktop over ssh: the server
+captures a Hyprland output or a private headless one sized to the client
+window and sends H.264 4:4:4 (two 4:2:0 streams) through Vulkan compute and
+VA-API on AMD or Intel, or OpenH264 on the CPU; input goes through virtual
+keyboard and pointer with the client's keymap; the clipboard is lazy and
+carries files. Findings:
+
+- No macOS client: the client is Linux GTK4 only. A native one (VideoToolbox
+  and Metal) is a draft pull request (#5) untouched since 2026-09-21, on a
+  protocol version main has since reset, so it is a reference, not a client.
+- The guest has VirGL (OpenGL only), so neither Vulkan compute nor VA-API
+  encode exists there: gliff would fall back to OpenH264 on the guest's
+  vCPUs, whose fast conversion kernels are x86_64-only; aarch64 is untested
+  and the upstream package is `arch=x86_64`.
+- As the VM's display it would add capture, encode, transport and decode
+  where QEMU now shows VirGL's rendering directly, and lose the Cocoa
+  patches' host-window behavior (immersive mode, full grab, Command-Tab,
+  pinch zoom, precise scroll, the ISO key swap); it would also show nothing
+  before the Hyprland session (boot, password prompt). It would cover only
+  display, input, resize and the clipboard; audio, camera, battery, Touch ID,
+  time zone and the shared folder stay on their bridges.
+- Remote access from another machine does not fit Try Roguix either: "Add
+  SSH" binds `127.0.0.1` only, and on the same Mac Cocoa is the better view.
+- Upstream Try Omarchy does not mention gliff; Omarchy itself installs it by
+  default since 2026-10-09 (see "List gliff as not provided at the next
+  Omarchy bump" under Proposed).
+- Packaging for Guix means the whole Rust crate tree (gtk4-rs, ash,
+  wayland-rs, openh264 built from source); only `gliff-server` would be
+  needed in a guest (`cargo build -p gliff-server`), still an ongoing upkeep
+  for a 0.x project whose protocol already broke once.
+
+Both models: not now as a display path, possibly later as an optional
+guest package for remote access, and design ideas worth borrowing (the lazy,
+typed clipboard with files and offer serials; the private output sized to the
+client window, which display-sync already resembles). sol alone: gate any
+packaging behind one disposable CPU-tier experiment with a Linux client.
+MiMo alone: audit Omarchy's gliff additions at the next bump. Dismissed:
+MiMo's worry that the indicator misleads in the guest (it lights only while
+a `gliff-server` runs).
 
 ### Background: choosing the next proposals
 
