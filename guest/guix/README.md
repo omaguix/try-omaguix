@@ -92,6 +92,13 @@ in as root on the console and mount `project` (read-only) at `/mnt/project` and
 depends on its backing file (`qemu-img info` names it); deleting that file to
 free space leaves the builder unbootable until the same file is restored,
 for the official Guix VM image from ftp.gnu.org with its signature checked.
+To give space back to the Mac, run `guix gc` and then `fstrim -av` through
+`vm-run`. The builder's disk is attached with `discard=unmap`, so the trim
+shrinks the qcow2's allocated size in place; a `qemu-img convert` would only
+shorten the sparse file length, which costs no disk space (2026-10-09: gc took
+the store from 50 to 34 GB and the trim the host file from 59 to 25 GiB).
+Plain `guix gc` keeps every GC root, including the `time-machine` profiles
+and `/root/roguix-system-ungrafted`.
 Run long builds under `herdr-job`, so they get their own tab and a real
 result:
 
