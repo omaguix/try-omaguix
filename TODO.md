@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### Choose, with the models, which proposals go next
-
-Requested 2026-10-09: "choose with the models" which of these go into "Next,
-in order": the factory image still almost fully allocated, dropping the old
-image GC root that keeps the builder at 39 GiB, hiding Hyprland's log on the
-shutdown screen, Super+Space sometimes needing a second press (and the other
-"Proposed" items). Consult the default models with each item's evidence, cost
-and value (disk space is tight), and record a ranked recommendation; the
-coordinator then moves the chosen items.
-
 ## Proposed
 
 ### The shutdown screen shows Hyprland's startup log
@@ -70,6 +60,45 @@ first press. Likely Omarchy's own open/close state; reproduce and check
 upstream first.
 
 ## Needs a decision
+
+### Background: choosing the next proposals
+
+Asked 2026-10-09 ("choose with the models"); consulted sol and MiMo (round
+20261009-173426-9b1a) with each item's evidence, value and cost. Recommended
+order for "Next, in order"; the coordinator moves the items:
+
+1. Drop the old image GC root (`/root/b38-image.raw`, already exported) that
+   keeps the builder disk at 39 GiB: remove it, `guix gc`, `fstrim`
+   (README procedure), and check the allocated size after. Minutes, about
+   20 GiB back. MiMo: a prerequisite for any further guest build, which
+   needs about 40 GiB of transient room.
+2. "Make test VM state roots small and remove them": docs only, stops a
+   repeat of the 19.7 GiB duplicate. sol: also require checking that the
+   clone succeeded and deleting the root after a failed run.
+3. "The factory image still comes out almost fully allocated", time-boxed
+   (about an hour) and before a smaller image: no guest build, up to about
+   8 GiB per factory image. MiMo: try writing the decoded stream through
+   `dd conv=sparse` to tell zstd's granularity from APFS. Not urgent while
+   the factory image is deleted; a reset re-extracts it.
+4. "Build the image with a smaller --image-size": both keep it after 3,
+   since sparse extraction cannot free the zeros inside the builder (store
+   copy, `partition.img`). Size with headroom from the measured closure,
+   not the 11.5 GiB in use (MiMo suggests about 16 GiB). Existing VMs keep
+   their disks, so the gain comes with new factory images.
+5. "Super+Space sometimes needs a second press": triage only first
+   (reproduce, check Omarchy's issues); the most user-visible item, but a
+   local patch of Omarchy's menu state should wait for the cause.
+
+Park: "The shutdown screen shows Hyprland's startup log" as its own rebuild
+(both: ride along with item 4's guest build only if it is a small change),
+and "Give the builder a disposable scratch disk" (both: no capacity gained,
+a builder-start change, and a smaller image makes it worth less).
+
+Where they differed: nowhere on the order; MiMo added the dependency of
+item 4 on item 1. Dismissed: MiMo's "a smaller image shrinks the download"
+(zeros compress to almost nothing) and its worry that a reconfigure runs on
+a near-full root (`roguix-grow-root` grows the root at boot, so only the
+first boot runs inside the image size).
 
 ### Background: data stored twice
 
