@@ -12,19 +12,6 @@ Find out read-only: its state and versions, whether QEMU's virtio-gpu Venus
 moving the runtime from VirGL on ANGLE would cost. Consult the default
 models; record the answer and options; adopt nothing without approval.
 
-### Roguix as a gliff remote machine
-
-Requested 2026-10-10 ("the real use for Roguix would be different: Roguix as
-a remote machine, with gliff-server in the guest, reached from another
-computer with Hyprland, e.g. an older x86_64 machine running Roguix; ask
-the models"). Find out read-only what that needs: packaging gliff and
-gliff-server for Guix (Rust, dependencies, aarch64 and x86_64), how the
-guest is reached over ssh from another machine (Try Roguix forwards ssh only
-to the Mac's loopback), CPU encoding without Vulkan video in the VM, and
-what Omarchy's own gliff integration (9d48fc402e) expects. Consult the
-default models; record the answer and options; adopt nothing without
-approval.
-
 ### Super+Space sometimes needs a second press to open the menu
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
@@ -69,6 +56,25 @@ toggles) and measure press-to-map latency.
 Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
 
 ## Proposed
+
+### Test gliff-server in the guest before packaging it
+
+Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine"). A
+disposable check, nothing packaged or shipped: set pass thresholds first
+(sustained frames per second and encode time per frame at 1080p, typing and
+scrolling feel), then (a) check that Hyprland's ext-image-copy-capture into a
+GBM buffer and a CPU map of it work on the VirGL render node, (b) time
+OpenH264 at 1080p on the guest's vCPUs, and only if both pass (c) run a
+gliff-server built outside the image against a gliff client on an existing
+x86_64 Linux with Hyprland, over NAT with a ProxyJump through the Mac, on a
+wired LAN. Record the numbers; stop at the first failure.
+
+### Compare wayvnc as the remote view
+
+Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine").
+wayvnc 0.10.1 is already in Guix at the pinned commit (`gnu/packages/vnc.scm`)
+and needs no Vulkan or VA-API. Run it in the guest for one boot against the
+same checks as the gliff test, so a choice is made between measured options.
 
 ### List gliff as not provided at the next Omarchy bump
 
@@ -127,6 +133,12 @@ roots that point to a `-disk-image` store item.
 
 ## Needs a decision
 
+### Roguix as a gliff remote machine
+
+Pursue Roguix as a gliff remote machine, and how far?
+Options: run the disposable feasibility test first, package nothing yet | compare wayvnc first | drop it, the Mac window is the remote view | package gliff-server for Guix now
+Checked: see "Background: Roguix as a gliff remote machine".
+
 ### Background: gliff
 
 Decided 2026-10-10: adopt nothing before upstream ships a macOS client; record only.
@@ -172,6 +184,72 @@ packaging behind one disposable CPU-tier experiment with a Linux client.
 MiMo alone: audit Omarchy's gliff additions at the next bump. Dismissed:
 MiMo's worry that the indicator misleads in the guest (it lights only while
 a `gliff-server` runs).
+
+### Background: Roguix as a gliff remote machine
+
+Requested 2026-10-10 ("the real use for Roguix would be different: Roguix as
+a remote machine, with gliff-server in the guest, reached from another
+computer with Hyprland, e.g. an older x86_64 machine running Roguix; ask
+the models"). Investigated read-only on 2026-10-10 against gliff v0.3.0
+(omacom/gliff `7bc69d0c67`), Guix `7e74121a40`, Omarchy `9d48fc402e`;
+consulted sol and MiMo (round 20261010-002509-0b0d).
+
+Short answer: feasible only as an experiment for now. Reaching the guest
+needs no app change, packaging is mechanical but large, and the unknown that
+decides it is whether capture and CPU encoding work fast enough inside the
+VM. The x86_64 client side does not exist yet.
+
+- Reaching the guest: the correction to "Background: gliff" is that the
+  launcher already has a Bridged network mode (socket_vmnet helper, own LAN
+  address) whose opt-in "Allow SSH connections from the LAN" starts the
+  guest's sshd for that boot (`macos/run-qemu-gpu.sh`, `QEMU_NETWORK_SSH`;
+  the guest side is `roguix-ssh-access` in `integrations.scm`). In NAT mode
+  the forward binds `127.0.0.1:2222` only, but gliff runs plain `ssh`, so a
+  ProxyJump through the Mac works with no change. Neither path was tested
+  with the Guix guest. gliff-server finds Hyprland from `XDG_RUNTIME_DIR`
+  (it does not need `WAYLAND_DISPLAY`), which an ssh login gets from elogind;
+  not verified in the guest.
+- Packaging: `gliff-server` alone pulls 125 crates (`cargo tree -p
+  gliff-server --target aarch64-unknown-linux-gnu`; 184 for the whole
+  workspace with the GTK client). Guix at our pin has the Cargo.lock importer
+  (`guix import crate --lockfile`, `define-cargo-inputs`), so the crate list
+  is generated into our channel. Even the CPU path links libva
+  (`crates/gliff-va/build.rs` requires libva >= 1.20 and libva-drm) and ash;
+  both are available in Guix, so no patching is needed. `openh264-sys2`
+  builds OpenH264 from bundled source. Upstream's PKGBUILD is x86_64 only;
+  aarch64 is untested upstream.
+- Encoding in the guest: no Vulkan or VA-API under VirGL, so gliff takes its
+  CPU tier: it maps the captured GBM buffer, converts BGRA to I420 with
+  scalar code (the AVX2 kernels are x86_64 only, `gliff-sw/src/convert.rs`)
+  and runs OpenH264 on up to four threads. That tier sends 4:2:0, so it
+  gives up gliff's sharp-text 4:4:4 unless `--full-chroma` doubles the
+  work. Upstream's ~10 ms per 1080p frame is a Ryzen 7840U figure; nothing
+  is measured on aarch64 vCPUs. Capture goes through ext-image-copy-capture
+  into GBM buffers on the render node; whether that and the CPU map work on
+  VirGL is unverified.
+- The client machine: Roguix is aarch64 and VM-only today (VirtIO initrd
+  modules, removable GRUB EFI, packages with `supported-systems` aarch64),
+  so "an older x86_64 Roguix" is a separate port. Guix's linux-libre ships
+  no GPU firmware, so an AMD client would likely decode on the CPU too. The
+  gliff client needs GTK4 and libadwaita, which Guix has.
+- Omarchy: 9d48fc402e adds `gliff` to the base packages, a migration, and a
+  bar indicator whose `probe.sh` pgreps the user's `gliff-server` and reads
+  `SSH_CONNECTION` from `/proc`. Our pinned Omarchy (`c668141e9c`) has none
+  of it; with a packaged `gliff-server` the indicator would just work.
+- Alternative: wayvnc 0.10.1 is in Guix at the pin, CPU-only by design and
+  works with any VNC client.
+
+Both models: the strongest argument against is the workload placement (the
+Mac renders, the guest copies and software-encodes on vCPUs, an older machine
+decodes), so test feasibility in the guest before packaging anything, use
+NAT with ProxyJump rather than LAN-exposed sshd, and treat an x86_64 Roguix
+as a separate project. sol alone: fix pass thresholds before the test, count
+jitter from TCP over ssh and VM scheduling, and the CPU tier loses 4:4:4.
+MiMo alone: wayvnc as the zero-risk baseline (verified packaged), and two
+cheap probes first (capture with a CPU map, OpenH264 speed) before building
+gliff at all. Dismissed: MiMo's "3-5x slower" estimate (not measured), its
+suggestion to patch out gliff-va and ash (libva and the Vulkan loader are in
+Guix), and its version-skew worry (our pinned Omarchy has no gliff at all).
 
 ### Background: choosing the next proposals
 
