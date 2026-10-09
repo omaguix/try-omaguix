@@ -45,9 +45,9 @@ count the menu's open/close transitions per press (no lost and no double
 toggles) and measure press-to-map latency.
 Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
 
-## Proposed
-
 ### Test gliff-server in the guest before packaging it
+
+Approved 2026-10-10: run this feasibility test first; package nothing yet.
 
 Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine"). A
 disposable check, nothing packaged or shipped: set pass thresholds first
@@ -58,6 +58,8 @@ OpenH264 at 1080p on the guest's vCPUs, and only if both pass (c) run a
 gliff-server built outside the image against a gliff client on an existing
 x86_64 Linux with Hyprland, over NAT with a ProxyJump through the Mac, on a
 wired LAN. Record the numbers; stop at the first failure.
+
+## Proposed
 
 ### Compare wayvnc as the remote view
 
@@ -155,12 +157,6 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
-
-### Roguix as a gliff remote machine
-
-Pursue Roguix as a gliff remote machine, and how far?
-Options: run the disposable feasibility test first, package nothing yet | compare wayvnc first | drop it, the Mac window is the remote view | package gliff-server for Guix now
-Checked: see "Background: Roguix as a gliff remote machine".
 
 ### Background: KosmicKrisp and Venus
 
