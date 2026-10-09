@@ -53,6 +53,14 @@ Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
 build would free those at once instead of waiting for gc and trim. It adds
 no capacity (same APFS volume) and changes how the builder is started.
 
+### Let the export drop every old image root
+
+Proposed 2026-10-09 by the builder cleanup worker: `build.py --export`
+removes only the exported image's GC root, so an older `/root/*.raw` root
+kept a previous image pinned (the builder stayed at 39 GiB until it was
+removed by hand). The export could also remove the other `/root/*.raw`
+roots that point to a `-disk-image` store item.
+
 ## Needs a decision
 
 ### Background: choosing the next proposals

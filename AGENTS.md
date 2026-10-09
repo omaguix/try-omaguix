@@ -528,6 +528,11 @@ which writes the image's zeros as data (about 20 GiB). Check that the clone
 succeeded, and delete the state root when the check ends, also after a
 failed run.
 
+The builder belongs to the main checkout: from a worktree, run
+`guest/guix/vm-run` with `VM_RUN_SOCKET=<main checkout>/.build/guix-validation/serial.sock`,
+since it otherwise looks for the socket in the worktree's own `.build/` and
+exits 125.
+
 `make run-isolated` opens the start menu and waits for a click on **Launch
 Roguix**, so an unattended check must not leave it waiting: start the VM in
 a way that needs no click, or say that the in-app step stayed unchecked.
