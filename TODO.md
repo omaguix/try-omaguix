@@ -2,17 +2,6 @@
 
 ## Next, in order
 
-### Is anything in the app's data folder stored twice elsewhere?
-
-Requested 2026-10-09: "do we have in two places something that is in the
-app's data folder and somewhere else? Ask the models, because disk space is
-running out." Find, read-only, whether the factory image, VM disks, packaged
-guest (`build/guix`, `disk.raw.zst`), installed and development app bundles,
-worktree builds, builder exports or caches hold the same data twice (copies,
-not APFS clones), say which copies can go and what each costs, consult the
-default models, and record the answer here without paths private to the
-maintainer's machine. Delete nothing.
-
 ### Pass the VM's TRIM through to the Mac
 
 Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
@@ -92,7 +81,57 @@ Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
 build would free those at once instead of waiting for gc and trim. It adds
 no capacity (same APFS volume) and changes how the builder is started.
 
+### Make test VM state roots small and remove them
+
+Proposed 2026-10-09. A worker's throwaway VM state root held a 20 GiB
+factory image with only 0.4 GiB of holes although the image is 8.65 GiB of
+zeros (an extraction by the app's `--sparse` path keeps them as holes; its
+modification time predated the state root, so it was most likely copied
+rather than extracted by the app), plus a VM disk cloned from it: about
+19.7 GiB that no other file shared. Say in the agent instructions
+("Building and Running in a Worktree") that a test state root is created by
+the app itself or `cp -c` from an existing one, never with a plain copy,
+and is deleted when the worker finishes.
+
 ## Needs a decision
+
+### Delete the factory image to free its own blocks?
+
+Delete the app data's factory image now (frees about 1.4 GiB at once, and
+lets the TRIM item above give back the VM disk's free space it shares)?
+Options: delete it now | keep it until the TRIM item has shipped | keep it
+Costs: a factory reset or a new VM extracts it again (now sparse, about
+11.4 GiB allocated) and refuses to start without the full 20 GiB plus
+headroom free; an existing VM launches from its own disk without it.
+Checked 2026-10-09 (see "Background: data stored twice" below).
+
+### Background: data stored twice
+
+Investigated 2026-10-09, read-only (consult round with sol and MiMo).
+Physical sharing was measured by mapping each file's data ranges
+(`SEEK_DATA`/`SEEK_HOLE`) to device offsets with `F_LOG2PHYS_EXT` and
+intersecting them, checked on a test file (a `cp -c` clone shared 100%, a
+plain `cp` or `cat` copy 0%), plus SHA-256 for equal contents. No APFS
+local snapshots held anything. Nothing the repository's tooling makes is
+a real copy:
+
+- The factory image and the VM disk share 18.7 of their 20.0 and 21.0 GiB;
+  the image owns 1.4 GiB, the disk 2.3 GiB. The image predates the sparse
+  extraction (a8dae12), so its 8.65 GiB of zeros (offsets 12 to 20 GiB) are
+  allocated and shared with the disk; trimming the guest alone cannot free
+  them while the image exists.
+- The installed app and the main checkout's development app hold the same
+  `disk.raw.zst` as one APFS clone (`make install` uses `ditto`,
+  `build-app.sh` uses `cp -c`); each bundle owns under 0.11 GiB.
+- `build/guix` in a checkout is shared with its own development app; a
+  newer `build/guix` that no app embeds yet owns its 2.77 GiB.
+- The builder disk (39 GiB allocated) and its 1.25 GiB backing image hold
+  no Mac-side duplicate; exports are removed after packaging, and
+  `omarchy-qemu-gpu.*` directories under `/tmp` are 16 KiB each and went
+  away when their VMs ended.
+- The real duplicate was a worker's throwaway state root (see "Make test VM
+  state roots small and remove them" under Proposed): about 19.7 GiB until
+  that worker deletes it.
 
 ### Background: large VM files
 
