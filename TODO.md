@@ -38,13 +38,26 @@ call took 3.7 s. Upstream has no issue for it; `quattro` replaced the path
 after 4.0.4 (no release since): #13418 binds menus and panels as Hyprland
 global shortcuts that the shell handles without starting a process (about
 110 lines), #13435 sends `omarchy-shell` calls over the shell's own socket.
-Either fix is a guest change and needs a builder build.
-Which fix should the image get?
-Options: backport #13418 as a patch on the pinned Omarchy (removes the process
-chain and the timeout; drop it when the pin includes it) | raise
-`omarchy-shell`'s default timeout to 10 s with a `substitute*` (one line, no
-lost presses, but the menu still opens seconds late under host load) | wait
-for an Omarchy release that includes #13418.
+The defect is the kill itself: a killed client leaves a non-idempotent
+toggle in an unknown state (lost or late), whatever the timeout value, so a
+longer timeout is no fix. Consulted sol and MiMo (round
+20261009-190242-e59a): both back removing the per-press process chain; sol
+recommends the #13418 backport. MiMo's smaller alternative (a persistent socket
+with request IDs and acknowledgements) is new machinery: #13435 alone is
++356 lines and still starts `socat` per press with a timeout. The #13418
+handler is `onPressed` only, so a release cannot toggle twice. A press before
+the shell has registered its shortcuts, or during a shell restart, reaches
+no one; that is no worse than today, where `omarchy-shell` fails then too.
+Fix, a guest change that needs a builder build: backport #13418 as a patch on
+the pinned Omarchy (shell.qml, helpers.lua, the shortcuts list, the
+bindings) and drop it when the pin includes it. Verify on a VM under host
+load: hundreds of presses after menu actions, rapid double presses, presses
+while the shell is busy, right after login and across a shell restart;
+count the menu's open/close transitions per press (no lost and no double
+toggles) and measure press-to-map latency.
+Backport #13418 now, or wait for an Omarchy release that includes it?
+Options: backport now (recommended by sol; the bug stays until a release
+otherwise) | wait for the release.
 
 ## Proposed
 
@@ -55,6 +68,17 @@ fresh working disk allocates about 1.1 GiB of zeros. Offer a small change
 that punches whole zero blocks in its helper's SHA-256 pass after
 decoding, framed modestly (initial footprint, contents unchanged), with a
 measurement on its current main. Contacting upstream needs approval.
+
+### omarchy-shell kills non-idempotent calls on a timeout
+
+Proposed 2026-10-09 by the Super+Space worker, raised by sol and MiMo:
+`omarchy-shell` runs `qs ipc` under `timeout --kill-after=1s 2s` and reports
+"not responding" when it kills the client, but the call may already have
+reached the shell, so a toggle is lost or applied late and the caller
+cannot tell which. Other bindings and scripts still go through it after the
+#13418 backport. A kill should mean "outcome unknown", never a failure to
+retry; callers that need a state should ask for it (open or close, not
+toggle). Check which default callers toggle, and offer it upstream.
 
 ### The shutdown screen shows Hyprland's startup log
 
