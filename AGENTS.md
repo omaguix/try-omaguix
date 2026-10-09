@@ -56,6 +56,10 @@ clean; edit them only upstream. Where they differ, this repository follows:
   decision is the maintainer's, not something to infer from forks or pull
   requests. Release tags are never moved, and upstream's tags are fetched as
   `try-omarchy/*` (`docs/releasing.md`).
+- Repository files (TODO.md, docs, commit messages) never carry details
+  private to the maintainer's machine: paths outside this repository and its
+  documented app locations, other projects, personal dotfiles or tools.
+  Keep those in the session or the maintainer's own notes.
 - The rest of this file is the project's architecture and maintenance policy.
 
 <!-- AGENTS.md version: 1.0.0 -->
