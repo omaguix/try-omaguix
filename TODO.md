@@ -33,6 +33,18 @@ Found 2026-10-08 by the initial-window worker: on a fresh disk the guest
 stays at 2560x1440 at the login screen instead of following the window size
 (before and after the initial-window fix). Unverified beyond that run.
 
+### A click in the guest menu sometimes does nothing the first time
+
+Approved 2026-10-08.
+
+Reported by the maintainer 2026-10-08: opening the menu in the VM and
+clicking Shutdown did not work right away, as if the click was not passed
+on at once; they had to click Shutdown a second time. It may be the same
+slowdown suspected behind the Control-Option hand-back (a full-grab tap
+callback that waits on QEMU's lock long enough for macOS to disable the
+tap), but the tap does not handle mouse events, so it is more likely on the
+guest side or in the pointer path. Cause unknown; reproduce first.
+
 ## Proposed
 
 ## Needs a decision
