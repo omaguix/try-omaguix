@@ -106,8 +106,7 @@ roots that point to a `-disk-image` store item.
 
 ### Background: gliff
 
-Should Roguix adopt gliff in any form before upstream ships a macOS client?
-Options: no, record only (recommended) | a time-boxed CPU-tier test of `gliff-server` in the guest against a Linux GTK client | package `gliff-server` for Guix now
+Decided 2026-10-10: adopt nothing before upstream ships a macOS client; record only.
 
 Requested 2026-10-10 ("ask the models"); investigated read-only, consulted
 sol and MiMo (round 20261010-000628-72e6). gliff (omacom/gliff, MIT, Rust,
