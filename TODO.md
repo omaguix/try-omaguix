@@ -59,6 +59,15 @@ gliff-server built outside the image against a gliff client on an existing
 x86_64 Linux with Hyprland, over NAT with a ProxyJump through the Mac, on a
 wired LAN. Record the numbers; stop at the first failure.
 
+### Rebase onto upstream Try Omarchy
+
+Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
+Omarchy"). After the items above: rebase `main` onto `upstream/main` and
+force-push with `--force-with-lease=main:<the reviewed old SHA>`, as the
+Roguix section of AGENTS.md and `docs/releasing.md` describe; resolve
+conflicts keeping Roguix's guest and our macOS patches, rerun `make test`,
+and review what upstream changed that Roguix should follow.
+
 ## Proposed
 
 ### Compare wayvnc as the remote view
