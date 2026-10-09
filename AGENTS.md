@@ -522,6 +522,12 @@ worktree has no `build/`; clone the main checkout's packaged guest into it
 first: `mkdir -p build && cp -c -R <main checkout>/build/guix build/guix`
 (an APFS clone, no extra space).
 
+A throwaway VM state root for a check is created by the app itself or with
+`cp -c` (an APFS clone) from an existing image, never with a plain copy,
+which writes the image's zeros as data (about 20 GiB). Check that the clone
+succeeded, and delete the state root when the check ends, also after a
+failed run.
+
 `make run-isolated` opens the start menu and waits for a click on **Launch
 Roguix**, so an unattended check must not leave it waiting: start the VM in
 a way that needs no click, or say that the in-app step stayed unchecked.

@@ -10,20 +10,6 @@ export because an older image's GC root under `/root` still pins it; remove
 the old image roots (keeping the time-machine and ungrafted roots), `guix gc`
 and `fstrim -av`, and report the space won. Shut the builder down after.
 
-### Make test VM state roots small and remove them
-
-Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
-
-Proposed 2026-10-09. A worker's throwaway VM state root held a 20 GiB
-factory image with only 0.4 GiB of holes although the image is 8.65 GiB of
-zeros (an extraction by the app's `--sparse` path keeps them as holes; its
-modification time predated the state root, so it was most likely copied
-rather than extracted by the app), plus a VM disk cloned from it: about
-19.7 GiB that no other file shared. Say in the agent instructions
-("Building and Running in a Worktree") that a test state root is created by
-the app itself or `cp -c` from an existing one, never with a plain copy,
-and is deleted when the worker finishes.
-
 ### The factory image still comes out almost fully allocated
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
