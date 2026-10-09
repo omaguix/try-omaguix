@@ -59,6 +59,25 @@ gliff-server built outside the image against a gliff client on an existing
 x86_64 Linux with Hyprland, over NAT with a ProxyJump through the Mac, on a
 wired LAN. Record the numbers; stop at the first failure.
 
+Pass thresholds, set by the worker on 2026-10-10 before measuring (gliff
+targets 60 fps; these are the floor for a usable remote desktop, not the
+target). All at 1920x1080 on the guest's default vCPUs, the Mac otherwise
+idle:
+
+- (a) Capture: ext-image-copy-capture of a 1080p Hyprland output into a GBM
+  buffer on the VirGL render node succeeds, and a CPU map of that buffer
+  reads the real screen contents (not zeros); capture plus map plus a
+  full-frame read takes at most 10 ms median and 20 ms p95 per frame.
+- (b) Encode: BGRA to I420 conversion plus an OpenH264 encode at 1080p
+  (gliff's CPU tier: 4:2:0, up to four threads) takes at most 25 ms median
+  and 40 ms p95 per frame, on content that changes every frame (scrolling
+  text). Capture plus encode together then fit a sustained 30 fps.
+- (c) End to end, wired LAN: at least 30 fps sustained while scrolling a
+  full-screen terminal or browser page for 30 s, at most 2 % of frames
+  later than 100 ms; typing and scrolling "feel fine" means input-to-frame
+  latency (key or wheel event at the client to the changed frame shown
+  there) at most 60 ms median and 120 ms p95, with no stall over 250 ms.
+
 ### Rebase onto upstream Try Omarchy
 
 Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
