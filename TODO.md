@@ -80,30 +80,14 @@ last line.
 
 ## Needs a decision
 
-- Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
 
 ### Background: Command-Space
 
 Reported 2026-10-03: Command-Space does nothing in the guest, and
-Command-Tab switches Mac apps.
-
-Command-Space, found: the maintainer's Karabiner-Elements rule turns
-Command-Space into F18 (for a Hammerspoon launcher) in its virtual HID
-driver, before QEMU's event tap, so the guest gets F18. Exempt the VM window
-in that rule's manipulator; the window belongs to QEMU, which has no bundle
-identifier, so match its path (check it in Karabiner-EventViewer):
-
-```json
-{"type": "frontmost_application_unless",
- "file_paths": ["^.*/Try Roguix\\.app/Contents/Resources/runtime/bin/Try Roguix$"]}
-```
-
-Done 2026-10-03 in the maintainer's dotfiles (ef9ebbb), which also restored
-the Emacs rule the F18 change had replaced. Still to do: test without the
-F18 workaround, binding Cmd+Space in Hammerspoon directly after a logout
-(the steps are in ~/.hammerspoon/init.lua); and document this for users of
-Karabiner, Hammerspoon and AltTab: such tools may own a chord before the VM
-sees it.
+Command-Tab switches Mac apps. Command-Space was a host key remapper taking
+the chord before QEMU's event tap; `docs/mac-keyboard.md` ("Host tools that
+take a chord first") explains how to exempt the VM window. Command-Tab is
+the "Send Command-Tab to Roguix" setting.
 
 ### Background: the Accessibility grant
 
