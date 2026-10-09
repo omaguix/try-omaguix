@@ -2,41 +2,6 @@
 
 ## Next, in order
 
-### The guest ignores the window size at the login screen on a fresh disk
-
-Approved 2026-10-08.
-
-Found 2026-10-08 by the initial-window worker: on a fresh disk the guest
-stays at 2560x1440 at the login screen instead of following the window size
-(before and after the initial-window fix). Unverified beyond that run.
-
-Diagnosed 2026-10-09 (dev build of 79bff87, image `3b3fb5b9…`, windowed,
-fresh disk, Apple M1 Pro): this is the text console, not a host bug.
-
-- At the first-start setup on tty1 the guest surface was 2560x1440 while the
-  window's content was 1296x729 pt (2592x1458 px). Resizing the window to
-  900x506 pt left it at 2560x1440; QEMU only scaled it, so the text shrank.
-- After the setup, Hyprland came up at 1800x1012, the window's pixels, and
-  a resize to 1199x674 pt gave 2398x1348: `roguix-display-sync` works, but
-  it runs only in the Hyprland session (`omarchy.scm`).
-- The console mode is fixed by the kernel argument
-  `video=Virtual-1:2560x1440M` (`guest/guix/modules/roguix/system.scm`),
-  chosen in 96793e9 because Terminus 16x32 at the window's Retina pixels was
-  too small and 1920x1080 scaled up too large. The host's EDID already offers
-  the window size as the preferred mode at boot (d398b7e), so dropping the
-  argument would start the console at the window's pixels. Even then fbcon
-  would not follow later resizes: the DRM fbdev emulation keeps the
-  framebuffer it allocated at boot. The same mode is what the shutdown
-  screen returns to (see the shutdown font item).
-
-Does the text console follow the window at boot, at the cost of the text
-size chosen in 96793e9? Options: keep 2560x1440 and close this item (the
-desktop already follows the window) | drop `video=Virtual-1:2560x1440M` so
-the console starts at the window's pixels with Terminus 16x32 (smaller text,
-still fixed after boot; a guest build) | run the first-start setup in a
-Hyprland/Foot session instead of on tty1 (follows resizes; a larger guest
-change). Either guest change needs the builder, which the font worker uses.
-
 ### A click in the guest menu sometimes does nothing the first time
 
 Approved 2026-10-08.
@@ -307,3 +272,32 @@ edk2-stable202608" to QEMU's e7764c7cda ("edk2: update binaries to
 edk2-stable202608", the prebuilt firmware QEMU ships; b8f0e2d4f4 two minutes
 earlier only updates the `roms/edk2` submodule). The rest of the description
 is unchanged.
+
+### Background: the text console size
+
+Approved 2026-10-08.
+
+Found 2026-10-08 by the initial-window worker: on a fresh disk the guest
+stays at 2560x1440 at the login screen instead of following the window size
+(before and after the initial-window fix). Unverified beyond that run.
+
+Diagnosed 2026-10-09 (dev build of 79bff87, image `3b3fb5b9…`, windowed,
+fresh disk, Apple M1 Pro): this is the text console, not a host bug.
+
+- At the first-start setup on tty1 the guest surface was 2560x1440 while the
+  window's content was 1296x729 pt (2592x1458 px). Resizing the window to
+  900x506 pt left it at 2560x1440; QEMU only scaled it, so the text shrank.
+- After the setup, Hyprland came up at 1800x1012, the window's pixels, and
+  a resize to 1199x674 pt gave 2398x1348: `roguix-display-sync` works, but
+  it runs only in the Hyprland session (`omarchy.scm`).
+- The console mode is fixed by the kernel argument
+  `video=Virtual-1:2560x1440M` (`guest/guix/modules/roguix/system.scm`),
+  chosen in 96793e9 because Terminus 16x32 at the window's Retina pixels was
+  too small and 1920x1080 scaled up too large. The host's EDID already offers
+  the window size as the preferred mode at boot (d398b7e), so dropping the
+  argument would start the console at the window's pixels. Even then fbcon
+  would not follow later resizes: the DRM fbdev emulation keeps the
+  framebuffer it allocated at boot. The same mode is what the shutdown
+  screen returns to (see the shutdown font item).
+
+Decided 2026-10-09: keep 2560x1440 ("leave 2560x1440 and close the item"); the desktop already follows the window.
