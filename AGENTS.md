@@ -537,6 +537,18 @@ exits 125.
 Roguix**, so an unattended check must not leave it waiting: start the VM in
 a way that needs no click, or say that the in-app step stayed unchecked.
 
+## Delegated Work and Added Delays
+
+"Added delay is a bug signal" (the maintainer's Rule 10) applies to fixes and
+to the options a report offers, not only to an agent's own scripts: a longer
+timeout, a sleep, a retry or a debounce is never offered as a fix or as an
+option for an asynchronous bug; find the race, lost event or non-idempotent
+step instead. A `delay:` label on a constant inside a fix (as opposed to a
+test harness) needs the coordinator's or the maintainer's agreement first;
+it never serves to get past the delay check. A coordinator checks every
+option in a worker's report against this rule before passing it on or
+writing it into TODO.md.
+
 ## Long-Running Work
 
 Run builder VM work that takes more than a minute (image and system builds,
