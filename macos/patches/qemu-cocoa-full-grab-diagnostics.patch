@@ -14,9 +14,16 @@ Command chords were captured or left to macOS. Only Command chords are
 logged, by key code and never ordinary typing, and each kind only a few
 times per run.
 
+With send-command-tab=on, also log the Control-Option hand-back: each
+modifier change the tap sees while the window is key, by key code and flag
+mask, and each time the release chord arms, disarms (and why), hands
+Command-Tab back or is reset because the window resigned key, for the
+first 256 lines of a run. A key pressed while the chord is armed is not
+named.
+
 --- a/ui/cocoa.m
 +++ b/ui/cocoa.m
-@@ -441,6 +441,7 @@
+@@ -442,6 +442,7 @@
  - (BOOL) isMouseGrabbed;
  - (BOOL) isKeyboardCaptured;
  - (void) reenableEventTap;
@@ -24,13 +31,10 @@ times per run.
  - (void) raiseAllKeys;
  - (void) endPinchLocked;
  - (void) resetPinchLocked:(bool)running;
-@@ -486,13 +487,51 @@
-     } else if (flags == 0 && command_tab_release_armed) {
-         command_tab_release_armed = false;
-         command_tab_released = true;
-+    }
-+}
-+
+@@ -518,9 +519,81 @@
+     return command_tab_key_passed;
+ }
+ 
 +/*
 + * System-shortcut capture fails silently: without the Accessibility grant
 + * the tap is never created, macOS may disable it later, and a chord can
@@ -53,7 +57,7 @@ times per run.
 +    if (type != kCGEventKeyDown ||
 +        !(CGEventGetFlags(cgEvent) & kCGEventFlagMaskCommand)) {
 +        return;
-     }
++    }
 +    if (cocoa_tap_should_log(++*count)) {
 +        fprintf(stderr,
 +                "[event-tap] Command chord key code %lld %s (window key: %s, #%u)\n",
@@ -61,22 +65,55 @@ times per run.
 +                captured ? "captured for the guest" : "left to macOS",
 +                window_key ? "yes" : "no", *count);
 +    }
- }
- 
++}
++
++/*
++ * The send-command-tab=on hand-back: each modifier change the tap sees
++ * while the window is key, and each time the release chord arms, disarms
++ * or hands Command-Tab back, for the first lines of a run. Modifier key
++ * codes and flag masks only; a key pressed while armed is not named.
++ */
++static void cocoa_tap_log_command_tab_release(CGEventType type,
++                                              CGEventRef cgEvent,
++                                              bool was_armed, bool completed)
++{
++    static unsigned int count;
++    const char *change = NULL;
++
++    if (type == kCGEventFlagsChanged && ++count <= 256) {
++        fprintf(stderr,
++                "[event-tap] Command-Tab hand-back: modifier key code %lld, flags 0x%llx\n",
++                CGEventGetIntegerValueField(cgEvent, kCGKeyboardEventKeycode),
++                (unsigned long long)CGEventGetFlags(cgEvent));
++    }
++
++    if (completed) {
++        change = "released: Command-Tab goes to macOS";
++    } else if (!was_armed && command_tab_release_armed) {
++        change = "armed by Control-Option";
++    } else if (was_armed && !command_tab_release_armed) {
++        change = type == kCGEventKeyDown ?
++                 "disarmed: a key was pressed" :
++                 "disarmed: another modifier joined Control-Option";
++    }
++    if (change && ++count <= 256) {
++        fprintf(stderr, "[event-tap] Command-Tab hand-back %s\n", change);
++    }
++}
++
  static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void *userInfo)
  {
      QemuCocoaView *view = userInfo;
 +    static bool callback_logged;
- 
++
 +    if (!callback_logged) {
 +        callback_logged = true;
 +        fprintf(stderr, "[event-tap] First event reached the tap.\n");
 +    }
-+
+ 
      /*
       * macOS owns the tap's lifetime. A callback that returns too slowly
-      * gets the tap disabled with kCGEventTapDisabledByTimeout, and a tap
-@@ -503,7 +542,15 @@
+@@ -532,12 +605,23 @@
       */
      if (type == kCGEventTapDisabledByTimeout ||
          type == kCGEventTapDisabledByUserInput) {
@@ -92,7 +129,25 @@ times per run.
          return cgEvent;
      }
  
-@@ -529,9 +576,12 @@
+     if (send_command_tab && [[view window] isKeyWindow]) {
+-        trackCommandTabRelease(type, cgEvent);
++        bool was_armed = command_tab_release_armed;
++        bool completed = trackCommandTabRelease(type, cgEvent);
++
++        cocoa_tap_log_command_tab_release(type, cgEvent, was_armed, completed);
+     }
+ 
+     /*
+@@ -549,6 +633,8 @@
+      * the user presses the release chord.
+      */
+     if (commandTabGoesToMacOS(type, cgEvent)) {
++        cocoa_tap_log_command_chord(type, cgEvent, [[view window] isKeyWindow],
++                                    false);
+         return cgEvent;
+     }
+ 
+@@ -572,9 +658,12 @@
      NSEvent *event = [NSEvent eventWithCGEvent:cgEvent];
      if ([view isKeyboardCaptured] && [view handleEvent:event]) {
          COCOA_DEBUG("Global events tap: qemu handled the event, capturing!\n");
@@ -105,7 +160,7 @@ times per run.
  
      return cgEvent;
  }
-@@ -1010,6 +1060,16 @@
+@@ -1053,6 +1142,16 @@
  {
      COCOA_DEBUG("QemuCocoaView: setFullGrab\n");
  
@@ -122,7 +177,7 @@ times per run.
      CGEventMask mask = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
      eventsTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault,
                                   mask, handleTapEvent, self);
-@@ -1018,6 +1078,8 @@
+@@ -1061,6 +1160,8 @@
          return;
      } else {
          COCOA_DEBUG("Global events tap created! Will capture system key combos.\n");
@@ -131,7 +186,7 @@ times per run.
      }
  
      CFRunLoopRef runLoop = CFRunLoopGetCurrent();
-@@ -1691,6 +1753,11 @@
+@@ -1734,6 +1835,11 @@
      }
  }
  
@@ -143,3 +198,14 @@ times per run.
  /*
   * Makes the target think all down keys are being released.
   * This prevents a stuck key problem, since we will not see
+@@ -1985,6 +2091,10 @@
+     COCOA_DEBUG("%s\n", __func__);
+     [cocoaView ungrabMouse];
+     [cocoaView raiseAllKeys];
++    if (command_tab_released || command_tab_release_armed) {
++        fprintf(stderr,
++                "[event-tap] Command-Tab hand-back reset: the window resigned key\n");
++    }
+     command_tab_released = false;
+     command_tab_release_armed = false;
+     command_tab_key_passed = false;

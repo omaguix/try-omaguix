@@ -126,21 +126,27 @@ struct FullscreenNativeContractTests {
         #expect(patch.contains("kCGEventFlagMaskControl | kCGEventFlagMaskAlternate"))
         #expect(patch.contains("command_tab_released = true;"))
         let tracking = try #require(patch.range(of: "trackCommandTabRelease(type, cgEvent);"))
-        let routing = try #require(patch.range(of: "(!send_command_tab || command_tab_released)"))
+        let routing = try #require(patch.range(of: "if (commandTabGoesToMacOS(type, cgEvent))"))
         #expect(tracking.lowerBound < routing.lowerBound)
         let resignKey = try #require(patch.range(of: "[cocoaView raiseAllKeys];\n+    command_tab_released = false;"))
         #expect(routing.lowerBound < resignKey.lowerBound)
 
-        // Both the key down and its key up must bypass the guest, or the
-        // guest sees a Tab release without its press.
-        #expect(patch.contains("type == kCGEventKeyDown || type == kCGEventKeyUp"))
-        #expect(patch.contains("== kVK_Tab"))
+        // The key up follows its key down, even after Command is up, or the
+        // switcher keeps holding Tab (test-cocoa-command-tab.py).
+        #expect(patch.contains("bool passed = command_tab_key_passed;"))
+        #expect(patch.contains("!= kVK_Tab"))
         #expect(patch.contains("kCGEventFlagMaskCommand"))
 
         // The bypass has to come before the tap hands the event to the guest.
-        let bypass = try #require(patch.range(of: "== kVK_Tab"))
+        let bypass = try #require(patch.range(of: "if (commandTabGoesToMacOS(type, cgEvent))"))
         let capture = try #require(patch.range(of: "[view handleEvent:event]"))
         #expect(bypass.lowerBound < capture.lowerBound)
+
+        // The switcher sees Command itself go down and up, or it stays open
+        // without switching; the window still hands it to the guest.
+        #expect(patch.contains("keycode == kVK_Command || keycode == kVK_RightCommand"))
+        let passCommand = try #require(patch.range(of: "keycode == kVK_Command"))
+        #expect(passCommand.lowerBound < capture.lowerBound)
 
         let reenable = try #require(
             builder.range(of: "patch -d \"$source_dir\" -p1 -f -i \"$reenable_patch\"")

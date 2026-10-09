@@ -10,6 +10,13 @@ guest and the keyboard can no longer leave the VM; only a trackpad swipe
 does. Let Command-Tab and Command-Shift-Tab through the tap untouched, as
 any other Mac app does. The guest has seen Command go down as Super; the
 switch makes the window resign key, and windowDidResignKey releases it.
+The switcher has to see Command itself as well: with Command's own
+flags-changed events swallowed, it never saw Command come up, so it stayed
+open without switching. Those events now pass through the tap, and the key
+window still hands them to the guest.
+A Tab key up follows its key down rather than the flags it carries: in a
+quick Command-Tab, Command often comes up before Tab, and swallowing that
+key up left the switcher holding Tab, so it waited or kept stepping.
 
 Users who switch guest windows with Super-Tab can opt in with
 send-command-tab=on. Command-Tab then reaches the guest, and pressing and
@@ -59,17 +66,18 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
 index 8f1f6fd..ce26809 100644
 --- a/ui/cocoa.m
 +++ b/ui/cocoa.m
-@@ -110,6 +110,9 @@ static int left_command_key_enabled = 1;
+@@ -110,6 +110,10 @@ static int left_command_key_enabled = 1;
  static bool swap_opt_cmd;
  static bool full_grab_enabled;
  static bool immersive_mode_enabled = true;
 +static bool send_command_tab;
 +static bool command_tab_released;
 +static bool command_tab_release_armed;
++static bool command_tab_key_passed;
  static NSMenuItem *fullScreenMenuItem;
  
  static bool zoom_interpolation;
-@@ -360,6 +363,38 @@ static void handleAnyDeviceErrors(Error * err)
+@@ -360,6 +364,66 @@ static void handleAnyDeviceErrors(Error * err)
  
  QemuCocoaView *cocoaView;
  
@@ -78,9 +86,9 @@ index 8f1f6fd..ce26809 100644
 + * own hands Command-Tab back to macOS until the VM window resigns key, so
 + * the keyboard can still leave the VM. A chord that adds any other key,
 + * such as Control-Option-T, does not count, and the guest still sees the
-+ * modifiers as usual.
++ * modifiers as usual. Returns whether this event completed the chord.
 + */
-+static void trackCommandTabRelease(CGEventType type, CGEventRef cgEvent)
++static bool trackCommandTabRelease(CGEventType type, CGEventRef cgEvent)
 +{
 +    const CGEventFlags chord = kCGEventFlagMaskControl | kCGEventFlagMaskAlternate;
 +    const CGEventFlags watched = chord | kCGEventFlagMaskCommand |
@@ -88,10 +96,10 @@ index 8f1f6fd..ce26809 100644
 +
 +    if (type == kCGEventKeyDown) {
 +        command_tab_release_armed = false;
-+        return;
++        return false;
 +    }
 +    if (type != kCGEventFlagsChanged) {
-+        return;
++        return false;
 +    }
 +
 +    CGEventFlags flags = CGEventGetFlags(cgEvent) & watched;
@@ -102,13 +110,41 @@ index 8f1f6fd..ce26809 100644
 +    } else if (flags == 0 && command_tab_release_armed) {
 +        command_tab_release_armed = false;
 +        command_tab_released = true;
++        return true;
 +    }
++    return false;
++}
++
++/*
++ * Whether this Tab key event belongs to a Command-Tab that macOS owns:
++ * Command-Tab and Command-Shift-Tab unless send-command-tab=on keeps them
++ * for the guest. The key up follows its key down, not the flags: in a
++ * quick Command-Tab, Command often comes up before Tab, and a Tab key up
++ * swallowed for the guest left the switcher holding Tab, so it waited or
++ * kept stepping through apps.
++ */
++static bool commandTabGoesToMacOS(CGEventType type, CGEventRef cgEvent)
++{
++    if ((type != kCGEventKeyDown && type != kCGEventKeyUp) ||
++        CGEventGetIntegerValueField(cgEvent, kCGKeyboardEventKeycode) != kVK_Tab) {
++        return false;
++    }
++    if (type == kCGEventKeyUp) {
++        bool passed = command_tab_key_passed;
++
++        command_tab_key_passed = false;
++        return passed;
++    }
++    command_tab_key_passed =
++        (CGEventGetFlags(cgEvent) & kCGEventFlagMaskCommand) &&
++        (!send_command_tab || command_tab_released);
++    return command_tab_key_passed;
 +}
 +
  static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void *userInfo)
  {
      QemuCocoaView *view = userInfo;
-@@ -378,6 +413,25 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
+@@ -378,6 +442,39 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
          return cgEvent;
      }
  
@@ -124,26 +160,41 @@ index 8f1f6fd..ce26809 100644
 +     * send-command-tab=on they reach the guest as Super-Tab instead, until
 +     * the user presses the release chord.
 +     */
-+    if ((type == kCGEventKeyDown || type == kCGEventKeyUp) &&
-+        CGEventGetIntegerValueField(cgEvent, kCGKeyboardEventKeycode) == kVK_Tab &&
-+        (CGEventGetFlags(cgEvent) & kCGEventFlagMaskCommand) &&
-+        (!send_command_tab || command_tab_released)) {
++    if (commandTabGoesToMacOS(type, cgEvent)) {
 +        return cgEvent;
++    }
++
++    /*
++     * The application switcher also has to see Command itself go down and
++     * up: when the tap swallowed it, the switcher never saw Command come
++     * up, so it stayed open without switching until a click. Let Command's
++     * own flags-changed events through; the key window still hands them
++     * to the guest as Super through -[QemuApplication sendEvent:]. Command
++     * chords stay captured, because their key events are still swallowed
++     * below.
++     */
++    if (type == kCGEventFlagsChanged) {
++        int64_t keycode = CGEventGetIntegerValueField(cgEvent,
++                                                      kCGKeyboardEventKeycode);
++        if (keycode == kVK_Command || keycode == kVK_RightCommand) {
++            return cgEvent;
++        }
 +    }
 +
      NSEvent *event = [NSEvent eventWithCGEvent:cgEvent];
      if ([view isKeyboardCaptured] && [view handleEvent:event]) {
          COCOA_DEBUG("Global events tap: qemu handled the event, capturing!\n");
-@@ -1587,6 +1641,8 @@ static NSRect cocoa_initial_window_frame(void)
+@@ -1587,6 +1684,9 @@ static NSRect cocoa_initial_window_frame(void)
      COCOA_DEBUG("%s\n", __func__);
      [cocoaView ungrabMouse];
      [cocoaView raiseAllKeys];
 +    command_tab_released = false;
 +    command_tab_release_armed = false;
++    command_tab_key_passed = false;
  }
  
  /* We abstract the method called by the Enter Fullscreen menu item
-@@ -2661,6 +2717,8 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2661,6 +2761,8 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
                          opts->u.cocoa.full_grab;
      immersive_mode_enabled = !opts->u.cocoa.has_immersive ||
                               opts->u.cocoa.immersive;

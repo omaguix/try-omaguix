@@ -13,21 +13,6 @@ Requested 2026-10-09 to be done now ("do the compaction now"). Check free space 
 console login after a reboot (guest/guix/README.md): if it is not reachable,
 stop and ask the maintainer.
 
-### Handing Command-Tab back with Control-Option depends on timing
-
-Approved 2026-10-08.
-
-Found 2026-10-08 in the in-app check (main 2c39093, macOS 27.0.1): with Send
-Command-Tab to Roguix on, Command-Tab reaches the guest as Super-Tab, as the
-`[event-tap] ... captured for the guest` lines confirm. After pressing and
-releasing Control-Option alone, the next Command-Tab switches Mac apps only
-if the maintainer waits a moment first, and not always even then. The patch
-(`macos/patches/qemu-cocoa-command-tab.patch`) has no delay: it arms on the
-Control-Option flags-changed event and releases on the one with no flags, so
-some event or flag sequence is not what it expects. The release itself is not
-logged, so the log cannot show which presses counted; logging the arm and
-release would make it reproducible. Cause unknown.
-
 ### Name the macOS 27 privacy list in the Accessibility texts
 
 Approved 2026-10-08.
