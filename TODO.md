@@ -2,36 +2,17 @@
 
 ## Next, in order
 
-## Proposed
+### Drop the old image GC root in the builder
 
-### The shutdown screen shows Hyprland's startup log
-
-Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
-the bold console font: at shutdown tty1 still shows the Roguix logo and
-Hyprland's startup log, which `start-hyprland` printed there, and the
-shutdown lines are written over its last line. Clearing tty1 when Hyprland
-exits (or not printing the log there) would leave only the shutdown text.
-
-### Build the image with a smaller --image-size
-
-Proposed 2026-10-09. `build.py` passes `--image-size=20G`; the system uses
-about 11.5 GiB of it, and the rest is zeros that the builder writes into
-the store copy (allocated in the builder's ext4), the image file and the
-factory image. The guest grows its root to the VM disk at boot
-(`roguix-grow-root`), so the image needs only the closure plus headroom for
-the first boot and setup. Measure the closure, pick a size (or Guix's
-estimate), and check first boot and the first reconfigure on a fresh VM.
-
-### Give the builder a disposable scratch disk for builds
-
-Proposed 2026-10-09; weigh it after the cleanup step above. The image
-derivations copy the closure into a temporary root, an ext4
-`partition.img` and a genimage temporary in guix-daemon's build directory.
-Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
-build would free those at once instead of waiting for gc and trim. It adds
-no capacity (same APFS volume) and changes how the builder is started.
+Approved 2026-10-09 (chosen with the models, see "Background: choosing the
+next proposals"). The builder disk stays at about 39 GiB after the last
+export because an older image's GC root under `/root` still pins it; remove
+the old image roots (keeping the time-machine and ungrafted roots), `guix gc`
+and `fstrim -av`, and report the space won. Shut the builder down after.
 
 ### Make test VM state roots small and remove them
+
+Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
 
 Proposed 2026-10-09. A worker's throwaway VM state root held a 20 GiB
 factory image with only 0.4 GiB of holes although the image is 8.65 GiB of
@@ -45,6 +26,8 @@ and is deleted when the worker finishes.
 
 ### The factory image still comes out almost fully allocated
 
+Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
+
 Found 2026-10-09 by the TRIM and menu worker: with a8dae12, the app's
 `zstd -d --sparse` on the real `disk.raw.zst` leaves only 3 holes (432 MB of
 its 8.6 GiB of zeros), so a factory image still takes about 20 GiB, although
@@ -52,12 +35,45 @@ synthetic zero files come out sparse. Cause unknown (block alignment of the
 zero runs, zstd's sparse write granularity, or how APFS reports holes).
 In a running VM the hourly trim then frees about 8 GiB of the working disk.
 
+### Build the image with a smaller --image-size
+
+Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
+
+Proposed 2026-10-09. `build.py` passes `--image-size=20G`; the system uses
+about 11.5 GiB of it, and the rest is zeros that the builder writes into
+the store copy (allocated in the builder's ext4), the image file and the
+factory image. The guest grows its root to the VM disk at boot
+(`roguix-grow-root`), so the image needs only the closure plus headroom for
+the first boot and setup. Measure the closure, pick a size (or Guix's
+estimate), and check first boot and the first reconfigure on a fresh VM.
+
 ### Super+Space sometimes needs a second press to open the menu
+
+Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
 
 Found 2026-10-09 (both the old and the new image, about 1 in 20): after an
 action closed the Omarchy menu, Super+Space sometimes does not open it on the
 first press. Likely Omarchy's own open/close state; reproduce and check
 upstream first.
+
+## Proposed
+
+### The shutdown screen shows Hyprland's startup log
+
+Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
+the bold console font: at shutdown tty1 still shows the Roguix logo and
+Hyprland's startup log, which `start-hyprland` printed there, and the
+shutdown lines are written over its last line. Clearing tty1 when Hyprland
+exits (or not printing the log there) would leave only the shutdown text.
+
+### Give the builder a disposable scratch disk for builds
+
+Proposed 2026-10-09; weigh it after the cleanup step above. The image
+derivations copy the closure into a temporary root, an ext4
+`partition.img` and a genimage temporary in guix-daemon's build directory.
+Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
+build would free those at once instead of waiting for gc and trim. It adds
+no capacity (same APFS volume) and changes how the builder is started.
 
 ## Needs a decision
 
