@@ -43,6 +43,22 @@ rather than extracted by the app), plus a VM disk cloned from it: about
 the app itself or `cp -c` from an existing one, never with a plain copy,
 and is deleted when the worker finishes.
 
+### The factory image still comes out almost fully allocated
+
+Found 2026-10-09 by the TRIM and menu worker: with a8dae12, the app's
+`zstd -d --sparse` on the real `disk.raw.zst` leaves only 3 holes (432 MB of
+its 8.6 GiB of zeros), so a factory image still takes about 20 GiB, although
+synthetic zero files come out sparse. Cause unknown (block alignment of the
+zero runs, zstd's sparse write granularity, or how APFS reports holes).
+In a running VM the hourly trim then frees about 8 GiB of the working disk.
+
+### Super+Space sometimes needs a second press to open the menu
+
+Found 2026-10-09 (both the old and the new image, about 1 in 20): after an
+action closed the Omarchy menu, Super+Space sometimes does not open it on the
+first press. Likely Omarchy's own open/close state; reproduce and check
+upstream first.
+
 ## Needs a decision
 
 ### Background: data stored twice
@@ -325,3 +341,10 @@ fresh disk, Apple M1 Pro): this is the text console, not a host bug.
   screen returns to (see the shutdown font item).
 
 Decided 2026-10-09: keep 2560x1440 ("leave 2560x1440 and close the item"); the desktop already follows the window.
+
+### Background: the lost first menu click
+
+Fixed 2026-10-09 by substituting Omarchy's `Menu.qml` at build time so the
+rows are rebuilt only when a guard result changed (d833b4e), and offered
+upstream as https://github.com/omacom/omarchy/pull/14740; drop the
+substitution once Omarchy takes it.
