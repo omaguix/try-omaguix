@@ -2,6 +2,19 @@
 
 ## Next, in order
 
+### What gliff means for Roguix
+
+Requested 2026-10-10: "https://github.com/omacom/gliff — ask the models".
+gliff is Omarchy's remote desktop for Hyprland over ssh (H.264 4:4:4 on the
+GPU, a private screen that follows the client window, the client's keyboard
+layout, a two-way clipboard with files, reconnection). Find out read-only
+whether and how it matters for Roguix and Try Roguix: as a way to show the
+guest instead of (or beside) QEMU's Cocoa display, against our display,
+clipboard, keyboard and resize work, whether a macOS client exists or is
+planned, what packaging it in Guix would take, and what upstream Try
+Omarchy does with it. Consult the default models and record a short answer
+with options; adopt nothing without approval.
+
 ### Super+Space sometimes needs a second press to open the menu
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
