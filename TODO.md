@@ -2,6 +2,22 @@
 
 ## Next, in order
 
+### Why the large VM files are so big, and how to keep them smaller
+
+Requested 2026-10-09: "ask the models why these files are so big, which
+can be deleted, and what to do so that in the future they do not appear or
+are smaller". The files (apparent / allocated, 2026-10-09): the builder disk
+`.build/guix-validation/builder.qcow2` (82 / 64 GB, grew from 25 GB during
+the paused shutdown-font image build), the Try Roguix VM disk
+`disks/current/disk.raw` (64 / 21 GB) and the factory image `images/<id>.raw`
+(21 / 20 GB; the VM disk is an APFS clone of it), both in the app's data
+folder. Investigate read-only with evidence (how each is
+created and used, what shares blocks, what each build step writes), consult
+the default models, and record per file: why it is that size, whether it can
+be deleted now and what that costs, and what to change so it stays smaller
+(e.g. building the image outside the builder's disk, discard on the VM disk,
+dropping the factory image after the VM disk exists). Delete nothing.
+
 ### A click in the guest menu sometimes does nothing the first time
 
 Approved 2026-10-08.
