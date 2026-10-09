@@ -23,6 +23,29 @@ action closed the Omarchy menu, Super+Space sometimes does not open it on the
 first press. Likely Omarchy's own open/close state; reproduce and check
 upstream first.
 
+Diagnosed 2026-10-09 (worker, no guest change yet): not the menu's state and
+not our `Menu.qml` substitution, but Omarchy 4.0.4's IPC path. Super+Space
+runs `omarchy-menu toggle`, which runs `omarchy-shell`, which runs a `qs ipc`
+client under `timeout --kill-after=1s 2s`. On a throwaway VM (windowed app
+from this tree, keys through QMP, Hyprland's layer events and a traced bind)
+that chain took 0.3-4 s per press (`qs --version` alone 150-650 ms; the host
+was heavily loaded by builds). When the client is killed, `omarchy-shell`
+exits 1 ("not responding") and the toggle is lost (3 of 10 such presses) or
+reaches the shell 0.6-3.5 s later. After an action closed the menu, 3 of 80
+and 10 of 81 presses timed out; with the bind run under
+`OMARCHY_SHELL_IPC_TIMEOUT=30s` (a test value), 0 of 84 failed and the longest
+call took 3.7 s. Upstream has no issue for it; `quattro` replaced the path
+after 4.0.4 (no release since): #13418 binds menus and panels as Hyprland
+global shortcuts that the shell handles without starting a process (about
+110 lines), #13435 sends `omarchy-shell` calls over the shell's own socket.
+Either fix is a guest change and needs a builder build.
+Which fix should the image get?
+Options: backport #13418 as a patch on the pinned Omarchy (removes the process
+chain and the timeout; drop it when the pin includes it) | raise
+`omarchy-shell`'s default timeout to 10 s with a `substitute*` (one line, no
+lost presses, but the menu still opens seconds late under host load) | wait
+for an Omarchy release that includes #13418.
+
 ## Proposed
 
 ### Offer Try Omarchy the zero-block punch
