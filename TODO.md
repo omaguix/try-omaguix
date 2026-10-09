@@ -2,22 +2,6 @@
 
 ## Next, in order
 
-### Why the large VM files are so big, and how to keep them smaller
-
-Requested 2026-10-09: "ask the models why these files are so big, which
-can be deleted, and what to do so that in the future they do not appear or
-are smaller". The files (apparent / allocated, 2026-10-09): the builder disk
-`.build/guix-validation/builder.qcow2` (82 / 64 GB, grew from 25 GB during
-the paused shutdown-font image build), the Try Roguix VM disk
-`disks/current/disk.raw` (64 / 21 GB) and the factory image `images/<id>.raw`
-(21 / 20 GB; the VM disk is an APFS clone of it), both in the app's data
-folder. Investigate read-only with evidence (how each is
-created and used, what shares blocks, what each build step writes), consult
-the default models, and record per file: why it is that size, whether it can
-be deleted now and what that costs, and what to change so it stays smaller
-(e.g. building the image outside the builder's disk, discard on the VM disk,
-dropping the factory image after the VM disk exists). Delete nothing.
-
 ### A click in the guest menu sometimes does nothing the first time
 
 Approved 2026-10-08.
@@ -78,8 +62,94 @@ last line.
 
 ## Proposed
 
+### Materialize the factory image sparsely
+
+Proposed 2026-10-09 (see "Background: large VM files"). The pinned
+`zstd` 1.5.7 writes zeros as data with `-d -o FILE`: a 200 MB file of zeros
+came out fully allocated, and 40 KB with `--sparse`. The current factory
+image holds 8.65 GiB of all-zero MiB chunks (free space of the image's ext4),
+all allocated. Add `--sparse` to the `zstd -d` call in
+`macos/qemu-persistent-storage.sh` and cover it in
+`macos/Tests/qemu-persistent-storage.test.sh` (allocated size of a
+materialized image with a zero run). Saves about 8.6 GiB for every new
+factory image and the VM disks cloned from it; it does not change existing
+files, and rewriting the current one would cost space while the VM disk
+still shares its blocks.
+
+### Pass the VM's TRIM through to the Mac
+
+Proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
+and no `discard=` (QEMU's default `ignore`), and the guest runs no `fstrim`,
+so files deleted in the guest never give space back: `disk.raw` only grows.
+Add `discard=unmap` to the `-drive` in `macos/run-qemu-gpu.sh` and a weekly
+`fstrim /` service in the guest (`modules/roguix/services.scm`). The builder
+shows that QEMU 11.1 on macOS punches holes through to the APFS file (its
+trim took the qcow2 from 59 to 25 GiB allocated), but verify it with the
+app's own runtime first: on a disposable clone, write and delete a large
+file in the guest, trim, and check the host's allocated size.
+
+### Clean the builder right after each export
+
+Proposed 2026-10-09. An image build grows the builder's qcow2 by about
+40 GiB and nothing gives it back until someone runs `guix gc` and
+`fstrim`. Document (or script around `vm-run`) one step after a verified
+export: remove the `/root/<name>.raw` GC root, `guix gc` (check
+`guix gc --list-roots` for older image roots and the ungrafted system),
+then `fstrim -av`. Old image roots under `/root` each pin a 20 GiB image in
+the store plus its `partition.img`.
+
+### Build the image with a smaller --image-size
+
+Proposed 2026-10-09. `build.py` passes `--image-size=20G`; the system uses
+about 11.5 GiB of it, and the rest is zeros that the builder writes into
+the store copy (allocated in the builder's ext4), the image file and the
+factory image. The guest grows its root to the VM disk at boot
+(`roguix-grow-root`), so the image needs only the closure plus headroom for
+the first boot and setup. Measure the closure, pick a size (or Guix's
+estimate), and check first boot and the first reconfigure on a fresh VM.
+
+### Give the builder a disposable scratch disk for builds
+
+Proposed 2026-10-09; weigh it after the cleanup step above. The image
+derivations copy the closure into a temporary root, an ext4
+`partition.img` and a genimage temporary in guix-daemon's build directory.
+Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
+build would free those at once instead of waiting for gc and trim. It adds
+no capacity (same APFS volume) and changes how the builder is started.
+
 ## Needs a decision
 
+- What to delete now so the paused image build can finish: resume the builder and, while the build waits, remove old `/root/*.raw` image GC roots, `guix gc` and `fstrim -av` inside it (returns freed qcow2 blocks to the Mac), keeping the VM disk and the factory image? Options: clean inside the builder, keep the VM disk and factory image | also delete the factory image (about 0.3 GiB back; a later reset re-extracts it in full) | free unrelated files on the Mac instead | delete nothing. Checked 2026-10-09: no local APFS snapshots; the VM disk is a clone of the factory image (only 0.27 GiB of its first 20 GiB differ), so `du`'s 41 GB for the pair is about 21 GiB on disk; which old image roots exist in the builder was not checked (no `vm-run` while it is paused).
+
+### Background: large VM files
+
+Investigated 2026-10-09, read-only (sizes apparent / allocated; consult
+round with sol and MiMo). The factory image and the VM disk are in the
+app's data folder under `VM/v1/guix/`.
+
+- Builder disk `.build/guix-validation/builder.qcow2` (82 GB file length,
+  64 GiB allocated, 90 GiB virtual): a qcow2 overlay on the official Guix VM
+  image, attached with `discard=unmap,detect-zeroes=unmap`; it holds the
+  builder's store, GC roots and build directories. It was 25 GiB after
+  `guix gc` and `fstrim` and grew about 40 GiB during the paused image build:
+  the Guix image pipeline (`gnu/build/image.scm`, `gnu/system/image.scm` at
+  the pin) copies the closure into a temporary root (`deduplicate? #f`),
+  builds `partition.img` as its own store item, assembles the disk with
+  genimage in a build directory and `copy-file`s the 20 GiB result into the
+  store (zeros become unmaps on the host, but use real blocks in the
+  builder's ext4). Blocks the guest frees stay allocated in the qcow2 until
+  `fstrim`. Deletable now: no, it is paused mid-build and holds the store;
+  losing it means a new builder and downloading the store again.
+- Factory image `images/<identity>.raw` (21 GB / 20 GiB): the bundled
+  `disk.raw.zst` (2.8 GiB) expanded once by `zstd -d -o`, which writes the
+  8.65 GiB of zeros in it as data. It is needed only to create or reset a VM.
+  Deletable now: yes, but it frees only about 0.3 GiB (the VM disk shares
+  the rest), and a later reset re-extracts it in full.
+- VM disk `disks/current/disk.raw` (64 GiB / 21 GiB): an APFS clone of the
+  factory image extended sparsely to 64 GiB; only 0.27 GiB of its first
+  20 GiB differ from the factory image, plus 0.73 GiB written beyond it, so
+  it owns about 1 GiB of its own. Attached without `discard`, so it never
+  shrinks. Deletable: no, it is the user's VM.
 
 ### Background: Command-Space
 
