@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### Does Try Omarchy punch holes in the factory image's zero blocks?
-
-Requested 2026-10-09: "so Try Omarchy does not punch holes in zero blocks?
-Look in git remotes/upstream/main. Ask the models." Compare upstream's
-materialization of the factory image (`upstream/main`,
-`macos/qemu-persistent-storage.sh` and the helper) with ours after 8b72456:
-does upstream decode sparsely or punch holes, how much its images allocate,
-and whether our fix (or a smaller one) is worth offering upstream. Consult
-the default models; record the answer, offer nothing without approval.
-
 ### Build the image with a smaller --image-size
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
@@ -34,6 +24,14 @@ first press. Likely Omarchy's own open/close state; reproduce and check
 upstream first.
 
 ## Proposed
+
+### Offer Try Omarchy the zero-block punch
+
+Proposed 2026-10-09 (see "Background: large VM files"): Try Omarchy's
+fresh working disk allocates about 1.1 GiB of zeros. Offer a small change
+that punches whole zero blocks in its helper's SHA-256 pass after
+decoding, framed modestly (initial footprint, contents unchanged), with a
+measurement on its current main. Contacting upstream needs approval.
 
 ### The shutdown screen shows Hyprland's startup log
 
@@ -170,6 +168,20 @@ app's data folder under `VM/v1/guix/`.
   superseded by the exported image), `guix gc` (43 GiB freed, `/` from
   35 to 13 GB used) and `fstrim -av` took the builder disk from 39 GiB
   to 12 GiB allocated (`du -h`).
+- Try Omarchy (checked 2026-10-09 on `upstream/main` 3c6056d and its
+  v0.5.1 release; consult round with sol and MiMo): no sparse handling
+  anywhere in its history. Its guest is a 6 GiB ext4 image (`mke2fs -d`,
+  `zstd -12`); since 2026-10-02 it keeps no factory image and runs
+  `zstd -d -f -o` (no `--sparse`) straight into the working disk, verifies
+  SHA-256 and grows the file sparsely; the disk is attached without
+  `discard`. The v0.5.1 image has 1.14 GiB of zero 4 KiB blocks in 12 runs
+  (1.12 GiB in 4 runs over 16 MiB), and with its bundled zstd 1.5.7 both
+  `-d -o` and `-d --sparse -o` allocated the whole 6.0 GiB. So it has the
+  same waste, about 1.1 GiB (19%) per fresh disk or reset, of which an
+  unknown part is ext4 free space the guest fills soon anyway. Our punch
+  fits it (its helper already has the SHA-256 and sync commands); the
+  smaller variant would punch inside the helper's existing SHA-256 pass,
+  and a punch failure should not fail provisioning there.
 
 ### Background: Command-Space
 
