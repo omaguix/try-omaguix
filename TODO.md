@@ -2,6 +2,16 @@
 
 ## Next, in order
 
+### Choose, with the models, which proposals go next
+
+Requested 2026-10-09: "choose with the models" which of these go into "Next,
+in order": the factory image still almost fully allocated, dropping the old
+image GC root that keeps the builder at 39 GiB, hiding Hyprland's log on the
+shutdown screen, Super+Space sometimes needing a second press (and the other
+"Proposed" items). Consult the default models with each item's evidence, cost
+and value (disk space is tight), and record a ranked recommendation; the
+coordinator then moves the chosen items.
+
 ## Proposed
 
 ### The shutdown screen shows Hyprland's startup log
