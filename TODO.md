@@ -34,11 +34,56 @@ callback that waits on QEMU's lock long enough for macOS to disable the
 tap), but the tap does not handle mouse events, so it is more likely on the
 guest side or in the pointer path. Cause unknown; reproduce first.
 
+### The font on the shutdown screen looks terrible
+
+Approved 2026-10-09: the builder logs in without the maintainer and 49 GB are free after compacting it. Switch `%roguix-console-font` from ter-v32n to ter-v32b, build the guest in the builder, `make guix-package`, and check boot, setup and shutdown in the app.
+
+Requested 2026-10-07: "the font looks terrible during the shutdown, on the
+black screen". Boot messages look fine; the shutdown text appears after
+Hyprland exits, on a VT. Capture a screenshot of it first (blurry, too small,
+too large or wrong glyphs) and compare it with the boot screen.
+
+Consulted 2026-10-07 (sol, MiMo, DeepSeek; unverified): all three put first
+that after Hyprland drops DRM master, fbcon repaints at a mode other than the
+boot's `video=Virtual-1:2560x1440M` (the window-sized mode
+roguix-display-sync left, not a multiple of 16x32), or at 2560x1440 that
+zoom-to-fit then scales by a non-integer factor with linear filtering. To
+tell guest from host: a QMP `screendump` during the shutdown (sharp there,
+blurry on screen means the Cocoa scaling), and in the guest, before and after
+`hyprctl dispatch exit`, `fgconsole`, `/sys/class/graphics/fb0/virtual_size`,
+the DRM connector's active mode and `setfont -C /dev/ttyN -O` (which font the
+shown VT has). Candidate fixes, by cause: restore the boot mode when Hyprland
+stops, nearest-neighbor filtering in the Cocoa patch, or `setfont` on the
+VT shown at shutdown.
+
+Diagnosed 2026-10-07 (worker, b35 image, windowed dev build): the mode is
+not the cause; the font is. Probes after Hyprland exits, written to hvc0
+during a real `loginctl poweroff`: VT 1, `fb0` 2560x1440, the DRM plane
+2560x1440, exactly the boot's mode (Hyprland itself ran at 1920x1080). A
+`/dev/fb0` dump is sharp, so the guest draws what it means to. What
+differs from boot is the face: the kernel's `fbcon=font:TER16x32` is
+Terminus Bold (all 95 ASCII glyphs byte-identical to `ter-v32b`), while
+`%roguix-console-font` (`modules/roguix/services.scm`) is `ter-v32n`, the
+normal weight with 2 px strokes instead of 3; the probe read `ter-v32n` on
+tty1 at shutdown. Boot messages are drawn before `console-font-tty1` runs
+(it waits for tty1's login), shutdown messages after it. Zoom-to-fit then
+scales 2560x1440 with linear filtering (about 1.35x full screen on a 16"
+MacBook), which leaves the thin strokes grey and uneven. Loading
+`ter-v32b` on tty1 right after Hyprland exited, in the same run, made the
+shutdown text match the boot's weight. Proposed fix: `ter-v32b.psf.gz` in
+`%roguix-console-font` (same 512 glyphs, same 16x32 cell, so the setup's
+layouts are still covered); it needs an image build in the builder VM and
+`make guix-package`, then a look at boot, setup and shutdown in the app.
+Not done by the worker: the builder VM was not running and the Mac had
+16 GB free, too little for a build and export. Separately, tty1 at
+shutdown also shows the Roguix logo and Hyprland's startup log, which
+`start-hyprland` printed there, with the shutdown lines written over its
+last line.
+
 ## Proposed
 
 ## Needs a decision
 
-- Start the builder VM (it needs a console login after a reboot) and free disk space, so a worker can build the guest with the bold console font (ter-v32n to ter-v32b, see "Background: the shutdown font")? Checked: the fix was verified live with setfont; the builder had no serial.sock and the Mac has 13 GB free (2026-10-07).
 - Test Command-Space without the F18 workaround, binding it in Hammerspoon directly after a logout? Answered 2026-10-07: the maintainer runs it later. Checked: the Karabiner exemption is in the dotfiles (ef9ebbb); the test needs your logout and keyboard.
 
 ### Background: Command-Space
@@ -247,47 +292,3 @@ edk2-stable202608" to QEMU's e7764c7cda ("edk2: update binaries to
 edk2-stable202608", the prebuilt firmware QEMU ships; b8f0e2d4f4 two minutes
 earlier only updates the `roms/edk2` submodule). The rest of the description
 is unchanged.
-
-### Background: the shutdown font
-
-Requested 2026-10-07: "the font looks terrible during the shutdown, on the
-black screen". Boot messages look fine; the shutdown text appears after
-Hyprland exits, on a VT. Capture a screenshot of it first (blurry, too small,
-too large or wrong glyphs) and compare it with the boot screen.
-
-Consulted 2026-10-07 (sol, MiMo, DeepSeek; unverified): all three put first
-that after Hyprland drops DRM master, fbcon repaints at a mode other than the
-boot's `video=Virtual-1:2560x1440M` (the window-sized mode
-roguix-display-sync left, not a multiple of 16x32), or at 2560x1440 that
-zoom-to-fit then scales by a non-integer factor with linear filtering. To
-tell guest from host: a QMP `screendump` during the shutdown (sharp there,
-blurry on screen means the Cocoa scaling), and in the guest, before and after
-`hyprctl dispatch exit`, `fgconsole`, `/sys/class/graphics/fb0/virtual_size`,
-the DRM connector's active mode and `setfont -C /dev/ttyN -O` (which font the
-shown VT has). Candidate fixes, by cause: restore the boot mode when Hyprland
-stops, nearest-neighbor filtering in the Cocoa patch, or `setfont` on the
-VT shown at shutdown.
-
-Diagnosed 2026-10-07 (worker, b35 image, windowed dev build): the mode is
-not the cause; the font is. Probes after Hyprland exits, written to hvc0
-during a real `loginctl poweroff`: VT 1, `fb0` 2560x1440, the DRM plane
-2560x1440, exactly the boot's mode (Hyprland itself ran at 1920x1080). A
-`/dev/fb0` dump is sharp, so the guest draws what it means to. What
-differs from boot is the face: the kernel's `fbcon=font:TER16x32` is
-Terminus Bold (all 95 ASCII glyphs byte-identical to `ter-v32b`), while
-`%roguix-console-font` (`modules/roguix/services.scm`) is `ter-v32n`, the
-normal weight with 2 px strokes instead of 3; the probe read `ter-v32n` on
-tty1 at shutdown. Boot messages are drawn before `console-font-tty1` runs
-(it waits for tty1's login), shutdown messages after it. Zoom-to-fit then
-scales 2560x1440 with linear filtering (about 1.35x full screen on a 16"
-MacBook), which leaves the thin strokes grey and uneven. Loading
-`ter-v32b` on tty1 right after Hyprland exited, in the same run, made the
-shutdown text match the boot's weight. Proposed fix: `ter-v32b.psf.gz` in
-`%roguix-console-font` (same 512 glyphs, same 16x32 cell, so the setup's
-layouts are still covered); it needs an image build in the builder VM and
-`make guix-package`, then a look at boot, setup and shutdown in the app.
-Not done by the worker: the builder VM was not running and the Mac had
-16 GB free, too little for a build and export. Separately, tty1 at
-shutdown also shows the Roguix logo and Hyprland's startup log, which
-`start-hyprland` printed there, with the shutdown lines written over its
-last line.
