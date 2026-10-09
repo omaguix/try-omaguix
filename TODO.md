@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### KosmicKrisp and Venus: Vulkan in the Roguix guest on macOS
-
-Requested 2026-10-10 ("add the KosmicKrisp and Venus research; ask the
-models"). KosmicKrisp is LunarG's Vulkan driver on Metal for macOS, in Mesa.
-Find out read-only: its state and versions, whether QEMU's virtio-gpu Venus
-(virglrenderer) runs on macOS on top of it, what that would give the guest
-(Vulkan for the desktop and apps, video extensions for encoding), and what
-moving the runtime from VirGL on ANGLE would cost. Consult the default
-models; record the answer and options; adopt nothing without approval.
-
 ### Super+Space sometimes needs a second press to open the menu
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
@@ -131,6 +121,39 @@ kept a previous image pinned (the builder stayed at 39 GiB until it was
 removed by hand). The export could also remove the other `/root/*.raw`
 roots that point to a `-disk-image` store item.
 
+### Recheck Venus on macOS at the next virglrenderer release
+
+Approved 2026-10-10; waits for the next virglrenderer release.
+
+Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"). When a
+virglrenderer release after 1.3.0 contains the macOS Venus series (!1600,
+!1601, !1602, !1635), check read-only whether it also settles host memory
+on KosmicKrisp (!1685), whether Guix's Mesa has reached 26.2.4 or later,
+and whether UTM still keeps the Linux desktop on VirGL; then update the
+background and ask again. No runtime change.
+
+### A time-boxed Venus experiment on a throwaway runtime
+
+Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if
+Vulkan apps become a goal. A development runtime with virglrenderer main
+(plus !1685 if still open), a bundled Vulkan loader and KosmicKrisp
+(macOS 26) or MoltenVK (macOS 15), `venus=on,blob=on,hostmem=...` on the
+existing device, and a guest Mesa with "venus: honor the virtio-gpu blob
+alignment". Pass when: `vulkaninfo` shows the Venus device, vkcube in a
+Hyprland window does not lose Hyprland's GL context, the hostmem BAR fits
+on an M1 or M2 (36-bit guest addresses), and a guest-triggered device loss
+leaves the Mac and the VirGL desktop working. Record numbers against
+VirGL; ship nothing from it.
+
+### Hardware H.264 encoding through VA-API and VideoToolbox
+
+Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if CPU
+encoding (OpenH264, gliff) is measured too slow in the guest. The route
+independent of Vulkan: guest VA-API (Guix's Mesa builds its VA driver with
+`-Dvideo-codecs=all`) over virgl's video protocol to a virglrenderer
+patched to encode with VideoToolbox, as OmacVM does (#48). Needs
+`-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
+
 ## Needs a decision
 
 ### Roguix as a gliff remote machine
@@ -138,6 +161,90 @@ roots that point to a `-disk-image` store item.
 Pursue Roguix as a gliff remote machine, and how far?
 Options: run the disposable feasibility test first, package nothing yet | compare wayvnc first | drop it, the Mac window is the remote view | package gliff-server for Guix now
 Checked: see "Background: Roguix as a gliff remote machine".
+
+### Background: KosmicKrisp and Venus
+
+Decided 2026-10-10: record only, recheck at the next virglrenderer release.
+Checked: the sources below, the runtime scripts, the Guix Mesa package at the pin, consult round 20261010-002607-ad4d.
+
+Requested 2026-10-10 ("add the KosmicKrisp and Venus research; ask the
+models"); investigated read-only, consulted sol and MiMo (round
+20261010-002607-ad4d). Short answer: Venus would be an addition for Vulkan
+apps, not a replacement of VirGL on ANGLE for the desktop, and it brings no
+video encoding; today it needs unreleased or third-party host code, a newer
+guest Mesa and macOS 26 for KosmicKrisp. Findings:
+
+- KosmicKrisp: LunarG's Vulkan driver on Metal 4 in Mesa (merged for Mesa
+  26.0), Vulkan 1.4 conformant and in the Vulkan SDK since 2026-09-29
+  (Phoronix, Khronos). macOS 26 or later only
+  (docs.mesa3d.org/drivers/kosmickrisp.html); the app supports macOS 15,
+  where only MoltenVK exists. Mesa main lists `VK_EXT_external_memory_metal`
+  and `VK_EXT_external_memory_host`, transform feedback and tessellation,
+  no `VK_KHR_external_memory_fd` and no `VK_KHR_video_*` at all.
+- QEMU (our pin c3d48b7): Venus is `virtio-gpu-gl-pci,venus=on`, which
+  requires `blob=on` and `hostmem`, and starts virglrenderer with
+  `VIRGL_RENDERER_VENUS|VIRGL_RENDERER_RENDER_SERVER`. It adds Vulkan
+  contexts beside the VirGL ones on the same device. The pin has no
+  virtio-gpu blob-alignment code.
+- virglrenderer: our 1.3.0 (2026-02-10) is built with `-Dvenus=true`, but
+  the app starts no Venus. macOS Venus was merged upstream after 1.3.0 and is
+  unreleased: build support (!1600), posix_spawn render-server workers for
+  Metal (!1601), POSIX shared memory wrapped as an MTLBuffer and exported to
+  the VMM as an SHM fd (!1602), Metal device export (!1635). Open: !1685
+  (UTM's author) says KosmicKrisp has neither `VK_EXT_metal_objects` nor the
+  MTLBuffer handle type, so every host-visible allocation fails, and moves
+  the import to `VK_EXT_external_memory_host`; !1618 (Metal texture scanout,
+  GL and Vulkan interop) is open. The startergo taps we build from carry
+  their own Venus-on-Metal patches; their QEMU README's
+  `virtio-gpu-pci,vulkan=on` is not a QEMU option, so it reads untested.
+- Guest: Guix's Mesa (pin and master) is 26.0.2 and builds the Venus
+  driver (`virtio`) on aarch64. Mesa 26.2.4 (2026-10-01) has "venus: honor
+  the virtio-gpu blob alignment"; OmacVM reports Venus failing without it
+  on a 16 KiB-page host. A backport would do as well as the bump.
+- Prior art: UTM 5.0.6 beta (2026-09-24) ships Venus with MoltenVK or
+  KosmicKrisp and says Linux desktop rendering in Vulkan does not work, so
+  the desktop stays on VirGL. OmacVM (MIT, an Omarchy VM for the Mac) ships
+  Venus on QEMU with MoltenVK (macOS 15) and KosmicKrisp (26+, default
+  since 2026-10-09) behind a stack of patches: KosmicKrisp built with
+  `-Dplatforms=macos` (otherwise a NULL entry point crashed QEMU on the
+  guest's first allocation), a load-time fallback to MoltenVK, a smaller
+  high PCI window so the hostmem BAR fits on M1 and M2 (36-bit guest
+  addresses; without it the VM did not boot), and a host patch so a
+  Vulkan window imported into Hyprland's virgl GL context no longer loses
+  that context; the window is still copied on the host. Its M4 numbers:
+  vkmark 840 (KosmicKrisp) against 650 (MoltenVK); glmark2 through Zink
+  558 against VirGL 592; Chrome's ANGLE on Vulkan works only with X11 and
+  flags. Its VirGL runs on Apple OpenGL, not ANGLE, so the context-loss
+  path is unverified on our runtime.
+- What it would give: Vulkan for guest apps (vkcube, vkmark, compute,
+  OpenCL through rusticl on Zink). Not the desktop: Hyprland renders with
+  GLES on VirGL, and Zink on KosmicKrisp is slower than VirGL and lacked
+  GL 3+ features in OmacVM's test. Not video: neither KosmicKrisp nor Venus
+  has Vulkan Video, so no hardware encoding for gliff through Vulkan
+  (Vulkan compute could still do its colour conversion).
+- Cost of adding it: virglrenderer from main or a patch stack, a Vulkan
+  loader and KosmicKrisp (Mesa with LLVM, libclc and the SPIR-V translator
+  at build time) plus MoltenVK for macOS 15, a render-server executable to
+  bundle and sign, QEMU's high PCI window for the hostmem BAR on M1 and M2,
+  a guest Mesa with the alignment fix, the Venus-to-VirGL presentation path,
+  and a larger guest-reachable host surface (a shader compiler; OmacVM saw
+  a guest drive KosmicKrisp to `VK_ERROR_DEVICE_LOST`).
+
+Both models: record only now, (a) ahead of (b) a time-boxed experiment,
+far ahead of (c) moving the desktop to Zink, which the glmark2 numbers and
+UTM's note argue against; hardware encoding for gliff is the VA-API route
+to VideoToolbox (OmacVM #48), independent of Venus. sol alone: gate any
+adoption on acceptance criteria (KosmicKrisp allocations work, the guest
+alignment fix, the BAR on M1 and M2, Vulkan windows presented reliably,
+recoverable device loss), not on a release number; advertising
+`VK_EXT_external_memory_metal` and !1685's failure can both be true. MiMo
+alone: check the guest kernel's virtio-gpu context and blob support and
+the render server's entitlements; whether Venus would retire the 1 ms
+fence poll (it would not: the desktop stays on VirGL). Dismissed: MiMo's
+"OpenH264 is fine" (gliff's fast conversion kernels are x86_64 only, see
+"Background: gliff"), and that the compiler runs in QEMU's process (QEMU
+starts Venus with the render server, so it runs in a worker; OmacVM's
+note reflects its setup).
 
 ### Background: gliff
 
