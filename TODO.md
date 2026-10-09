@@ -45,9 +45,24 @@ count the menu's open/close transitions per press (no lost and no double
 toggles) and measure press-to-map latency.
 Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
 
+### Rebase onto upstream Try Omarchy
+
+Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
+Omarchy"). After the items above: rebase `main` onto `upstream/main` and
+force-push with `--force-with-lease=main:<the reviewed old SHA>`, as the
+Roguix section of AGENTS.md and `docs/releasing.md` describe; resolve
+conflicts keeping Roguix's guest and our macOS patches, rerun `make test`,
+and review what upstream changed that Roguix should follow.
+
+## Proposed
+
 ### Test gliff-server in the guest before packaging it
 
+Postponed 2026-10-10 by the maintainer ("put gliff off for later, many things are more important").
+
 Approved 2026-10-10: run this feasibility test first; package nothing yet.
+Postponed by the maintainer 2026-10-10 (more important work first), during
+step (a); see "Progress" below for where it stopped and how to resume.
 
 Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine"). A
 disposable check, nothing packaged or shipped: set pass thresholds first
@@ -78,16 +93,32 @@ idle:
   latency (key or wheel event at the client to the changed frame shown
   there) at most 60 ms median and 120 ms p95, with no stall over 250 ms.
 
-### Rebase onto upstream Try Omarchy
-
-Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
-Omarchy"). After the items above: rebase `main` onto `upstream/main` and
-force-push with `--force-with-lease=main:<the reviewed old SHA>`, as the
-Roguix section of AGENTS.md and `docs/releasing.md` describe; resolve
-conflicts keeping Roguix's guest and our macOS patches, rerun `make test`,
-and review what upstream changed that Roguix should follow.
-
-## Proposed
+Progress 2026-10-10 (worker, stopped by the postponement; no threshold
+measured yet, nothing packaged): a disposable VM from this tree's app and
+main's guest build (`run-qemu-gpu.sh --ephemeral` with
+`OMARCHY_QEMU_GPU_STATE_ROOT` in a scratch directory and
+`OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2299:22`, 8 vCPUs, 8 GiB, Apple M1 Pro)
+booted unattended: a script waited for each `roguix-setup: ready STEP` line
+in the run's `console.log` and answered with QMP `send-key`, then SSH with a
+password worked through the NAT forward. The guest showed Hyprland 0.56.1 on
+a 3456x2170 output (the Retina window size), `/dev/dri/renderD128`, and Guix
+offers rust 1.93.0, libva 2.22.0, mesa 26.0.2 and openh264 2.6.0. gliff
+v0.3.0 has its own probe, `gliff-probe`, which covers (a) and (b) directly:
+`capture` (ext-image-copy-capture into a GBM buffer on the render node, CPU
+map, PNG), `--video cpu roundtrip --single --width 1920 --height 1080`
+(per-frame encode time), and `stream-bench` against
+`gliff-server --listen 127.0.0.1:9000 --headless --video cpu` (fps, jitter,
+latency; with `RUST_LOG=gliff_server=debug` the server logs `read_us` and
+`enc_us` per frame, and `--headless` gives an exact 1080p output). The
+build (`guix shell rust rust:cargo pkg-config gcc-toolchain libva mesa
+wayland libxkbcommon -- cargo build --release -p gliff-server -p
+gliff-probe`, about 15 minutes, mostly substitute downloads) compiled 111
+crates, then failed in `libdbus-sys`: `dbus` is missing from that package
+list. Afterwards the guest's sshd stopped answering (TCP connected, no
+banner) while QMP reported the VM running; the cause was not investigated.
+To resume: add `dbus` to the `guix shell` list, find why SSH stopped
+answering (memory pressure from 8 parallel rustc jobs is one suspect, not
+verified), then run the probes above in this order.
 
 ### Compare wayvnc as the remote view
 
