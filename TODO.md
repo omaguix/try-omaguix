@@ -38,38 +38,9 @@ trim took the qcow2 from 59 to 25 GiB allocated), but verify it with the
 app's own runtime first: on a disposable clone, write and delete a large
 file in the guest, trim, and check the host's allocated size.
 
-## Proposed
-
-### The shutdown screen shows Hyprland's startup log
-
-Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
-the bold console font: at shutdown tty1 still shows the Roguix logo and
-Hyprland's startup log, which `start-hyprland` printed there, and the
-shutdown lines are written over its last line. Clearing tty1 when Hyprland
-exits (or not printing the log there) would leave only the shutdown text.
-
-### Build the image with a smaller --image-size
-
-Proposed 2026-10-09. `build.py` passes `--image-size=20G`; the system uses
-about 11.5 GiB of it, and the rest is zeros that the builder writes into
-the store copy (allocated in the builder's ext4), the image file and the
-factory image. The guest grows its root to the VM disk at boot
-(`roguix-grow-root`), so the image needs only the closure plus headroom for
-the first boot and setup. Measure the closure, pick a size (or Guix's
-estimate), and check first boot and the first reconfigure on a fresh VM.
-
-### Give the builder a disposable scratch disk for builds
-
-Proposed 2026-10-09; weigh it after the cleanup step above. The image
-derivations copy the closure into a temporary root, an ext4
-`partition.img` and a genimage temporary in guix-daemon's build directory.
-Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
-build would free those at once instead of waiting for gc and trim. It adds
-no capacity (same APFS volume) and changes how the builder is started.
-
-## Needs a decision
-
 ### A click in the guest menu sometimes does nothing the first time
+
+Decided 2026-10-09: override `Menu.qml` in the Roguix build (as `MenuModel.js` already is) so rows are rebuilt only when the guard result changed, rebuild the guest, and prepare a PR to Omarchy for the maintainer to review before it is sent.
 
 Approved 2026-10-08; diagnosed 2026-10-09, fix blocked on a guest build.
 
@@ -104,6 +75,37 @@ What was checked:
   `rebuildDisplay()` only when the results differ from the current ones.
   A changed result can still rebuild under a press; keeping delegates
   across rebuilds (updating the model in place) would close that too.
+
+## Proposed
+
+### The shutdown screen shows Hyprland's startup log
+
+Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
+the bold console font: at shutdown tty1 still shows the Roguix logo and
+Hyprland's startup log, which `start-hyprland` printed there, and the
+shutdown lines are written over its last line. Clearing tty1 when Hyprland
+exits (or not printing the log there) would leave only the shutdown text.
+
+### Build the image with a smaller --image-size
+
+Proposed 2026-10-09. `build.py` passes `--image-size=20G`; the system uses
+about 11.5 GiB of it, and the rest is zeros that the builder writes into
+the store copy (allocated in the builder's ext4), the image file and the
+factory image. The guest grows its root to the VM disk at boot
+(`roguix-grow-root`), so the image needs only the closure plus headroom for
+the first boot and setup. Measure the closure, pick a size (or Guix's
+estimate), and check first boot and the first reconfigure on a fresh VM.
+
+### Give the builder a disposable scratch disk for builds
+
+Proposed 2026-10-09; weigh it after the cleanup step above. The image
+derivations copy the closure into a temporary root, an ext4
+`partition.img` and a genimage temporary in guix-daemon's build directory.
+Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
+build would free those at once instead of waiting for gc and trim. It adds
+no capacity (same APFS volume) and changes how the builder is started.
+
+## Needs a decision
 
 ### Background: large VM files
 
