@@ -45,11 +45,13 @@
 ;; root partition and its ext4 this label.
 (define %root-label "Guix_image")
 
-;; Terminus 32 px on the text consoles, as for boot messages; its 512 glyphs
-;; cover the setup's keyboard layouts, which the kernel's built-in font does
-;; not.
+;; Terminus Bold 32 px on the text consoles, the face of the kernel's
+;; built-in TER16x32 used for boot messages, so the shutdown text keeps the
+;; boot's weight (the normal weight's thin strokes blur when the window scales
+;; the display). Its 512 glyphs cover the setup's keyboard layouts, which the
+;; kernel's built-in font does not.
 (define %roguix-console-font
-  (file-append font-terminus "/share/consolefonts/ter-v32n.psf.gz"))
+  (file-append font-terminus "/share/consolefonts/ter-v32b.psf.gz"))
 
 (define grow-root-program
   (program-file
