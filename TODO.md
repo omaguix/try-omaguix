@@ -2,6 +2,29 @@
 
 ## Next, in order
 
+### KosmicKrisp and Venus: Vulkan in the Roguix guest on macOS
+
+Requested 2026-10-10 ("add the KosmicKrisp and Venus research; ask the
+models"). KosmicKrisp is LunarG's Vulkan driver on Metal for macOS, in Mesa.
+Find out read-only: its state and versions, whether QEMU's virtio-gpu Venus
+(virglrenderer) runs on macOS on top of it, what that would give the guest
+(Vulkan for the desktop and apps, video extensions for encoding), and what
+moving the runtime from VirGL on ANGLE would cost. Consult the default
+models; record the answer and options; adopt nothing without approval.
+
+### Roguix as a gliff remote machine
+
+Requested 2026-10-10 ("the real use for Roguix would be different: Roguix as
+a remote machine, with gliff-server in the guest, reached from another
+computer with Hyprland, e.g. an older x86_64 machine running Roguix; ask
+the models"). Find out read-only what that needs: packaging gliff and
+gliff-server for Guix (Rust, dependencies, aarch64 and x86_64), how the
+guest is reached over ssh from another machine (Try Roguix forwards ssh only
+to the Mac's loopback), CPU encoding without Vulkan video in the VM, and
+what Omarchy's own gliff integration (9d48fc402e) expects. Consult the
+default models; record the answer and options; adopt nothing without
+approval.
+
 ### Super+Space sometimes needs a second press to open the menu
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
