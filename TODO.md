@@ -55,9 +55,7 @@ load: hundreds of presses after menu actions, rapid double presses, presses
 while the shell is busy, right after login and across a shell restart;
 count the menu's open/close transitions per press (no lost and no double
 toggles) and measure press-to-map latency.
-Backport #13418 now, or wait for an Omarchy release that includes it?
-Options: backport now (recommended by sol; the bug stays until a release
-otherwise) | wait for the release.
+Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
 
 ## Proposed
 
