@@ -2,18 +2,6 @@
 
 ## Next, in order
 
-### Name the macOS 27 privacy list in the Accessibility texts
-
-Approved 2026-10-08.
-
-Found 2026-10-08: on macOS 27.0.1 the list that grants Try Roguix control of
-the computer is System Settings > Privacy & Security > Device Control and Data
-Access; the maintainer found no Accessibility entry under Privacy & Security.
-The start menu and docs say Accessibility, the name older macOS versions use,
-so the wording should follow the running macOS version; which version renamed
-it is unverified. The OPEN SETTINGS flow itself works there: one window, the
-macOS prompt.
-
 ### The guest ignores the window size at the login screen on a fresh disk
 
 Approved 2026-10-08.

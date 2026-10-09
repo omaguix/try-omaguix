@@ -49,6 +49,11 @@ Save, then run `hyprctl reload` and `hyprctl configerrors`.
 
 ## Command-Tab
 
+System chords such as Command-Space reach the guest as Super only while
+Try Roguix is allowed in System Settings > Privacy & Security > Device Control
+and Data Access on macOS 27 (Accessibility before); the start menu names the
+list the running macOS uses.
+
 Command-Tab and Command-Shift-Tab stay with the macOS app switcher by
 default, so the keyboard can always leave the VM. The **Send Command-Tab to
 Roguix** setting (start menu and settings, off by default, applied on the

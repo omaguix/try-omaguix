@@ -73,9 +73,12 @@ goes straight to Hyprland.
 The desktop is Omarchy's: **Super+Return** opens a terminal, **Super+Space**
 the Omarchy menu, **Super+Alt+Space** the app launcher, **Super+W** closes a
 window. Command acts as Super while the VM window is focused, except
-Command-Tab, which stays with the Mac's app switcher. Turn on **Send
-Command-Tab to Roguix** in the start menu or settings to switch guest windows
-with it instead; then press and release **Control-Option** to hand Command-Tab
+Command-Tab, which stays with the Mac's app switcher. System shortcuts such as
+Command-Space reach the guest once Try Roguix is allowed in
+**System Settings > Privacy & Security > Device Control and Data Access** on
+macOS 27 (**Accessibility** before); the start menu's **Open Settings** asks
+for it. Turn on **Send Command-Tab to Roguix** in the start menu or settings
+to switch guest windows with it instead; then press and release **Control-Option** to hand Command-Tab
 back to the Mac until you leave the VM window
 ([docs/mac-keyboard.md](docs/mac-keyboard.md#command-tab)). Host tools such as
 Karabiner-Elements, Hammerspoon or AltTab can take a chord before the VM sees

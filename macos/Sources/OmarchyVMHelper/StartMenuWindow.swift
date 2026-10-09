@@ -804,7 +804,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         headingStack.spacing = 14
 
         let accessibilityRow = StartMenuPermissionRow(
-            symbolName: "accessibility", title: "Accessibility", target: self
+            symbolName: "accessibility", title: StartMenuPresentation.accessibilityListName(), target: self
         )
         let microphoneRow = StartMenuPermissionRow(
             symbolName: "mic", title: "Microphone access", target: self

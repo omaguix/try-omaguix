@@ -56,6 +56,19 @@ enum StartMenuPresentation {
             + (resources.diskGiB.map { " · \($0) GiB disk" } ?? "")
     }
 
+    /// The name System Settings > Privacy & Security gives the list behind
+    /// `AXIsProcessTrusted`. macOS 27 renamed it from Accessibility to Device
+    /// Control and Data Access; the API, the TCC service and the
+    /// `Privacy_Accessibility` Settings URL keep the old name. Apple's own
+    /// documentation names no version; the evidence is macOS 26 and 27
+    /// screenshots in https://github.com/keymanapp/keyman/issues/16703 and
+    /// the maintainer's macOS 27.0.1.
+    static func accessibilityListName(
+        macOSMajorVersion: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+    ) -> String {
+        macOSMajorVersion >= 27 ? "Device Control and Data Access" : "Accessibility"
+    }
+
     static let incompatibleWorkspaceDetail = "The saved VM uses a storage or boot format this version can’t use, or its data folder contains multiple saved VMs. Reset Roguix to create a compatible VM. Resetting permanently erases everything in the VM."
 
     static let savedVMChoiceDetail = "This data folder holds more than one saved VM, so Roguix doesn’t know which to start. Keep one to launch it: the others are moved, unchanged, to an archive folder in the same data folder, which Roguix no longer uses or resets. Or reset Roguix to erase all of them and start fresh."

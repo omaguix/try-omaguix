@@ -273,6 +273,25 @@ struct StartMenuWindowWidthTests {
         #expect(refreshedAction.accessibilityLabel() == (allowed ? "" : "Open Settings"))
     }
 
+    @Test("the Accessibility row names the list as the running macOS does")
+    func accessibilityRowUsesListName() throws {
+        _ = NSApplication.shared
+        let menu = makeMenu(storageState: { .defaultLocation }, permissionsGranted: false)
+        menu.prepareForPresentation(visibleFrame: NSRect(x: 0, y: 0, width: 1440, height: 900))
+        defer { menu.dismiss() }
+
+        let content = try #require(menu.window.contentView)
+        content.layoutSubtreeIfNeeded()
+        let row = try #require(descendant(withIdentifier: "permission-row-accessibility", in: content))
+        let title = try #require(
+            descendant(withIdentifier: "permission-title-accessibility", in: row) as? NSTextField
+        )
+        #expect(title.stringValue == StartMenuPresentation.accessibilityListName())
+        let titleFrame = try #require(title.superview)
+            .convert(title.alignmentRect(forFrame: title.frame), to: row)
+        #expect(titleFrame.maxX <= row.bounds.maxX - 124 - 12 + 0.5)
+    }
+
     private func makeMenu(
         storageState: @escaping () -> StorageLocationMenuState,
         permissionsGranted: Bool = true,

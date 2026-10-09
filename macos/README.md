@@ -76,8 +76,8 @@ release notarization workflow.
 ### Development signing identity
 
 An ad-hoc signature's designated requirement is the build's cdhash, so every
-rebuild is a new app to macOS and loses its Accessibility and other privacy
-grants. Create a persistent local identity once:
+rebuild is a new app to macOS and loses its Device Control and Data Access
+(macOS 27; Accessibility before) and other privacy grants. Create a persistent local identity once:
 
 ```sh
 make signing-identity
@@ -240,10 +240,11 @@ parallel forwarding path exists.
 
 Ad-hoc signing identifies one exact build, so macOS intentionally invalidates
 its privacy grants when that build is replaced. The app's **Open Settings**
-action repairs a stale Accessibility entry and registers the installed build,
-and scopes the repair to the running app's bundle ID. A stable signature (the
-development identity above, Apple Development or Developer ID) is required for
-the grant to survive future updates.
+action repairs a stale Device Control and Data Access (Accessibility before
+macOS 27) entry and registers the installed build, and scopes the repair to
+the running app's bundle ID. A stable signature (the development identity
+above, Apple Development or Developer ID) is required for the grant to survive
+future updates.
 
 See the root `README.md`, `docs/architecture.md`, and `docs/releasing.md` for the
 supported platform, runtime boundaries, and distribution checklist.

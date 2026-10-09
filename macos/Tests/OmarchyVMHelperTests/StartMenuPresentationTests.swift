@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
@@ -10,6 +11,25 @@ struct StartMenuPresentationTests {
         #expect(detail.contains("multiple saved VMs"))
         #expect(detail.contains("permanently erases"))
         #expect(!detail.contains("different Try Roguix build"))
+    }
+
+    @Test("the Accessibility list is named as the running macOS names it")
+    func accessibilityListName() {
+        for version in [14, 15, 26] {
+            #expect(StartMenuPresentation.accessibilityListName(macOSMajorVersion: version) == "Accessibility")
+        }
+        for version in [27, 28] {
+            #expect(
+                StartMenuPresentation.accessibilityListName(macOSMajorVersion: version)
+                    == "Device Control and Data Access"
+            )
+        }
+        #expect(
+            StartMenuPresentation.accessibilityListName()
+                == StartMenuPresentation.accessibilityListName(
+                    macOSMajorVersion: ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+                )
+        )
     }
 
     @Test("microphone permission states offer only valid actions")
