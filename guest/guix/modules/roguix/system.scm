@@ -20,7 +20,7 @@
   #:use-module (roguix services)
   #:export (roguix-operating-system
             %pinned-guix-root))
-(use-service-modules desktop docker sddm sound ssh xorg)
+(use-service-modules desktop docker linux sddm sound ssh xorg)
 (use-package-modules fonts gl linux package-management terminals
                      window-management xdisorg)
 
@@ -232,6 +232,13 @@ the image's defaults."
             ;; shell, seeded into the account at the first desktop login.
             (service roguix-omarchy-service-type)
             (service roguix-grow-root-service-type)
+            ;; The VM disk is attached with discard=unmap, so a trim gives
+            ;; deleted files' blocks back to the Mac. Hourly rather than
+            ;; Guix's weekly default: Shepherd's timer does not catch up on
+            ;; a run missed while the VM was closed, and ext4 skips groups
+            ;; already trimmed since the mount, so a run costs little.
+            (service fstrim-service-type
+                     (fstrim-configuration (schedule "0 * * * *")))
             (extra-special-file %pinned-guix-root (pinned-guix))
             (simple-service 'roguix-config activation-service-type
                             roguix-config-activation)

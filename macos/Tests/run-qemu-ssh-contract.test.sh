@@ -517,7 +517,8 @@ assert_line_pair "$test_root/disabled/qemu.log" -smbios 'type=11,value=omarchy.q
 assert_contains "$disabled_qemu" 'type=11,value=tryomarchy.keyboard_layout='
 # UEFI has no virtio keyboard driver; GRUB's menu reads the USB keyboard.
 assert_line_pair "$test_root/disabled/qemu.log" -device 'usb-kbd,bus=roguix-usb.0'
-assert_contains "$disabled_qemu" "file=$persistent_root/disk.raw"
+assert_line_pair "$test_root/disabled/qemu.log" -drive \
+  "if=none,id=omarchy-root,file=$persistent_root/disk.raw,format=raw,media=disk,cache=writeback,discard=unmap"
 assert_not_contains "$disabled_qemu" hostfwd
 assert_not_contains "$disabled_qemu" tryomarchy.ssh_access
 assert_keyboard_lockstep "$test_root/disabled/qemu.log" iso

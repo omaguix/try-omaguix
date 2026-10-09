@@ -910,7 +910,9 @@ qemu_args=(
   -monitor none
   -qmp "unix:$qmp_socket,server=on,wait=off"
   "${boot_args[@]}"
-  -drive "if=none,id=omarchy-root,file=$working_disk,format=raw,media=disk,cache=writeback"
+  # The guest's fstrim punches holes in disk.raw, so deleted files give their
+  # space back to the Mac.
+  -drive "if=none,id=omarchy-root,file=$working_disk,format=raw,media=disk,cache=writeback,discard=unmap"
   -device 'virtio-blk-pci,drive=omarchy-root,serial=omarchy-root'
   -device "$gpu_device"
   # Cocoa forwards its live backing-pixel dimensions and the current host

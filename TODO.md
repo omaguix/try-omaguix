@@ -2,18 +2,6 @@
 
 ## Next, in order
 
-### Pass the VM's TRIM through to the Mac
-
-Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
-and no `discard=` (QEMU's default `ignore`), and the guest runs no `fstrim`,
-so files deleted in the guest never give space back: `disk.raw` only grows.
-Add `discard=unmap` to the `-drive` in `macos/run-qemu-gpu.sh` and a weekly
-`fstrim /` service in the guest (`modules/roguix/services.scm`). The builder
-shows that QEMU 11.1 on macOS punches holes through to the APFS file (its
-trim took the qcow2 from 59 to 25 GiB allocated), but verify it with the
-app's own runtime first: on a disposable clone, write and delete a large
-file in the guest, trim, and check the host's allocated size.
-
 ### A click in the guest menu sometimes does nothing the first time
 
 Decided 2026-10-09: override `Menu.qml` in the Roguix build (as `MenuModel.js` already is) so rows are rebuilt only when the guard result changed, rebuild the guest, and open a PR to Omarchy (approved 2026-10-09: "make the PR remotely"; the coordinator reviews it before it is opened).

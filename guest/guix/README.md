@@ -292,6 +292,18 @@ arguments:
   (`partx --update`) and runs `resize2fs` online. `resize2fs` runs on every
   boot, so a growth interrupted after `sfdisk` completes on the next boot.
 
+- Guix's `fstrim-service-type` trims the file systems in `/etc/fstab`
+  hourly (`modules/roguix/system.scm`). The launcher attaches the disk with
+  `discard=unmap`, so the trim punches holes in `disk.raw` and files deleted
+  in the guest give their space back to the Mac. Hourly, not Guix's weekly
+  default, because Shepherd's timer does not run a missed event later, and a
+  VM is often closed. Verified 2026-10-09 with the app's runtime on a sparse
+  raw file: writing 3 GiB took it from 70 to 3144 MiB allocated, `rm` left
+  that, and `fstrim` brought it back to 72 MiB. Through the app the same
+  day, the timer was scheduled hourly, and `herd trigger fstrim` took
+  `disk.raw` from 14146 MiB (after writing and deleting a 2 GiB file) back to
+  12098 MiB.
+
 On the first boot, `fsck.fat` repairs `.`/`..` entries in the ESP that
 genimage writes; later boots find nothing to fix.
 
