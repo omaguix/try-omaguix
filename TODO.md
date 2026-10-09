@@ -95,16 +95,6 @@ and is deleted when the worker finishes.
 
 ## Needs a decision
 
-### Delete the factory image to free its own blocks?
-
-Delete the app data's factory image now (frees about 1.4 GiB at once, and
-lets the TRIM item above give back the VM disk's free space it shares)?
-Options: delete it now | keep it until the TRIM item has shipped | keep it
-Costs: a factory reset or a new VM extracts it again (now sparse, about
-11.4 GiB allocated) and refuses to start without the full 20 GiB plus
-headroom free; an existing VM launches from its own disk without it.
-Checked 2026-10-09 (see "Background: data stored twice" below).
-
 ### Background: data stored twice
 
 Investigated 2026-10-09, read-only (consult round with sol and MiMo).
@@ -132,6 +122,8 @@ a real copy:
 - The real duplicate was a worker's throwaway state root (see "Make test VM
   state roots small and remove them" under Proposed): about 19.7 GiB until
   that worker deletes it.
+
+Decided and done 2026-10-09: the factory image was deleted (no process had it open); a reset or new VM re-extracts it.
 
 ### Background: large VM files
 
