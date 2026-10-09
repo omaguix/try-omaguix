@@ -2,6 +2,17 @@
 
 ## Next, in order
 
+### Compact the builder VM disk
+
+Requested 2026-10-09 (disk space: 15 GB free): `.build/guix-validation/builder.qcow2`
+is 81 GB with 59 GB allocated. Reclaim space without losing the builder: run
+`guix gc` and `fstrim` in the builder (through `guest/guix/vm-run`), shut it
+down cleanly, then compact the image (e.g. `qemu-img convert -O qcow2` to a
+new file, verify it boots and `vm-run` works, then replace the old one).
+Requested 2026-10-09 to be done now ("do the compaction now"). Check free space before the copy; report the space won. The builder needs a
+console login after a reboot (guest/guix/README.md): if it is not reachable,
+stop and ask the maintainer.
+
 ### Handing Command-Tab back with Control-Option depends on timing
 
 Approved 2026-10-08.
@@ -36,17 +47,6 @@ Approved 2026-10-08.
 Found 2026-10-08 by the initial-window worker: on a fresh disk the guest
 stays at 2560x1440 at the login screen instead of following the window size
 (before and after the initial-window fix). Unverified beyond that run.
-
-### Compact the builder VM disk
-
-Requested 2026-10-09 (disk space: 15 GB free): `.build/guix-validation/builder.qcow2`
-is 81 GB with 59 GB allocated. Reclaim space without losing the builder: run
-`guix gc` and `fstrim` in the builder (through `guest/guix/vm-run`), shut it
-down cleanly, then compact the image (e.g. `qemu-img convert -O qcow2` to a
-new file, verify it boots and `vm-run` works, then replace the old one).
-Check free space before the copy; report the space won. The builder needs a
-console login after a reboot (guest/guix/README.md): if it is not reachable,
-stop and ask the maintainer.
 
 ## Proposed
 
