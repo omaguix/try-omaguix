@@ -108,10 +108,21 @@ herdr-job run --name "Build image" -- guest/guix/vm-run 'guix time-machine ... -
 herdr-job wait <id>
 ```
 
-The default output `build/guix/image.raw` is a Guix GC-root symlink to a 20 GiB
-raw EFI disk image, not an unpartitioned ext4 filesystem. An existing output,
-including a dangling symlink, is refused rather than replaced. Choose another
-`--output` for another build. The builder never opens existing VM workspaces.
+The default output `build/guix/image.raw` is a Guix GC-root symlink to a raw EFI
+disk image (a 40 MiB ESP and a 16 GiB root partition), not an unpartitioned
+ext4 filesystem. The system fills about 11.7 GiB of the root; the rest is
+headroom for the closure to grow, since `roguix-grow-root` (below) grows the
+root to the VM disk early in the first boot, before the desktop or the setup
+write anything large. Measured 2026-10-09 on a fresh 16 GiB image in the app:
+`roguix-grow-root` started with `file-systems`, before `guix-daemon` and the
+first-boot setup, and grew the root to the 24 GiB VM disk; after the setup
+`df` showed 11.3 GiB used, and the first update (`roguix-pkg add hello`,
+23 minutes) added 4.9 GiB, which an ungrown 16 GiB root could not hold. A
+16 GiB build took the builder from 13 to 48 GB used before the export.
+
+An existing output, including a dangling symlink, is
+refused rather than replaced. Choose another `--output` for another build. The
+builder never opens existing VM workspaces.
 
 A build grows the builder's disk by about 40 GiB, and nothing gives it back
 while the image's GC root exists. Export the image to macOS with the same
@@ -125,7 +136,7 @@ herdr-job run --name "Export image" -- guest/guix/vm-run \
 
 A failed copy or comparison stops before the root is removed. An existing
 export path is refused. Other GC roots stay, including older image roots under
-`/root`, each pinning a 20 GiB image and its `partition.img`: check
+`/root`, each pinning an image and its `partition.img`: check
 `guix gc --list-roots` and remove the ones already exported.
 
 The image carries no password. It declares one desktop account, `guest`

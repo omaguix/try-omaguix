@@ -524,7 +524,7 @@ first: `mkdir -p build && cp -c -R <main checkout>/build/guix build/guix`
 
 A throwaway VM state root for a check is created by the app itself or with
 `cp -c` (an APFS clone) from an existing image, never with a plain copy,
-which writes the image's zeros as data (about 20 GiB). Check that the clone
+which writes the image's zeros as data (the whole disk). Check that the clone
 succeeded, and delete the state root when the check ends, also after a
 failed run.
 

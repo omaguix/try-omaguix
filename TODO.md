@@ -2,18 +2,6 @@
 
 ## Next, in order
 
-### Build the image with a smaller --image-size
-
-Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
-
-Proposed 2026-10-09. `build.py` passes `--image-size=20G`; the system uses
-about 11.5 GiB of it, and the rest is zeros that the builder writes into
-the store copy (allocated in the builder's ext4), the image file and the
-factory image. The guest grows its root to the VM disk at boot
-(`roguix-grow-root`), so the image needs only the closure plus headroom for
-the first boot and setup. Measure the closure, pick a size (or Guix's
-estimate), and check first boot and the first reconfigure on a fresh VM.
-
 ### Super+Space sometimes needs a second press to open the menu
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").

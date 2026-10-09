@@ -64,10 +64,14 @@ def build(args):
     output = args.output.absolute()
     if not args.check and os.path.lexists(output):
         raise ValueError(f"Output already exists; choose a new --output: {output}")
+    # The root partition's size. The system fills about 11.7 GiB of it, and
+    # roguix-grow-root grows it to the VM disk early in the first boot, so it
+    # needs headroom only for the closure to grow; the rest would be zeros
+    # the builder writes into the store copy and the image file.
     command = [
         "guix", "time-machine", "--channels=CHANNELS", "--", "system", "image",
         f"--load-path={HERE / 'modules'}",
-        "--system=aarch64-linux", "--image-type=efi-raw", "--image-size=20G",
+        "--system=aarch64-linux", "--image-type=efi-raw", "--image-size=16G",
         f"--root={output}", str(HERE / "system.scm"),
     ]
     if args.check:
