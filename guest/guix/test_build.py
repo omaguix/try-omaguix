@@ -159,6 +159,70 @@ class BuildTests(unittest.TestCase):
         self.assertIn("PATH", env)
 
 
+class ExportTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.image = self.root / "image.raw"
+        self.image.symlink_to("/gnu/store/0000-disk-image")
+        self.args = argparse.Namespace(output=self.image, export=self.root / "export/image.raw", dry_run=False)
+
+    def test_root_goes_only_after_the_copy_compares_equal_then_space_is_reclaimed(self):
+        calls = []
+        with patch.object(builder.platform, "system", return_value="Linux"), \
+             patch.object(builder.subprocess, "run", side_effect=lambda c, **kw: calls.append((c, kw))), \
+             contextlib.redirect_stdout(io.StringIO()):
+            builder.export(self.args)
+        commands = [command for command, _ in calls]
+        self.assertTrue(all(kw["check"] for _, kw in calls))
+        self.assertEqual([command[0] for command in commands], ["cp", "cmp", "rm", "guix", "fstrim"])
+        self.assertIn("--dereference", commands[0])
+        self.assertEqual(commands[1], ["cmp", str(self.image), str(self.args.export)])
+        self.assertEqual(commands[2], ["rm", str(self.image)])
+        # Plain gc: other roots (time-machine profiles, ungrafted system) stay.
+        self.assertEqual(commands[3], ["guix", "gc"])
+        self.assertEqual(commands[4], ["fstrim", "-av"])
+
+    def test_failed_verification_keeps_the_root(self):
+        calls = []
+
+        def run(command, **kwargs):
+            calls.append(command)
+            if command[0] == "cmp":
+                raise subprocess.CalledProcessError(1, command)
+
+        with patch.object(builder.platform, "system", return_value="Linux"), \
+             patch.object(builder.subprocess, "run", side_effect=run):
+            with self.assertRaises(subprocess.CalledProcessError):
+                builder.export(self.args)
+        self.assertEqual([command[0] for command in calls], ["cp", "cmp"])
+
+    def test_refuses_non_roots_and_existing_exports_before_running_anything(self):
+        plain = self.root / "plain.raw"
+        plain.write_text("not a root")
+        existing = self.root / "existing.raw"
+        existing.write_text("keep")
+        cases = [(plain, self.args.export), (self.root / "missing.raw", self.args.export), (self.image, existing)]
+        for output, destination in cases:
+            with self.subTest(output=output, destination=destination), \
+                 patch.object(builder.subprocess, "run") as run:
+                self.args.output, self.args.export = output, destination
+                with self.assertRaises(ValueError):
+                    builder.export(self.args)
+                run.assert_not_called()
+        self.assertEqual(existing.read_text(), "keep")
+
+    def test_dry_run_prints_the_plan_only(self):
+        self.args.dry_run = True
+        output = io.StringIO()
+        with patch.object(builder.subprocess, "run") as run, contextlib.redirect_stdout(output):
+            builder.export(self.args)
+        run.assert_not_called()
+        self.assertIn("fstrim -av", output.getvalue())
+        self.assertTrue(self.image.is_symlink())
+
+
 class ProjectModuleTests(unittest.TestCase):
     """The self-contained module directory is also installed into the guest."""
 

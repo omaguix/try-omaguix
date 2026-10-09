@@ -98,7 +98,8 @@ shrinks the qcow2's allocated size in place; a `qemu-img convert` would only
 shorten the sparse file length, which costs no disk space (2026-10-09: gc took
 the store from 50 to 34 GB and the trim the host file from 59 to 25 GiB).
 Plain `guix gc` keeps every GC root, including the `time-machine` profiles
-and `/root/roguix-system-ungrafted`.
+and `/root/roguix-system-ungrafted`. `build.py --export` (below) does this
+after each image.
 Run long builds under `herdr-job`, so they get their own tab and a real
 result:
 
@@ -108,10 +109,24 @@ herdr-job wait <id>
 ```
 
 The default output `build/guix/image.raw` is a Guix GC-root symlink to a 20 GiB
-raw EFI disk image, not an unpartitioned ext4 filesystem. Copy the image, not
-just the symlink, when transferring it to macOS. An existing output, including
-a dangling symlink, is refused rather than replaced. Choose another `--output`
-for another build. The builder never opens existing VM workspaces.
+raw EFI disk image, not an unpartitioned ext4 filesystem. An existing output,
+including a dangling symlink, is refused rather than replaced. Choose another
+`--output` for another build. The builder never opens existing VM workspaces.
+
+A build grows the builder's disk by about 40 GiB, and nothing gives it back
+while the image's GC root exists. Export the image to macOS with the same
+script, which copies the image (not the symlink), compares the copy with
+`cmp`, and only then removes the GC root, runs `guix gc` and `fstrim -av`:
+
+```sh
+herdr-job run --name "Export image" -- guest/guix/vm-run \
+  'cd /mnt/project && python3 guest/guix/build.py --output /root/NAME.raw --export /mnt/export/NAME.raw'
+```
+
+A failed copy or comparison stops before the root is removed. An existing
+export path is refused. Other GC roots stay, including older image roots under
+`/root`, each pinning a 20 GiB image and its `partition.img`: check
+`guix gc --list-roots` and remove the ones already exported.
 
 The image carries no password. It declares one desktop account, `guest`
 (UID 1000, the shared-folder owner), with the locked password `!`, and a

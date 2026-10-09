@@ -110,6 +110,37 @@ def build(args):
         print(f"Guix image GC root: {output}")
 
 
+def export(args):
+    """Copy the built image out of the builder, then give its space back.
+
+    The GC root is removed only after the copy compares equal to the image,
+    and plain `guix gc` keeps every other root (the time-machine profiles,
+    the ungrafted system, other images).
+    """
+    root = args.output.absolute()
+    destination = args.export.absolute()
+    if not root.is_symlink() or not os.readlink(root).startswith("/gnu/store/"):
+        raise ValueError(f"Not a Guix image GC root: {root}")
+    if os.path.lexists(destination):
+        raise ValueError(f"Export already exists; choose a new path: {destination}")
+    commands = [
+        ["cp", "--dereference", "--sparse=always", str(root), str(destination)],
+        ["cmp", str(root), str(destination)],
+        ["rm", str(root)],
+        ["guix", "gc"],
+        ["fstrim", "-av"],
+    ]
+    if args.dry_run:
+        for command in commands:
+            print(shlex.join(command))
+        return
+    if platform.system() != "Linux":
+        raise ValueError("Export on the Linux builder that holds the image")
+    for command in commands:
+        subprocess.run(command, check=True)
+    print(f"Exported {destination}; removed the GC root and gave its space back")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path,
@@ -120,9 +151,15 @@ def main():
                         help="print the plan without running Guix")
     parser.add_argument("--check", action="store_true",
                         help="run pinned Guix to evaluate the image without building it")
+    parser.add_argument("--export", type=Path, metavar="PATH",
+                        help="copy the built --output image to PATH, verify it, then "
+                             "remove its GC root, collect garbage and trim the disk")
     args = parser.parse_args()
     try:
-        build(args)
+        if args.export:
+            export(args)
+        else:
+            build(args)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"guix-image: {error}\n")
 

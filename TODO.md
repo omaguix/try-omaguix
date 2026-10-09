@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### Clean the builder right after each export
-
-Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. An image build grows the builder's qcow2 by about
-40 GiB and nothing gives it back until someone runs `guix gc` and
-`fstrim`. Document (or script around `vm-run`) one step after a verified
-export: remove the `/root/<name>.raw` GC root, `guix gc` (check
-`guix gc --list-roots` for older image roots and the ungrafted system),
-then `fstrim -av`. Old image roots under `/root` each pin a 20 GiB image in
-the store plus its `partition.img`.
-
 ### Pass the VM's TRIM through to the Mac
 
 Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
