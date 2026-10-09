@@ -81,6 +81,16 @@ class OmarchyPackageTests(unittest.TestCase):
         self.assertNotIn('"pacman" "bin/"', source)
         self.assertNotIn('"yay"', source)
 
+    def test_menu_rebuilds_rows_only_when_guards_change(self):
+        # Menu.qml's guardProc.onExited from Omarchy c668141e: the build
+        # replaces exactly these two lines and fails if the result is missing.
+        source = (HERE / "modules/roguix/omarchy.scm").read_text()
+        self.assertEqual(source.count(r'(("root\\.whenResults = nextWhen")'), 1)
+        self.assertEqual(source.count(
+            r'(("^      if \\(root\\.opened\\) root\\.rebuildDisplay\\(\\)")'), 1)
+        self.assertEqual(source.count(
+            '"grep" "-q" "root.opened && guardsChanged" qml'), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

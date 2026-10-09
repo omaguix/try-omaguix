@@ -130,6 +130,23 @@
                 (substitute* (string-append omarchy "/shell/plugins/menu/MenuModel.js")
                   (("pacman -Qq; LC_ALL=C pacman -Qi") "roguix-pkg list; true")
                   (("pacman -Q \"[$]1\"") "roguix-pkg present \"$1\""))
+                ;; When the guard script ends, Menu.qml's guardProc.onExited
+                ;; recreates every row even if no `when:'/`checked:' result
+                ;; changed, and a click pressed on a row just before is lost
+                ;; with it. Rebuild only on a change. Derived from Omarchy
+                ;; c668141e (unchanged on master 988f44ea); remove once
+                ;; Omarchy takes the fix.
+                (let ((qml (string-append omarchy "/shell/plugins/menu/Menu.qml")))
+                  (substitute* qml
+                    (("root\\.whenResults = nextWhen")
+                     (string-append
+                      "var guardsChanged = JSON.stringify(nextWhen) !== JSON.stringify(root.whenResults)\n"
+                      "          || JSON.stringify(nextChecked) !== JSON.stringify(root.checkedResults)\n"
+                      "      root.whenResults = nextWhen"))
+                    (("^      if \\(root\\.opened\\) root\\.rebuildDisplay\\(\\)")
+                     "      if (root.opened && guardsChanged) root.rebuildDisplay()"))
+                  ;; substitute* does not fail when nothing matches.
+                  (invoke "grep" "-q" "root.opened && guardsChanged" qml))
                 ;; Guix's Qt 6.9 QML parser rejects `transient', a reserved
                 ;; word in its grammar, as a variable name, and Quickshell then
                 ;; skips the whole notification service.

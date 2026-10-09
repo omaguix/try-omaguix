@@ -383,6 +383,13 @@ went straight to the desktop.
   host bridges and PipeWire start with the session.
 - **Lock screen:** the shell authenticates with the PAM service
   `omarchy-lock-password`, defined with `pam_unix`.
+- **Menu clicks:** Omarchy's `Menu.qml` recreates every row when its guard
+  batch (`when:`/`checked:`) ends, and a press on a row just before is lost.
+  The build substitutes it to rebuild only when a result changed, until
+  Omarchy takes the fix. Verified 2026-10-09 through the app, with a test row
+  whose guard takes 3 s, pressed 0.2 s after the menu mapped and released 4 s
+  later: 2 of 10 clicks ran its action without the substitution, 10 of 10
+  with it; quick clicks worked 30 of 30 in both.
 
 Menus that manage systemd timers (reminders) do nothing here. `gum` and `libvips` are not in this Guix, so gum
 dialogs and background-picker thumbnails are missing.

@@ -60,9 +60,10 @@ Omarchy is the `omarchy` package in `guest/guix/modules/roguix/omarchy.scm`,
 pinned to an upstream commit and its `guix hash -rx` digest. To update it,
 change both, then review the upstream diff against what Roguix rewrites at
 build time: the menu (`omarchy-menu.py`, which drops Arch-only entries), the
-package helpers replaced with `roguix-pkg`, and the two `MenuModel.js`
-substitutions (`test_omarchy_menu.py` pins that each still matches exactly
-once). Omarchy's own names (`omarchy-*`, `OMARCHY_PATH`) are never renamed, so
+package helpers replaced with `roguix-pkg`, the two `MenuModel.js`
+substitutions and the `Menu.qml` one that rebuilds rows only when a guard
+result changed (`test_omarchy_menu.py` pins that each still matches exactly
+once; drop the `Menu.qml` one when Omarchy carries the fix). Omarchy's own names (`omarchy-*`, `OMARCHY_PATH`) are never renamed, so
 an update stays a commit and hash change. Run `make test`, build the image
 (`guest/guix/README.md`), package it with `make guix-package`, and check the
 desktop in the app.
