@@ -56,6 +56,16 @@ and review what upstream changed that Roguix should follow.
 
 ## Proposed
 
+### Register checks for herdr todo run [t-s4g9hycj]
+
+Proposed 2026-10-10 by the herdr coordinator: `herdr todo run` (verify,
+cherry-pick, install, push) needs this repository's checks and install
+registered in `.herdr/checks.toml`: `make test` as the check, `make install`
+as the install step (only with the maintainer's go, since it replaces the
+installed app), and what a guest build needs. Until then the coordinator
+runs headless workers with `herdr worker start`, `wait`, `verify` and
+cherry-picks by hand.
+
 ### Test gliff-server in the guest before packaging it [t-wqwfbjrg]
 
 Postponed 2026-10-10 by the maintainer ("put gliff off for later, many things are more important").
