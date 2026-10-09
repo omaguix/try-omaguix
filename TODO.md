@@ -16,7 +16,7 @@ file in the guest, trim, and check the host's allocated size.
 
 ### A click in the guest menu sometimes does nothing the first time
 
-Decided 2026-10-09: override `Menu.qml` in the Roguix build (as `MenuModel.js` already is) so rows are rebuilt only when the guard result changed, rebuild the guest, and prepare a PR to Omarchy for the maintainer to review before it is sent.
+Decided 2026-10-09: override `Menu.qml` in the Roguix build (as `MenuModel.js` already is) so rows are rebuilt only when the guard result changed, rebuild the guest, and open a PR to Omarchy (approved 2026-10-09: "make the PR remotely"; the coordinator reviews it before it is opened).
 
 Approved 2026-10-08; diagnosed 2026-10-09, fix blocked on a guest build.
 
