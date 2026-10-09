@@ -2,7 +2,7 @@
 
 ## Next, in order
 
-### Super+Space sometimes needs a second press to open the menu [t-lo1fz285]
+### Super+Space sometimes needs a second press to open the menu [t-w2soppgg]
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
 
@@ -45,7 +45,7 @@ count the menu's open/close transitions per press (no lost and no double
 toggles) and measure press-to-map latency.
 Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
 
-### Rebase onto upstream Try Omarchy [t-3ixr0cbu]
+### Rebase onto upstream Try Omarchy [t-qxwxwcet]
 
 Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
 Omarchy"). After the items above: rebase `main` onto `upstream/main` and
@@ -56,7 +56,7 @@ and review what upstream changed that Roguix should follow.
 
 ## Proposed
 
-### Register checks for herdr todo run [t-s4g9hycj]
+### Register checks for herdr todo run [t-atkjktc5]
 
 Proposed 2026-10-10 by the herdr coordinator: `herdr todo run` (verify,
 cherry-pick, install, push) needs this repository's checks and install
@@ -66,7 +66,7 @@ installed app), and what a guest build needs. Until then the coordinator
 runs headless workers with `herdr worker start`, `wait`, `verify` and
 cherry-picks by hand.
 
-### Test gliff-server in the guest before packaging it [t-wqwfbjrg]
+### Test gliff-server in the guest before packaging it [t-sakzbqb5]
 
 Postponed 2026-10-10 by the maintainer ("put gliff off for later, many things are more important").
 
@@ -130,14 +130,14 @@ To resume: add `dbus` to the `guix shell` list, find why SSH stopped
 answering (memory pressure from 8 parallel rustc jobs is one suspect, not
 verified), then run the probes above in this order.
 
-### Compare wayvnc as the remote view [t-camfwxg2]
+### Compare wayvnc as the remote view [t-4vzb5lvt]
 
 Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine").
 wayvnc 0.10.1 is already in Guix at the pinned commit (`gnu/packages/vnc.scm`)
 and needs no Vulkan or VA-API. Run it in the guest for one boot against the
 same checks as the gliff test, so a choice is made between measured options.
 
-### List gliff as not provided at the next Omarchy bump [t-hg8buae2]
+### List gliff as not provided at the next Omarchy bump [t-76ot56gb]
 
 Proposed 2026-10-10 (see "Background: gliff"). Omarchy 9d48fc402e
 (2026-10-09) installs gliff by default (`omarchy-base.packages` and a
@@ -148,7 +148,7 @@ upstream package is x86_64 only), check that the indicator stays dark and
 quiet with no `gliff-server` installed, and leave the migration to the seed,
 which marks shipped migrations done. Docs only, with the bump.
 
-### Offer Try Omarchy the zero-block punch [t-vkodiy1t]
+### Offer Try Omarchy the zero-block punch [t-5wxjylaq]
 
 Proposed 2026-10-09 (see "Background: large VM files"): Try Omarchy's
 fresh working disk allocates about 1.1 GiB of zeros. Offer a small change
@@ -156,7 +156,7 @@ that punches whole zero blocks in its helper's SHA-256 pass after
 decoding, framed modestly (initial footprint, contents unchanged), with a
 measurement on its current main. Contacting upstream needs approval.
 
-### omarchy-shell kills non-idempotent calls on a timeout [t-xjjhg2iv]
+### omarchy-shell kills non-idempotent calls on a timeout [t-3b46spbn]
 
 Proposed 2026-10-09 by the Super+Space worker, raised by sol and MiMo:
 `omarchy-shell` runs `qs ipc` under `timeout --kill-after=1s 2s` and reports
@@ -167,7 +167,7 @@ cannot tell which. Other bindings and scripts still go through it after the
 retry; callers that need a state should ask for it (open or close, not
 toggle). Check which default callers toggle, and offer it upstream.
 
-### The shutdown screen shows Hyprland's startup log [t-ewphtbpp]
+### The shutdown screen shows Hyprland's startup log [t-5nrn7cv4]
 
 Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
 the bold console font: at shutdown tty1 still shows the Roguix logo and
@@ -175,7 +175,7 @@ Hyprland's startup log, which `start-hyprland` printed there, and the
 shutdown lines are written over its last line. Clearing tty1 when Hyprland
 exits (or not printing the log there) would leave only the shutdown text.
 
-### Give the builder a disposable scratch disk for builds [t-uypgdy3v]
+### Give the builder a disposable scratch disk for builds [t-4brvu3it]
 
 Proposed 2026-10-09; weigh it after the cleanup step above. The image
 derivations copy the closure into a temporary root, an ext4
@@ -184,7 +184,7 @@ Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
 build would free those at once instead of waiting for gc and trim. It adds
 no capacity (same APFS volume) and changes how the builder is started.
 
-### Let the export drop every old image root [t-cwebnruu]
+### Let the export drop every old image root [t-edvvmbii]
 
 Proposed 2026-10-09 by the builder cleanup worker: `build.py --export`
 removes only the exported image's GC root, so an older `/root/*.raw` root
@@ -192,7 +192,7 @@ kept a previous image pinned (the builder stayed at 39 GiB until it was
 removed by hand). The export could also remove the other `/root/*.raw`
 roots that point to a `-disk-image` store item.
 
-### Recheck Venus on macOS at the next virglrenderer release [t-yx3pgxsd]
+### Recheck Venus on macOS at the next virglrenderer release [t-zb7efvcb]
 
 Approved 2026-10-10; waits for the next virglrenderer release.
 
@@ -203,7 +203,7 @@ on KosmicKrisp (!1685), whether Guix's Mesa has reached 26.2.4 or later,
 and whether UTM still keeps the Linux desktop on VirGL; then update the
 background and ask again. No runtime change.
 
-### A time-boxed Venus experiment on a throwaway runtime [t-lne7xudd]
+### A time-boxed Venus experiment on a throwaway runtime [t-gh4i2jvb]
 
 Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if
 Vulkan apps become a goal. A development runtime with virglrenderer main
@@ -216,7 +216,7 @@ on an M1 or M2 (36-bit guest addresses), and a guest-triggered device loss
 leaves the Mac and the VirGL desktop working. Record numbers against
 VirGL; ship nothing from it.
 
-### Hardware H.264 encoding through VA-API and VideoToolbox [t-qx8oez52]
+### Hardware H.264 encoding through VA-API and VideoToolbox [t-3fkebvn4]
 
 Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if CPU
 encoding (OpenH264, gliff) is measured too slow in the guest. The route
