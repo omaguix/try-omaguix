@@ -2,6 +2,17 @@
 
 ## Next, in order
 
+### Is anything in the app's data folder stored twice elsewhere?
+
+Requested 2026-10-09: "do we have in two places something that is in the
+app's data folder and somewhere else? Ask the models, because disk space is
+running out." Find, read-only, whether the factory image, VM disks, packaged
+guest (`build/guix`, `disk.raw.zst`), installed and development app bundles,
+worktree builds, builder exports or caches hold the same data twice (copies,
+not APFS clones), say which copies can go and what each costs, consult the
+default models, and record the answer here without paths private to the
+maintainer's machine. Delete nothing.
+
 ### Pass the VM's TRIM through to the Mac
 
 Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`
