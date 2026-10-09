@@ -2,18 +2,6 @@
 
 ## Next, in order
 
-### A click in the guest menu sometimes does nothing the first time
-
-Approved 2026-10-08.
-
-Reported by the maintainer 2026-10-08: opening the menu in the VM and
-clicking Shutdown did not work right away, as if the click was not passed
-on at once; they had to click Shutdown a second time. It may be the same
-slowdown suspected behind the Control-Option hand-back (a full-grab tap
-callback that waits on QEMU's lock long enough for macOS to disable the
-tap), but the tap does not handle mouse events, so it is more likely on the
-guest side or in the pointer path. Cause unknown; reproduce first.
-
 ### Clean the builder right after each export
 
 Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. An image build grows the builder's qcow2 by about
@@ -81,6 +69,41 @@ no capacity (same APFS volume) and changes how the builder is started.
 
 ## Needs a decision
 
+### A click in the guest menu sometimes does nothing the first time
+
+Approved 2026-10-08; diagnosed 2026-10-09, fix blocked on a guest build.
+
+Fix it in a Roguix substitution of Omarchy's `Menu.qml` (skip the row
+rebuild when the guard results are unchanged), offer it to Omarchy
+upstream, or both?
+Options: Roguix substitution and an upstream PR | upstream PR only, wait
+for the next Omarchy pin | leave it
+
+Reported by the maintainer 2026-10-08: opening the menu in the VM and
+clicking Shutdown did not work right away; a second click did.
+
+What was checked:
+
+- The pointer path loses no clicks. With `libinput debug-events` in the
+  guest during repeated menu clicks, including ones that did nothing, every
+  `BTN_LEFT pressed` had its `released`. A Cocoa grab gap (QEMU forwards
+  pointer events only while `isMouseGrabbed`, which only `mouseEntered`
+  sets) was suspected and patched, but a click right after Command-Tab back
+  into the window worked without the patch, so the patch was dropped.
+- The menu loses them. Omarchy's `shell/plugins/menu/Menu.qml` (pin
+  c668141) starts `bash -lc <guard script>` (`evaluateGuards`) on every
+  `openExistingMenu`; when it exits, `guardProc.onExited` calls
+  `rebuildDisplay()`, which clears `displayModel` and recreates every row
+  even when the `when:`/`checked:` results did not change. Row providers
+  (`mergeProviderRows`) rebuild the same way. A press that lands on a row
+  just before the rebuild loses its `MouseArea`, so `onClicked` never fires.
+- It depends on guest speed: it happened while the Mac was busy, and after
+  closing many browser tabs on the Mac it no longer reproduced (`bash -lc
+  true` took 0.28 s in the guest).
+- Candidate fix: in `guardProc.onExited` (and the provider merge), call
+  `rebuildDisplay()` only when the results differ from the current ones.
+  A changed result can still rebuild under a press; keeping delegates
+  across rebuilds (updating the model in place) would close that too.
 
 ### Background: large VM files
 
