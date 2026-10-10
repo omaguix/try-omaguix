@@ -2,16 +2,6 @@
 
 ## Next, in order
 
-### Which items run in pane workers and which headless [t-nse2weys]
-
-Decided 2026-10-10 by the herdr coordinator with the models, at the
-maintainer's request: until herdr has repository-declared host operations,
-items that need the ad-hoc signed QEMU or app, PTYs, local sockets or `ps`
-(VM runs, `make app`, `make test`, the builder) run in pane (TUI) workers;
-everything else (docs, TODO-only, text changes) in headless workers; the
-headless sandbox is never widened by hand. Add this to AGENTS.md
-("Delegated Work and Added Delays"). Docs only.
-
 ### Close Omarchy's low-battery warning once the battery recovers [t-i2lmhkes]
 
 Found 2026-10-10 by the perl/battery worker, the likely cause of the
