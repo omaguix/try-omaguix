@@ -116,6 +116,16 @@ Arch-only documents); a one-line pointer comment at each divergent code
 site; and a step in AGENTS.md's rebase notes to review the table on every
 rebase (update, or delete rows where upstream converged). Docs only.
 
+### Which items run in pane workers and which headless [t-nse2weys]
+
+Decided 2026-10-10 by the herdr coordinator with the models, at the
+maintainer's request: until herdr has repository-declared host operations,
+items that need the ad-hoc signed QEMU or app, PTYs, local sockets or `ps`
+(VM runs, `make app`, `make test`, the builder) run in pane (TUI) workers;
+everything else (docs, TODO-only, text changes) in headless workers; the
+headless sandbox is never widened by hand. Add this to AGENTS.md
+("Delegated Work and Added Delays"). Docs only.
+
 ## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
