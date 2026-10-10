@@ -2,20 +2,23 @@
 
 ## Next, in order
 
-### Remote commands end when the remote work ends [t-gwjmq54j]
+### Install development builds as Try Roguix Dev [t-maseondx]
 
-Requested 2026-10-10 (the maintainer passed on the herdr coordinator's
-answer to a worker stuck mid-turn on a silent ssh call): herdr adds no
-silence timer, and a "no output for N" threshold or a Bash timeout used as
-a trigger are rejected workarounds. Add to AGENTS.md ("Delegated Work and
-Added Delays" or the VM testing notes): a command a worker runs into the
-guest or another remote must be ended by the remote work's completion, by a
-wrapper that captures the exit status, prints a completion line and exits,
-e.g. `ssh guest 'test; rc=$?; echo DONE:$rc; exit $rc'`. A process meant to
-keep running remotely gets its own stdin, stdout and stderr, e.g.
-`setsid cmd </dev/null >/tmp/x.log 2>&1 &`, so it does not hold the ssh
-session's stderr; `ssh -n` alone fixes only stdin. The coordinator puts the
-same rule in its worker task texts from now on.
+Should development builds install as `~/Applications/Try Roguix Dev.app`?
+Options: rename to Try Roguix Dev.app | keep ~/Applications/Try Roguix.app
+Checked 2026-10-10 after the rebase onto Try Omarchy 0.5: upstream gave
+development builds their own bundle id and the name "Try Omarchy Dev". The
+rebased dev build has the id `dev.tryroguix.native.development` but `make
+install` still copies it to `~/Applications/Try Roguix.app` (`INSTALLED_APP`
+in the Makefile; docs pin that path), while public releases (0.5.0, 0.5.1)
+ship the same name in the DMG. The worker recommended keeping the path; sol
+and MiMo both recommend renaming, so a dev build cannot be mistaken for or
+replace a release install, at the cost of updating the pinned path in the
+Makefile, docs and scripts. A changed bundle id may also ask again for the
+Accessibility grant.
+Decided by the user 2026-10-10: rename to Try Roguix Dev.app (update
+`INSTALLED_APP` and the docs and scripts that pin the path; releases keep
+Try Roguix.app).
 
 ## Proposed
 
@@ -232,21 +235,6 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
-
-### Development copy named Try Roguix Dev? [t-maseondx]
-
-Should development builds install as `~/Applications/Try Roguix Dev.app`?
-Options: rename to Try Roguix Dev.app | keep ~/Applications/Try Roguix.app
-Checked 2026-10-10 after the rebase onto Try Omarchy 0.5: upstream gave
-development builds their own bundle id and the name "Try Omarchy Dev". The
-rebased dev build has the id `dev.tryroguix.native.development` but `make
-install` still copies it to `~/Applications/Try Roguix.app` (`INSTALLED_APP`
-in the Makefile; docs pin that path), while public releases (0.5.0, 0.5.1)
-ship the same name in the DMG. The worker recommended keeping the path; sol
-and MiMo both recommend renaming, so a dev build cannot be mistaken for or
-replace a release install, at the cost of updating the pinned path in the
-Makefile, docs and scripts. A changed bundle id may also ask again for the
-Accessibility grant.
 
 ### Background: rebase onto Try Omarchy 0.5 (2026-10-10)
 
