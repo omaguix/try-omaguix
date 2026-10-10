@@ -93,6 +93,17 @@ only `Try Roguix.app`; make it match development builds too
 (`Try Roguix( Dev)?\.app`), say plainly that no such tool is needed, and
 that without the grant the VM runs without the Command mapping (the start
 menu's Accessibility row says so). Docs only.
+Also decided 2026-10-10 (the maintainer: remapper rules that concern Try
+Roguix are the coordinator's responsibility; placement checked with sol and
+MiMo, 20261010-160218-a12f): add to AGENTS.md's Roguix part, without private
+details: "When a change alters the VM process's runtime path, bundle name
+or identity, the TODO coordinator updates the host key-remapper exemptions
+that match it (`docs/mac-keyboard.md` and the maintainer's own rules outside
+this repository) and checks that Cmd+Space still reaches the guest; if it
+cannot, it reports what is left." The maintainer-specific side lives in
+their dotfiles (the remapper rule's own description says who keeps it in
+step); not in Claude Code's per-project memory, which other agents do not
+read.
 
 ### Clean-account keyboard check before each release [t-cli74btl]
 
