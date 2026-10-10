@@ -2,24 +2,6 @@
 
 ## Next, in order
 
-### Roguix needs no key remapper: keyboard docs cover dev builds [t-swnazc5i]
-
-Asked 2026-10-10: "Roguix has to work even if someone has no Karabiner or
-Hammerspoon installed?" Yes (sol and MiMo agree, 20261010-155003-355b): with
-the Accessibility grant, QEMU's own event tap captures Command chords,
-Command-Space included, before Spotlight (verified 2026-10-07, see
-"Background: the Accessibility grant"); Command-Tab follows the "Send
-Command-Tab to Roguix" setting. Remappers are only a problem for those who
-have one: they take a chord before the tap. `docs/mac-keyboard.md` ("Host
-tools that take a chord first") still shows an exemption regex matching
-only `Try Roguix.app`; make it match development builds too
-(`Try Roguix( Dev)?\.app`), say plainly that no such tool is needed, and
-that without the grant the VM runs without the Command mapping (the start
-menu's Accessibility row says so). Docs only.
-The exemption example now matches the helper's bundle ids (0f181729,
-"macos: run QEMU from a nested VM helper app"); what is left here is saying
-plainly that no remapper is needed and what happens without the grant.
-
 ### Clean-account keyboard check before each release [t-cli74btl]
 
 Run a keyboard check on a clean macOS account (no remappers), as sol and
