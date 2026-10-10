@@ -529,9 +529,10 @@ succeeded, and delete the state root when the check ends, also after a
 failed run.
 
 The builder belongs to the main checkout: from a worktree, run
-`guest/guix/vm-run` with `VM_RUN_SOCKET=<main checkout>/.build/guix-validation/serial.sock`,
-since it otherwise looks for the socket in the worktree's own `.build/` and
-exits 125.
+`env VM_RUN_SOCKET=<main checkout>/.build/guix-validation/serial.sock guest/guix/vm-run '<command>'`,
+since vm-run otherwise looks for the socket in the worktree's own `.build/`
+and exits 125. Put the `env` inside the `herdr-job run` command: a job's tab
+does not inherit the caller's exported variables.
 
 `make run-isolated` opens the start menu and waits for a click on **Launch
 Roguix**, so an unattended check must not leave it waiting: start the VM in
@@ -565,6 +566,8 @@ session open; `ssh -n` alone fixes only stdin.
 Run builder VM work that takes more than a minute (image and system builds,
 exports) as
 `herdr-job run --name "<short description>" --why "<what it is for>" -- guest/guix/vm-run '<command>'`
+(from a worktree, `-- env VM_RUN_SOCKET=... guest/guix/vm-run`, as above,
+since the job does not inherit the caller's environment)
 and wait for it in the background with `herdr-job wait <id>`. The job gets its
 own herdr tab with the live log, and `--why` stays in the tab's footer so the
 user sees why it exists.
