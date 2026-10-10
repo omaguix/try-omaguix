@@ -32,6 +32,18 @@ needs, so the Mac's language reaches the guest for these too. Needs a guest
 build.
 Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
 
+### herdr-job does not pass the caller's environment [t-2s62iij4]
+
+Found 2026-10-10 by the guest-05 worker: `herdr-job run` starts the command
+in a new tab without the caller's exported variables, so
+`VM_RUN_SOCKET=... ` set in the worker's shell never reached
+`guest/guix/vm-run`, which then looked for the worktree's own socket and
+exited 125. AGENTS.md ("Building and Running in a Worktree", "Long-Running
+Work") should show the variable passed inside the job's command, e.g.
+`herdr-job run ... -- env VM_RUN_SOCKET=<main checkout>/.build/guix-validation/serial.sock guest/guix/vm-run '<command>'`.
+Added straight to "Next, in order" by the coordinator (follows from an
+approved item, docs only, one revert undoes it).
+
 ## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
