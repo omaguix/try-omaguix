@@ -2,26 +2,6 @@
 
 ## Next, in order
 
-### Bring our Omarchy patches upstream [t-t7gyb6ui]
-
-Decided by the user 2026-10-10 after a consult round with sol and MiMo
-(20261010-133308-c01f), once Roguix's own image verifies each change; each
-checked against current omacom/omarchy `quattro` first (applies cleanly,
-upstream's tests pass there; record the tested commit), not only on 4.0.4:
-- omacom/omarchy#14740 (menu rows): answer Greptile's P2 with a behavioral
-  test of the rebuild decision (unchanged guard results keep the rows,
-  changed ones rebuild), as a new commit on the PR branch, no force-push;
-  reply under the finding.
-- omacom/omarchy#14850 (audio scripts under LC_ALL=C): open a PR on
-  `quattro` for the five scripts, linking the issue (search for a duplicate
-  fix first).
-- The jq menus change (item above): open a PR; say plainly that Arch has
-  perl, so the gain is one dependency fewer (jq is already used by 169
-  scripts), and test the real helpers, not only the encoder.
-A worker prepares the branches and texts in its own clone; the coordinator
-reviews, pushes to the maintainer's fork and opens or updates the PRs.
-One change per PR; no pings.
-
 ### The last perl in Omarchy's scripts: sed/bash [t-3eiod7hj]
 
 Found 2026-10-10 by the ttfx/jq worker: `omarchy-theme-bg-current` (the
@@ -47,6 +27,14 @@ did. Pure bash (`${word^}` loops) is longer and no better. Tests: the cases
 above, empty input, no extension, dotfiles, trailing dot, numeric prefix,
 underscores, repeated spaces and tabs, accented initials, in a UTF-8 and the
 C locale; `x.tar.gz` -> `X.Tar` stays as it is.
+Upstream since 2026-10-10: omacom/omarchy#14865 (rofrol:menu-jq) carries
+both the jq menus and this sed rewrite (commit 85dd5be3, using `\U` on
+`[[:lower:]]` initials, which also keeps GNU sed from splitting a multibyte
+letter in the C locale); take that commit as Roguix's patch instead of a
+version of our own, so the patch drops cleanly when the pin includes it.
+Still perl after it: `shell/plugins/clipboard/capture.sh` decodes UTF-16
+clipboard text with perl, so the clipboard capture plugin likely fails in
+Roguix too (not checked in a VM).
 
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
