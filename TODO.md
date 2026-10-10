@@ -2,36 +2,6 @@
 
 ## Next, in order
 
-### Apply the Mac's language once, not on every boot [t-2k7yfxqe]
-
-Proposed 2026-10-10 after the rebase onto Try Omarchy 0.5. Upstream
-(2dbd079) initializes the guest's language from the Mac once at first boot;
-Roguix's tty1 session still sets LANG from `tryomarchy.locale` on every
-boot, so a language changed inside the guest is overwritten at the next
-boot. Port the once-only behavior to the Guix session (sol and MiMo both
-flag it as a user-visible gap). Needs a guest build.
-Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
-
-### Port upstream's guest-side 0.5 fixes [t-3jzpekj7]
-
-Proposed 2026-10-10 after the rebase, each to check against Roguix's own
-port before porting: microphone switching in localized sessions (da53e89,
-Roguix's audio routing), draining large clipboard selections (6d480d1,
-the clipboard bridge), the battery mirror reading the charge limits and
-physical data the host now sends (f41da7c, 0c9817d), the screensaver in
-small windows (6bb1359), the time zone as an explicit choice at first boot
-(5cebb9b), and optionally macOS power profiles in the guest (7834690).
-Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
-
-### Korean input and zh_CN from Try Omarchy 0.5 [t-56y7klun]
-
-Proposed 2026-10-10 after the rebase: upstream added ko_KR with fcitx5
-Hangul (3e9f720) and zh_CN (2dbd079). Roguix's image lists only zh_TW in
-`guest.locales`; add the locales, fcitx5 groups and fonts the Guix guest
-needs, so the Mac's language reaches the guest for these too. Needs a guest
-build.
-Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
-
 ### herdr-job does not pass the caller's environment [t-2s62iij4]
 
 Found 2026-10-10 by the guest-05 worker: `herdr-job run` starts the command
