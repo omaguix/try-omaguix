@@ -74,7 +74,25 @@ after the first attempt; never to turn Gatekeeper off.
 7. Install `TryRoguix.dmg` on a clean account and launch it: the disk
    downloads, expands and boots, the first-start setup runs, and the
    updates window names the upstreams.
-8. Clear the prerelease flag and mark the release Latest
+8. On the same clean account, with no key remapper installed, check the
+   keyboard ([Mac keyboard geometry](mac-keyboard.md) explains each part):
+   - The first launch, before the Accessibility grant (Device Control and
+     Data Access on macOS 27): the VM runs, and the start menu's
+     Accessibility row shows the grant as missing with **Open Settings**.
+   - The grant flow: **Open Settings** brings up the prompt or System
+     Settings; after the grant, the row updates and the next launch maps
+     Command to Super.
+   - With the VM window focused, Command-Space opens the guest's menu, not
+     Spotlight; outside the VM, Command-Space opens Spotlight.
+   - Command-Return works in the guest; Command-Tab switches Mac apps with
+     **Send Command-Tab to Roguix** off, and guest windows with it on
+     (Control-Option hands it back to macOS).
+   - Typing, key repeat and copy-paste between macOS and the guest behave as
+     before.
+   - Installing this release over the previous one loses the grant, since
+     both are signed ad hoc ([Signing](#signing)); the Accessibility row shows
+     it missing, and **Open Settings** restores it.
+9. Clear the prerelease flag and mark the release Latest
    (`gh release edit TAG --prerelease=false --latest`), so `releases/latest`,
    and so the app's update checker, finds it; with two tag schemes, do not
    leave the choice of Latest to GitHub.
