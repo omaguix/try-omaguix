@@ -419,6 +419,11 @@ went straight to the desktop.
   callers of `omarchy-shell` keep the old path. Remove the patch once the
   pinned Omarchy includes 6762769b; the build fails if it no longer applies.
 
+- **Power profiles:** the VM has no Linux power profile driver
+  (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try
+  Omarchy's, makes the power menu and panel show one profile, managed by
+  macOS.
+
 Menus that manage systemd timers (reminders) do nothing here. `gum` and `libvips` are not in this Guix, so gum
 dialogs and background-picker thumbnails are missing.
 

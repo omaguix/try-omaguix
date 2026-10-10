@@ -73,9 +73,12 @@
               ;; instead of a qs IPC client that omarchy-shell kills on its
               ;; timeout, which lost or delayed Super+Space. The build fails
               ;; if the patch no longer applies; remove it once the pin
-              ;; includes 6762769b.
+              ;; includes 6762769b. The VM has no Linux power profile
+              ;; driver: as in Try Omarchy, the power menu and panel show
+              ;; one profile, managed by macOS.
               (patches
-               (list (local-file "omarchy-global-shortcuts.patch")))))
+               (list (local-file "omarchy-global-shortcuts.patch")
+                     (local-file "omarchy-macos-power-profile.patch")))))
     (build-system copy-build-system)
     (arguments
      (list
