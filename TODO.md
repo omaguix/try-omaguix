@@ -68,6 +68,17 @@ stale snapshot kept forever), and fix the cause.
 
 ## Proposed
 
+### Pinning the running VM's Dock icon pins the QEMU runtime [t-kfvugc3r]
+
+Proposed 2026-10-10: the maintainer's Dock icon "Try Roguix" turned out to
+point at the QEMU runtime binary inside an app bundle
+(`.../Try Roguix.app/Contents/Resources/runtime/bin/Try Roguix`), which macOS
+had re-resolved to a worker's worktree build; clicking it starts bare QEMU,
+not the app's start menu, and it breaks when that build is deleted. The
+running VM's Dock tile invites this pin. Check how upstream Try Omarchy
+presents the runtime in the Dock, and make the tile the app itself (or keep
+the runtime out of the Dock) so a pin reopens the app.
+
 ### Register checks for herdr todo run [t-atkjktc5]
 
 Proposed 2026-10-10 by the herdr coordinator: `herdr todo run` (verify,
