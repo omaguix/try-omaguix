@@ -573,6 +573,13 @@ remotely gets its own stdin, stdout and stderr, e.g.
 `setsid cmd </dev/null >/tmp/x.log 2>&1 &`, so it does not hold the ssh
 session open; `ssh -n` alone fixes only stdin.
 
+Until herdr has repository-declared host operations, an item that needs the
+ad-hoc signed QEMU or app, PTYs, local sockets or `ps` (VM runs, `make app`,
+`make test`, the builder through `guest/guix/vm-run`) runs in a pane (TUI)
+worker; everything else (docs, TODO-only and other text changes) runs in a
+headless worker. The headless sandbox is never widened by hand to make such
+an item fit.
+
 ## Long-Running Work
 
 Run builder VM work that takes more than a minute (image and system builds,
