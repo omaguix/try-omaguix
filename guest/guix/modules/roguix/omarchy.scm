@@ -164,6 +164,22 @@
                      "      if (root.opened && guardsChanged) root.rebuildDisplay()"))
                   ;; substitute* does not fail when nothing matches.
                   (invoke "grep" "-q" "root.opened && guardsChanged" qml))
+;; Try Omarchy 0c9817d: the mirrored Mac's charge state is
+                ;; authoritative. UPower can report zero watts or no estimate
+                ;; for a while after the Mac's AC changes, and the power panel
+                ;; then showed a charging Mac as held at a charge limit.
+                (let ((model (string-append omarchy
+                                            "/shell/plugins/panels/power/Model.js")))
+                  (substitute* model
+                    (("^  if \\(d\\.state !== s\\.Charging \\|\\| fraction >= 0\\.99\\) return false")
+                     (string-append
+                      "  // The mirrored Mac state is authoritative. UPower can temporarily report\n"
+                      "  // zero watts or no estimate after AC changes, even while charging.\n"
+                      "  return false"))
+                    (("^  return Number\\(d\\.changeRate .*") ""))
+                  (invoke "grep" "-q" "The mirrored Mac state is authoritative" model)
+                  (when (zero? (system* "grep" "-q" "d.changeRate" model))
+                    (error "Model.js still estimates a held charge" model)))
                 ;; Guix's Qt 6.9 QML parser rejects `transient', a reserved
                 ;; word in its grammar, as a variable name, and Quickshell then
                 ;; skips the whole notification service.

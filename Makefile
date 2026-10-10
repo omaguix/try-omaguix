@@ -102,6 +102,7 @@ test-contracts:
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omarchy_menu.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_audio_input_helper.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_battery_bridge.py"
+	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_tob_parse.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_clipboard_bridge.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_roguix_setup.py"
 	@$(ROOT)/macos/Tests/macos-compatibility.test.sh

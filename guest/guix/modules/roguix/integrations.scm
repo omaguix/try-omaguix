@@ -402,7 +402,8 @@ KERNEL==\"video42\", SUBSYSTEM==\"video4linux\", GROUP=\"video\", MODE=\"0660\"\
 (define roguix-battery-module
   (package
     (name "roguix-battery-module")
-    (version "1")
+    ;; Try Omarchy's MODULE_VERSION.
+    (version "1.3.0")
     (source (local-file "battery-module" #:recursive? #t))
     (build-system linux-module-build-system)
     (arguments (list #:tests? #f))
