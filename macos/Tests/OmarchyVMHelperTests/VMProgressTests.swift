@@ -52,7 +52,7 @@ struct VMProgressTests {
         #expect(VMResetPhase.deleting.buttonTitle == "Deleting VM…")
         #expect(VMLaunchPhase.preparing.buttonTitle == "Preparing image…")
         #expect(VMLaunchPhase.verifying.buttonTitle == "Verifying image…")
-        #expect(VMLaunchPhase.starting.buttonTitle == "Starting Omarchy…")
+        #expect(VMLaunchPhase.starting.buttonTitle == "Starting Roguix…")
         #expect(VMResetPhase.finishing.buttonTitle == "Finishing reset…")
     }
 

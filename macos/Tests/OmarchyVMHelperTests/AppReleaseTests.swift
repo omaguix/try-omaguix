@@ -91,7 +91,7 @@ struct AppReleaseTests {
     func releaseDownloadNames(assetName: String) throws {
         let latest = try AppRelease.decode(payload(assetName: assetName))
         #expect(latest.version == AppReleaseVersion("0.5.0"))
-        #expect(latest.url.absoluteString == "https://github.com/omacom/try-omarchy/releases/tag/v0.5.0")
+        #expect(latest.url.absoluteString == "https://github.com/rofrol/try-roguix/releases/tag/try-roguix-v0.5.0")
     }
 
     @Test("current and newer installed builds are not offered a downgrade")

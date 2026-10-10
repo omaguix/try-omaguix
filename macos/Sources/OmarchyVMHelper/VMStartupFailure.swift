@@ -20,7 +20,7 @@ enum VMStartupFailure {
             .unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) || $0 == "\n" || $0 == "\t" }
         let details = String(String.UnicodeScalarView(diagnostic))
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let summary = "Omarchy couldn’t start (exit status \(status)). Try launching again."
+        let summary = "Roguix couldn’t start (exit status \(status)). Try launching again."
         return details.isEmpty ? summary : "\(summary)\n\nStartup details:\n\(details)"
     }
 }

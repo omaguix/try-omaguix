@@ -1055,7 +1055,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         resetTitle.font = .monospacedSystemFont(ofSize: 13, weight: .bold)
         resetTitle.textColor = OmarchyStartMenuTheme.foreground
         let resetDetail = NSTextField(wrappingLabelWithString: virtualMachineRunning
-            ? "Shut down Omarchy to change the VM location or reset it to factory settings."
+            ? "Shut down Roguix to change the VM location or reset it to factory settings."
             : "Erase this VM and return it to factory settings.")
         resetDetail.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
         resetDetail.textColor = OmarchyStartMenuTheme.muted

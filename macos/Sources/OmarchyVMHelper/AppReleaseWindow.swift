@@ -5,8 +5,8 @@ enum AppReleasePrompt {
     static func alert(for release: AppRelease) -> NSAlert {
         let alert = NSAlert()
         alert.alertStyle = .informational
-        alert.messageText = "Try Omarchy \(release.version) is available"
-        alert.informativeText = "Download opens the release page on GitHub. Shut down Omarchy before replacing the app; your VM and settings are kept.\n\nSkip hides reminders for this version."
+        alert.messageText = "Try Roguix \(release.version) is available"
+        alert.informativeText = "Download opens the release page on GitHub. Shut down Roguix before replacing the app; your VM and settings are kept.\n\nSkip hides reminders for this version."
         alert.addButton(withTitle: "Download")
         alert.addButton(withTitle: "Skip").keyEquivalent = "\u{1b}"
         return alert

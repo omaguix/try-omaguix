@@ -173,7 +173,7 @@ struct ApplicationPresentationTests {
 
         let helpMenu = try #require(application.helpMenu)
         #expect(application.mainMenu?.items.last?.submenu === helpMenu)
-        #expect(helpMenu.items.map(\.title) == ["Try Omarchy Help", "Troubleshooting", "Report an Issue…"])
+        #expect(helpMenu.items.map(\.title) == ["Try Roguix Help", "Troubleshooting", "Report an Issue…"])
         for link in ApplicationHelpLink.allCases {
             let item = try #require(helpMenu.items.first(where: { $0.tag == link.rawValue }))
             #expect(item.action == #selector(VMApplicationController.openHelpLink(_:)))
