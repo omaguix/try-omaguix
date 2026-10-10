@@ -32,6 +32,21 @@ for one-line text munging, so both fail in Roguix. Decided by the user
 case of words and stripping a numeric prefix; test against the perl output
 on the host), and add the same change to the upstream jq PR. Needs a guest
 build: share it with the next item that builds the guest.
+Requested 2026-10-10: "compare the perl code with sed/bash; maybe the
+rewrite comes out worse." Compared by the coordinator (GNU sed 4.10 vs
+perl 5, UTF-8 locale) and checked with sol and MiMo
+(20261010-143752-68d8): the sed versions are no worse and read the same.
+Script 1 as `sed -E 's/\.[^.]+$//; s/^[0-9]+-//; s/-/ /g; s/\b(\w)/\u\1/g'`
+matches perl on ASCII names and fixes a perl bug: `perl -pe` works on bytes,
+so "02-über-städte.jpg" became "üBer StäDte" (sed: "Über Städte"); say so
+in the upstream PR. Script 2 as `sed -E 's/(^|[[:space:]])([^[:space:]])/\1\u\2/g'`
+matched perl (-Mopen=locale) on every case tried. `\u`, `\b`, `\w` are GNU
+sed extensions (Arch and Guix both ship GNU sed); both versions depend on
+the locale (in the C locale accented initials stay lowercase), as perl's
+did. Pure bash (`${word^}` loops) is longer and no better. Tests: the cases
+above, empty input, no extension, dotfiles, trailing dot, numeric prefix,
+underscores, repeated spaces and tabs, accented initials, in a UTF-8 and the
+C locale; `x.tar.gz` -> `X.Tar` stays as it is.
 
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
