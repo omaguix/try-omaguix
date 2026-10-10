@@ -681,7 +681,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         title.textColor = OmarchyStartMenuTheme.foreground
         title.identifier = NSUserInterfaceItemIdentifier("app-title")
 
-        let subtitle = NSTextField(labelWithString: "Guix + Omarchy, on macOS")
+        let subtitle = NSTextField(labelWithString: "Roguix, on macOS")
         subtitle.font = .monospacedSystemFont(ofSize: 10, weight: .semibold)
         subtitle.textColor = OmarchyStartMenuTheme.accent
 
