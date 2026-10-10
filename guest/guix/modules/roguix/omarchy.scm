@@ -255,9 +255,9 @@ configuration, Quickshell desktop shell, themes and helper commands.")
           "xdg-desktop-portal" "xdg-desktop-portal-gtk"
           ;; The Secret Service; Omarchy's default keyring has no password.
           "gnome-keyring"
-          ;; Omarchy runs fcitx5 for compose keys; Chewing and Noto CJK back
-          ;; the optional Traditional Chinese language.
-          "fcitx5" "fcitx5-chewing" "fcitx5-gtk"
+          ;; Omarchy runs fcitx5 for compose keys; Chewing, Hangul and Noto
+          ;; CJK back the optional Chinese and Korean languages.
+          "fcitx5" "fcitx5-chewing" "fcitx5-hangul" "fcitx5-gtk"
           "font-google-noto-sans-cjk"))
    (list lazygit-bin lazydocker-bin gum-bin dua-bin cliamp-bin
          fastfetch-without-zfs obs-without-vlc fcitx5-qt6)))

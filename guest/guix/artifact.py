@@ -39,8 +39,9 @@ FILES = frozenset({DISK, MANIFEST, SUMS})
 # start (modules/roguix/services.scm).
 CREDENTIALS = frozenset({"first-boot"})
 # Optional guest languages the image carries (system.scm's locale
-# definitions, fcitx5 and Noto CJK); the app offers them as its Language row.
-LOCALES = ("zh_TW.UTF-8",)
+# definitions, fcitx5 and Noto CJK); the app passes the Mac's language when it
+# is one of them, and the first-start setup takes it once (roguix-setup).
+LOCALES = ("zh_TW.UTF-8", "zh_CN.UTF-8", "ko_KR.UTF-8")
 ZSTD_MAGIC = bytes.fromhex("28b52ffd")
 # The persistent workspace the launcher creates; the guest grows its root
 # partition into the difference (roguix-grow-root). Matches the Arch guest's

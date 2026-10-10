@@ -9,12 +9,19 @@ omarchy=${OMARCHY_PATH:-/usr/share/omarchy}
 state=$HOME/.local/state/omarchy
 marker=$state/done/roguix-seed
 # Added after the first Roguix images, so they also reach seeded accounts:
-# fcitx5's US and Chewing input methods and the Traditional Chinese glyph
-# preference, both inert for English sessions.
+# fcitx5's input method groups (US and Chewing; US and Hangul) and the
+# Chinese and Korean glyph preferences, all inert for English sessions.
 roguix_share=/run/current-system/profile/share/roguix
 mkdir -p "$HOME/.config/fcitx5" "$HOME/.config/fontconfig/conf.d"
-[[ -e $HOME/.config/fcitx5/profile ]] || \
-  cp --no-preserve=mode "$roguix_share/fcitx5-profile" "$HOME/.config/fcitx5/profile"
+if [[ ! -e $HOME/.config/fcitx5/profile ]]; then
+  profile=$(<"$roguix_share/fcitx5-profile")
+  # A Korean system (LANG from the first-start setup) starts in the Korean
+  # group: fcitx5 starts in the first group of GroupOrder.
+  if [[ ${LANG:-} == ko_KR.* ]]; then
+    profile=${profile/$'[GroupOrder]\n0=Default\n1=Korean'/$'[GroupOrder]\n0=Korean\n1=Default'}
+  fi
+  printf '%s\n' "$profile" >"$HOME/.config/fcitx5/profile"
+fi
 [[ -e $HOME/.config/fontconfig/conf.d/30-roguix-cjk.conf ]] || \
   cp --no-preserve=mode "$roguix_share/30-roguix-cjk.conf" \
     "$HOME/.config/fontconfig/conf.d/30-roguix-cjk.conf"

@@ -167,6 +167,16 @@ it. Only the setup reads the launcher's language, so a language chosen
 later in the guest (`#:locale` in `/etc/config.scm`, or the settings file)
 survives reboots and changes of the Mac's language.
 
+The image lists Traditional Chinese (`zh_TW`), Simplified Chinese (`zh_CN`)
+and Korean (`ko_KR`); the launcher sends English and any other language as
+English. fcitx5 has two groups: Default (US, then Chewing) and Korean (US,
+then Hangul); `Ctrl + Space` switches within the current group. A Korean
+system starts in the Korean group (`roguix-omarchy-seed` puts it first when
+it seeds the profile), every other language in Default; `fcitx5-remote -g
+Korean` or `-g Default` switches, and fcitx5 keeps the choice. Noto Sans CJK
+covers all three; `30-roguix-cjk.conf` prefers its TC face for `zh-TW` and
+its KR face for Korean text.
+
 Like the Arch guest, the VM console then logs in directly: the disk is
 protected by the Mac account. tty1 auto-logs in `guest`, and
 `/etc/profile.d/roguix-session.sh` runs `start-hyprland` there only; other

@@ -132,10 +132,13 @@ defaults."
     ;; The image's optional languages (artifact.LOCALES): the first-start
     ;; setup takes the Mac's (tryomarchy.locale) once. Defined here, so that
     ;; choosing one does not rebuild the locales; Guix adds any other LOCALE.
+    ;; zh_CN.utf8 is one of %default-locale-definitions.
     (locale-definitions
-     (cons (locale-definition (name "zh_TW.utf8") (source "zh_TW")
-                              (charset "UTF-8"))
-           %default-locale-definitions))
+     (cons* (locale-definition (name "zh_TW.utf8") (source "zh_TW")
+                               (charset "UTF-8"))
+            (locale-definition (name "ko_KR.utf8") (source "ko_KR")
+                               (charset "UTF-8"))
+            %default-locale-definitions))
     (keyboard-layout (if variant
                          (keyboard-layout layout variant)
                          (keyboard-layout layout)))

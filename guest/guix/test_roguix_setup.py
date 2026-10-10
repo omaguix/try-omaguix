@@ -96,9 +96,11 @@ class SuggestionTests(unittest.TestCase):
             importlib.util.spec_from_file_location("artifact", HERE / "artifact.py"))
         artifact.__spec__.loader.exec_module(artifact)
         self.assertEqual(set(setup.LOCALES), {"en_US.UTF-8", *artifact.LOCALES})
+        # The image defines each language, so choosing one builds no locales;
+        # these two are among Guix's %default-locale-definitions.
         system = (HERE / "modules" / "roguix" / "system.scm").read_text()
-        for guix in setup.LOCALES.values():
-            self.assertIn(f'"{guix}"', system)
+        for guix in set(setup.LOCALES.values()) - {"en_US.utf8", "zh_CN.utf8"}:
+            self.assertIn(f'(name "{guix}")', system)
 
     def test_timezone_is_decoded_and_checked_against_zoneinfo(self):
         encoded = base64.urlsafe_b64encode(b"Europe/Warsaw").decode().rstrip("=")

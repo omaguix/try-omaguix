@@ -104,7 +104,8 @@ LAYOUTS = (
 # The Mac's language as the launcher passes it, and the Guix locale the image
 # defines for it (system.scm's locale definitions; artifact.LOCALES lists the
 # optional ones). Any other language keeps English.
-LOCALES = {"en_US.UTF-8": "en_US.utf8", "zh_TW.UTF-8": "zh_TW.utf8"}
+LOCALES = {"en_US.UTF-8": "en_US.utf8", "zh_TW.UTF-8": "zh_TW.utf8",
+           "zh_CN.UTF-8": "zh_CN.utf8", "ko_KR.UTF-8": "ko_KR.utf8"}
 
 HOSTNAME = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
 TIMEZONE = re.compile(r"^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$")
