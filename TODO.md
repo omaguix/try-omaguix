@@ -2,22 +2,6 @@
 
 ## Next, in order
 
-### Narrow omacom/omarchy#14865 to the UTF-8 bug [t-mwepf6tt]
-
-Decided by the user 2026-10-10 (with sol and MiMo): #14865 (rofrol:menu-jq,
-no human review yet) becomes a one-change PR: `perl -CSD -pe` in
-omarchy-theme-bg-current with a test, title and description led by the
-Arch-visible bug ("02-über-städte.jpg" shows as "üBer StäDte"), a short
-note that the jq/sed scope was dropped because perl stays; force-push the
-narrowed branch (ours, unreviewed). Check the one existing comment first. A
-worker prepares the branch and text; the coordinator pushes and edits the PR.
-Roguix's own patch (2026-10-10, omarchy-theme-bg-utf8.patch) uses
-`perl -CO -MEncode=decode -pe '$_ = decode("UTF-8", $_); ...'` instead of
-`-CSD`: with `-CSD` a file name that is not valid UTF-8 makes perl die with
-an empty result, worse than upstream; decode puts U+FFFD there and the name
-still shows. Accepted by the coordinator on that evidence; use the same in
-the narrowed PR.
-
 ### Warn before a test VM window opens [t-wwhpe6cq]
 
 Found 2026-10-10: a worker's throwaway VM opens a window named "Try Roguix"
