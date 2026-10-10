@@ -20,7 +20,23 @@ Decided by the user 2026-10-10: rename to Try Roguix Dev.app (update
 `INSTALLED_APP` and the docs and scripts that pin the path; releases keep
 Try Roguix.app).
 
-## Proposed
+### Check the built app's version against the release tag [t-icv2e3ua]
+
+Proposed 2026-10-10 after the rebase: upstream verifies the release app's
+version against the tag (3f77a2f). `macos/release.sh` derives the version
+from the `try-roguix-v*` tag through `scripts/app_version.py`, so they
+agree by construction, but nothing checks the built app; add the assertion
+after the build (a few lines). Decided by the coordinator 2026-10-10 with
+sol and MiMo: keep `release.sh`, do not port upstream's `scripts/release.py`
+(it builds the Arch guest and tags `v*`).
+Decided by the user 2026-10-10: approved.
+
+### Mark upstream's Arch guest documents as Try Omarchy's [t-gnl4jgea]
+
+Proposed 2026-10-10 after the rebase: `docs/integration-updates.md`,
+`docs/host-battery.md` and `docs/performance.md` describe the Arch guest and
+came in unchanged; say at their top that they describe Try Omarchy's guest.
+Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
 
 ### Apply the Mac's language once, not on every boot [t-2k7yfxqe]
 
@@ -30,14 +46,7 @@ Roguix's tty1 session still sets LANG from `tryomarchy.locale` on every
 boot, so a language changed inside the guest is overwritten at the next
 boot. Port the once-only behavior to the Guix session (sol and MiMo both
 flag it as a user-visible gap). Needs a guest build.
-
-### Korean input and zh_CN from Try Omarchy 0.5 [t-56y7klun]
-
-Proposed 2026-10-10 after the rebase: upstream added ko_KR with fcitx5
-Hangul (3e9f720) and zh_CN (2dbd079). Roguix's image lists only zh_TW in
-`guest.locales`; add the locales, fcitx5 groups and fonts the Guix guest
-needs, so the Mac's language reaches the guest for these too. Needs a guest
-build.
+Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
 
 ### Port upstream's guest-side 0.5 fixes [t-3jzpekj7]
 
@@ -48,22 +57,18 @@ the clipboard bridge), the battery mirror reading the charge limits and
 physical data the host now sends (f41da7c, 0c9817d), the screensaver in
 small windows (6bb1359), the time zone as an explicit choice at first boot
 (5cebb9b), and optionally macOS power profiles in the guest (7834690).
+Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
 
-### Check the built app's version against the release tag [t-icv2e3ua]
+### Korean input and zh_CN from Try Omarchy 0.5 [t-56y7klun]
 
-Proposed 2026-10-10 after the rebase: upstream verifies the release app's
-version against the tag (3f77a2f). `macos/release.sh` derives the version
-from the `try-roguix-v*` tag through `scripts/app_version.py`, so they
-agree by construction, but nothing checks the built app; add the assertion
-after the build (a few lines). Decided by the coordinator 2026-10-10 with
-sol and MiMo: keep `release.sh`, do not port upstream's `scripts/release.py`
-(it builds the Arch guest and tags `v*`).
+Proposed 2026-10-10 after the rebase: upstream added ko_KR with fcitx5
+Hangul (3e9f720) and zh_CN (2dbd079). Roguix's image lists only zh_TW in
+`guest.locales`; add the locales, fcitx5 groups and fonts the Guix guest
+needs, so the Mac's language reaches the guest for these too. Needs a guest
+build.
+Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
 
-### Mark upstream's Arch guest documents as Try Omarchy's [t-gnl4jgea]
-
-Proposed 2026-10-10 after the rebase: `docs/integration-updates.md`,
-`docs/host-battery.md` and `docs/performance.md` describe the Arch guest and
-came in unchanged; say at their top that they describe Try Omarchy's guest.
+## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
 
