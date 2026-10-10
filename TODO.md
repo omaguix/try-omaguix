@@ -2,17 +2,17 @@
 
 ## Next, in order
 
-### Report the battery agent's disconnect bug to Try Omarchy [t-k6j5xgqq]
-
-Decided by the user 2026-10-10: upstream Try Omarchy's battery agent has the
-bug Roguix fixed in 33c1628b: after the host bridge dies it keeps
-status=unknown with the last level and AC state, which UPower turns into
-Discharging, so a stale low level raises Omarchy's warning while the Mac
-charges; docs/host-battery.md describes that line. A worker drafts an issue
-(or a PR with the fix and the docs line) for omacom/try-omarchy with the
-VM reproduction; the coordinator files it.
-
 ## Proposed
+
+### Offer Try Omarchy the battery disconnect fix as a PR
+
+Filed 2026-10-11 as omacom/try-omarchy#338, which offers a PR. A local
+branch `upstream-battery-disconnect` (aa0b68b2, on upstream/main 3c6056d1)
+has the agent fix, upstream-style tests, the docs/host-battery.md row and
+the current agent's hash in guest/migrations/preimages.json; `make test`
+passed there. Open the PR from the maintainer's fork if upstream wants it
+(drop the Claude-Session trailer first); left unchecked: a live UPower
+check in upstream's guest.
 
 ### Give a test VM window its own title
 
