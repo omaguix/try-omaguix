@@ -11,8 +11,8 @@
 ;;; on tty1 before the console logs in automatically. Account activation keeps
 ;;; a password set this way across reboots and reconfigures.
 ;;;
-;;; roguix-machine-settings: the setup's host name, time zone and keyboard
-;;; live in a data file that /etc/config.scm reads. Until a reconfigure builds
+;;; roguix-machine-settings: the setup's host name, time zone, keyboard and
+;;; language (the Mac's, taken once) live in a data file that /etc/config.scm reads. Until a reconfigure builds
 ;;; them into the system, this service applies them at every boot, before the
 ;;; desktop session starts.
 (define-module (roguix services)
@@ -26,7 +26,7 @@
   #:use-module (gnu services shepherd)
   #:use-module (guix gexp)
   #:use-module ((roguix integrations)
-                #:select (%roguix-host-settings-file roguix-setup))
+                #:select (roguix-setup))
   #:use-module (gnu packages bash)
   #:export (%roguix-account
             %roguix-console-font
@@ -187,17 +187,13 @@ if [ \"$(tty)\" = /dev/tty1 ] && [ -z \"$WAYLAND_DISPLAY\" ] \\
   set -a
   . /usr/share/omarchy/default/environment.d/10-omarchy-fcitx.conf
   set +a
-  # The launcher's optional guest language (roguix-host-settings).
-  case \" $(cat " %roguix-host-settings-file " 2>/dev/null) \" in
-    *' tryomarchy.locale=zh_TW.UTF-8 '*) export LANG=zh_TW.UTF-8 ;;
-  esac
   exec " (file-append dbus "/bin/dbus-run-session") " start-hyprland
 fi
 "))
 
 ;; The first-start setup's answers (roguix-setup writes the file): an alist of
-;; host-name, timezone, keyboard-layout, keyboard-variant and console-keymap,
-;; each a string. Data, never code: it is read, not loaded.
+;; host-name, timezone, keyboard-layout, keyboard-variant, console-keymap and
+;; locale, each a string. Data, never code: it is read, not loaded.
 (define %roguix-machine-settings-file "/var/lib/roguix/machine-settings.scm")
 
 (define (read-machine-settings)
@@ -275,7 +271,23 @@ system was built with."
                                           "XKBLAYOUT=" layout "\n"
                                           "XKBVARIANT=" variant "\n"))
              (unless (string-null? keymap)
-               (system* #$(file-append kbd "/bin/loadkeys") keymap))))))))
+               (system* #$(file-append kbd "/bin/loadkeys") keymap)))))
+
+       ;; pam_env gives the login its LANG from /etc/environment.
+       (let ((locale (wanted 'locale)))
+         (when (and locale (safe? locale))
+           (replace-file
+            "/etc/environment"
+            (string-concatenate
+             (map (lambda (line) (string-append line "\n"))
+                  (cons (string-append "LANG=" locale)
+                        (filter (lambda (line)
+                                  (not (or (string-null? line)
+                                           (string-prefix? "LANG=" line))))
+                                (string-split
+                                 (call-with-input-file "/etc/environment"
+                                   get-string-all)
+                                 #\newline)))))))))))
 
 (define (machine-settings-shepherd-service built)
   (list (shepherd-service
@@ -294,5 +306,5 @@ built into this system yet.")
    (extensions
     (list (service-extension shepherd-root-service-type
                              machine-settings-shepherd-service)))
-   (description "Apply the first-start setup's host name, time zone and
-keyboard until a reconfigure builds them into the system.")))
+   (description "Apply the first-start setup's host name, time zone,
+keyboard and language until a reconfigure builds them into the system.")))

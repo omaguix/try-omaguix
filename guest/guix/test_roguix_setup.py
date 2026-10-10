@@ -27,11 +27,12 @@ class MachineSettingsTests(unittest.TestCase):
 
     def test_every_setting_is_written_as_data(self):
         polish = next(entry for entry in setup.LAYOUTS if entry[0] == "Polish")
-        text = setup.machine_settings("studio", "Europe/Warsaw", polish)
+        text = setup.machine_settings("studio", "Europe/Warsaw", polish,
+                                      "zh_TW.utf8")
         self.assertEqual(self.fields(text), {
             "host-name": "studio", "timezone": "Europe/Warsaw",
             "keyboard-layout": "pl", "keyboard-variant": "",
-            "console-keymap": "pl"})
+            "console-keymap": "pl", "locale": "zh_TW.utf8"})
         body = text.split("\n", 1)[1]
         self.assertEqual(body.count("("), body.count(")"))
         self.assertTrue(body.startswith("((") and body.rstrip().endswith("))"))
@@ -39,7 +40,15 @@ class MachineSettingsTests(unittest.TestCase):
     def test_unsafe_values_never_reach_scheme(self):
         for value in ['x" (system "id") "', "a b", "é", "a\n"]:
             with self.assertRaises(setup.Failure):
-                setup.machine_settings(value, "UTC", setup.LAYOUTS[0])
+                setup.machine_settings(value, "UTC", setup.LAYOUTS[0], "en_US.utf8")
+
+    def test_language_replaces_only_lang(self):
+        environment = ("LANG=en_US.utf8\nTZDIR=/gnu/store/x-tzdata/share/zoneinfo\n"
+                       "SSL_CERT_DIR=/etc/ssl/certs\n")
+        self.assertEqual(setup.with_language(environment, "zh_TW.utf8"),
+                         "LANG=zh_TW.utf8\nTZDIR=/gnu/store/x-tzdata/share/zoneinfo\n"
+                         "SSL_CERT_DIR=/etc/ssl/certs\n")
+        self.assertEqual(setup.with_language("", "en_US.utf8"), "LANG=en_US.utf8\n")
 
     def test_hosts_keeps_resolving_the_new_name(self):
         hosts = "127.0.0.1 localhost roguix\n::1 localhost roguix\n10.0.0.2 roguix-db\n"
@@ -73,6 +82,24 @@ class SuggestionTests(unittest.TestCase):
         unknown = self.settings_with("tryomarchy.keyboard_layout=zz\n")
         self.assertEqual(setup.suggested_layout(unknown)[0], "English (US)")
 
+    def test_language_follows_the_mac_or_falls_back_to_english(self):
+        for mac, guix in setup.LOCALES.items():
+            settings = self.settings_with(f"tryomarchy.locale={mac}\n")
+            self.assertEqual(setup.suggested_locale(settings), guix)
+        for other in ("tryomarchy.locale=de_DE.UTF-8\n",
+                      "tryomarchy.locale=zh_TW.utf8\n", ""):
+            self.assertEqual(setup.suggested_locale(self.settings_with(other)),
+                             "en_US.utf8")
+
+    def test_every_optional_image_language_is_known(self):
+        artifact = importlib.util.module_from_spec(
+            importlib.util.spec_from_file_location("artifact", HERE / "artifact.py"))
+        artifact.__spec__.loader.exec_module(artifact)
+        self.assertEqual(set(setup.LOCALES), {"en_US.UTF-8", *artifact.LOCALES})
+        system = (HERE / "modules" / "roguix" / "system.scm").read_text()
+        for guix in setup.LOCALES.values():
+            self.assertIn(f'"{guix}"', system)
+
     def test_timezone_is_decoded_and_checked_against_zoneinfo(self):
         encoded = base64.urlsafe_b64encode(b"Europe/Warsaw").decode().rstrip("=")
         settings = {"tryomarchy.timezone": encoded}
@@ -94,7 +121,7 @@ class SuggestionTests(unittest.TestCase):
 
     def test_every_layout_is_a_valid_scheme_value(self):
         for entry in setup.LAYOUTS:
-            setup.machine_settings("roguix", "UTC", entry)
+            setup.machine_settings("roguix", "UTC", entry, "en_US.utf8")
 
 
 class TerminalTests(unittest.TestCase):
@@ -116,6 +143,7 @@ class TerminalTests(unittest.TestCase):
             "tryomarchy.keyboard_layout": "pl",
             "tryomarchy.timezone": base64.urlsafe_b64encode(
                 b"Europe/Warsaw").decode().rstrip("="),
+            "tryomarchy.locale": "zh_TW.UTF-8",
         }
 
     def run_with(self, keys):
@@ -134,11 +162,11 @@ class TerminalTests(unittest.TestCase):
     def test_answers_typed_ahead_all_arrive_in_order(self):
         keys = ("\r" "secret1\r" "secret1\r" "Ada Lovelace\r" "ada@example.com\r"
                 "\x15studio\r" "\r" "\r")
-        (layout, password, name, email, host, zone), events = self.run_with(keys)
+        (layout, password, name, email, host, zone, locale), events = self.run_with(keys)
         self.assertEqual(layout[0], "Polish")
-        self.assertEqual((password, name, email, host, zone),
+        self.assertEqual((password, name, email, host, zone, locale),
                          ("secret1", "Ada Lovelace", "ada@example.com", "studio",
-                          "Europe/Warsaw"))
+                          "Europe/Warsaw", "zh_TW.utf8"))
         self.assertEqual([event for event in events if " ready " in event],
                          [f"roguix-setup: ready {step}" for step in (
                              "keyboard", "password", "password-repeat", "git-name",
@@ -149,7 +177,7 @@ class TerminalTests(unittest.TestCase):
         keys = ("\r" "\r" "one\r" "two\r" "pass\r" "pass\r" "\r" "\r"
                 "\x15Bad_Name\r" "\x15good\r" "\r" "n" "\r"
                 "\r" "\r" "\r" "\r" "\r")
-        (layout, password, name, email, host, zone), events = self.run_with(keys)
+        (layout, password, name, email, host, zone, _), events = self.run_with(keys)
         self.assertEqual((password, host), ("pass", "roguix"))
         self.assertIn("roguix-setup: rejected password The password must not be empty.",
                       events)

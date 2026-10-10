@@ -159,6 +159,14 @@ name, `/etc/hostname`, `/etc/hosts`, `/etc/localtime`, `/etc/vconsole.conf`
 reconfigure, for example when a package is added, builds the values in and
 the service has nothing left to do.
 
+The language follows the Mac without a question: the launcher passes the
+Mac's primary language (`tryomarchy.locale`) when the image lists it in
+`guest.locales`, and the setup records it as `locale` (English otherwise).
+The service and the next reconfigure set `LANG` in `/etc/environment` from
+it. Only the setup reads the launcher's language, so a language chosen
+later in the guest (`#:locale` in `/etc/config.scm`, or the settings file)
+survives reboots and changes of the Mac's language.
+
 Like the Arch guest, the VM console then logs in directly: the disk is
 protected by the Mac account. tty1 auto-logs in `guest`, and
 `/etc/profile.d/roguix-session.sh` runs `start-hyprland` there only; other

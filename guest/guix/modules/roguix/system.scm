@@ -51,11 +51,12 @@
 ;;
 ;;   sudo roguix-reconfigure
 ;;
-;; Omarchy's install menus edit the same list. The host name, time zone and
-;; keyboard come from the first-start setup, kept in
+;; Omarchy's install menus edit the same list. The host name, time zone,
+;; keyboard and language come from the first-start setup, kept in
 ;; /var/lib/roguix/machine-settings.scm; #:host-name, #:timezone,
-;; #:keyboard-layout and #:keyboard-variant here override them. Everything
-;; else is the Roguix system in /etc/roguix, which this reuses as is.
+;; #:keyboard-layout, #:keyboard-variant and #:locale (e.g. \"pl_PL.utf8\")
+;; here override them. Everything else is the Roguix system in /etc/roguix,
+;; which this reuses as is.
 (use-modules (roguix system))
 
 (roguix-operating-system
@@ -94,11 +95,12 @@
 
 (define* (roguix-operating-system #:key (packages '())
                                   host-name timezone keyboard-layout
-                                  keyboard-variant)
+                                  keyboard-variant locale)
   "Return the Roguix system, adding PACKAGES, a list of package names.
-HOST-NAME, TIMEZONE, KEYBOARD-LAYOUT and KEYBOARD-VARIANT (XKB names) default
-to the first-start setup's answers (%roguix-machine-settings-file), then to
-the image's defaults."
+HOST-NAME, TIMEZONE, KEYBOARD-LAYOUT and KEYBOARD-VARIANT (XKB names) and
+LOCALE (a Guix locale name such as \"zh_TW.utf8\") default to the first-start
+setup's answers (%roguix-machine-settings-file), then to the image's
+defaults."
   (define settings (read-machine-settings))
   (define (setting key)
     (let ((value (assq-ref settings key)))
@@ -108,9 +110,11 @@ the image's defaults."
          (layout (or keyboard-layout (setting 'keyboard-layout) "us"))
          (variant (or keyboard-variant
                       (and (not keyboard-layout) (setting 'keyboard-variant))))
+         (locale (or locale (setting 'locale) "en_US.utf8"))
          (os (base-operating-system packages host-name timezone layout
                                     variant
-                                    (or (setting 'console-keymap) ""))))
+                                    (or (setting 'console-keymap) "")
+                                    locale)))
     (operating-system
       (inherit os)
       (services
@@ -120,13 +124,14 @@ the image's defaults."
              (operating-system-user-services os))))))
 
 (define (base-operating-system packages host-name timezone layout variant
-                               console-keymap)
+                               console-keymap locale)
   (operating-system
     (host-name host-name)
     (timezone timezone)
-    (locale "en_US.utf8")
-    ;; Traditional Chinese, the launcher's one optional guest language
-    ;; (tryomarchy.locale); the session sets LANG from it.
+    (locale locale)
+    ;; The image's optional languages (artifact.LOCALES): the first-start
+    ;; setup takes the Mac's (tryomarchy.locale) once. Defined here, so that
+    ;; choosing one does not rebuild the locales; Guix adds any other LOCALE.
     (locale-definitions
      (cons (locale-definition (name "zh_TW.utf8") (source "zh_TW")
                               (charset "UTF-8"))
@@ -250,7 +255,8 @@ the image's defaults."
                        (timezone . ,timezone)
                        (keyboard-layout . ,layout)
                        (keyboard-variant . ,(or variant ""))
-                       (console-keymap . ,console-keymap)))
+                       (console-keymap . ,console-keymap)
+                       (locale . ,locale)))
             (service roguix-host-settings-service-type)
             (service roguix-mac-share-service-type)
             (service roguix-clipboard-service-type)

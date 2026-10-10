@@ -4,7 +4,9 @@
 It asks in Omarchy's order (install/provisioning/setup-form.sh): keyboard
 layout, the password of the account, an optional Git name and email, the host
 name and the time zone. The Mac app suggests the keyboard layout and time zone
-through the launcher's settings (/run/roguix/host-settings).
+through the launcher's settings (/run/roguix/host-settings). The system's
+language is the Mac's (tryomarchy.locale) without a question, set this once:
+later boots and Mac language changes leave the guest's choice alone.
 
 System values go into /var/lib/roguix/machine-settings.scm, a data file
 that /etc/config.scm reads, and take effect at once; until a reconfigure
@@ -99,6 +101,11 @@ LAYOUTS = (
     ("Ukrainian", "ua", "", "ua"),
 )
 
+# The Mac's language as the launcher passes it, and the Guix locale the image
+# defines for it (system.scm's locale definitions; artifact.LOCALES lists the
+# optional ones). Any other language keeps English.
+LOCALES = {"en_US.UTF-8": "en_US.utf8", "zh_TW.UTF-8": "zh_TW.utf8"}
+
 HOSTNAME = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
 TIMEZONE = re.compile(r"^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$")
 
@@ -135,6 +142,10 @@ def suggested_timezone(settings):
     return zone if valid_timezone(zone) else "Etc/UTC"
 
 
+def suggested_locale(settings):
+    return LOCALES.get(settings.get("tryomarchy.locale", ""), "en_US.utf8")
+
+
 def valid_timezone(zone, zoneinfo=None):
     return bool(TIMEZONE.match(zone)) and ".." not in zone \
         and os.path.isfile(os.path.join(zoneinfo or ZONEINFO, zone))
@@ -147,13 +158,13 @@ def scheme_string(text):
     return '"' + text + '"'
 
 
-def machine_settings(host_name, timezone, layout):
+def machine_settings(host_name, timezone, layout, locale):
     """The machine settings file's text: data that /etc/config.scm and the
     roguix-machine-settings service read, never load."""
     _, xkb_layout, variant, keymap = layout
     fields = (("host-name", host_name), ("timezone", timezone),
               ("keyboard-layout", xkb_layout), ("keyboard-variant", variant),
-              ("console-keymap", keymap))
+              ("console-keymap", keymap), ("locale", locale))
     return (";; Written by roguix-setup; read by /etc/config.scm and at boot.\n("
             + "\n ".join(f"({key} . {scheme_string(value)})" for key, value in fields)
             + ")\n")
@@ -437,6 +448,21 @@ def renamed_hosts(text, previous, host_name):
     return re.sub(rf"(?<![\w.-]){re.escape(previous)}(?![\w.-])", host_name, text)
 
 
+def with_language(environment, locale):
+    """/etc/environment's text ENVIRONMENT with LANG set to LOCALE."""
+    lines = [line for line in environment.splitlines()
+             if line and not line.startswith("LANG=")]
+    return "".join(f"{line}\n" for line in [f"LANG={locale}"] + lines)
+
+
+def apply_language(locale, environment="/etc/environment"):
+    # pam_env gives the login its LANG from here; the next reconfigure
+    # builds the same value from /etc/config.scm.
+    with open(environment, encoding="utf-8") as stream:
+        text = stream.read()
+    replace_file(environment, with_language(text, locale))
+
+
 def apply_system(host_name, timezone, hosts="/etc/hosts"):
     previous = socket.gethostname()
     run("hostname", host_name)
@@ -454,6 +480,7 @@ def apply_system(host_name, timezone, hosts="/etc/hosts"):
 
 def ask_all(terminal, settings):
     """Every answer, in Omarchy's order; returns them once confirmed."""
+    locale = suggested_locale(settings)
     layout = ask_layout(terminal, suggested_layout(settings))
     apply_layout(layout)
     password = ask_password(terminal)
@@ -463,10 +490,10 @@ def ask_all(terminal, settings):
         host_name = ask_host_name(terminal)
         timezone = ask_timezone(terminal, suggested_timezone(settings))
         summary = [f"Keyboard:  {layout[0]}", f"Host name: {host_name}",
-                   f"Time zone: {timezone}",
+                   f"Time zone: {timezone}", f"Language:  {locale} (the Mac's)",
                    f"Git:       {name or '-'} <{email or '-'}>"]
         if terminal.confirm("confirm", summary, "Save these settings?"):
-            return layout, password, name, email, host_name, timezone
+            return layout, password, name, email, host_name, timezone, locale
 
 
 def open_events():
@@ -482,11 +509,14 @@ def open_events():
 def main():
     settings = host_settings()
     with Terminal(events=open_events()) as terminal:
-        layout, password, name, email, host_name, timezone = ask_all(terminal, settings)
+        layout, password, name, email, host_name, timezone, locale = \
+            ask_all(terminal, settings)
         set_git_identity(name, email)
         os.makedirs(os.path.dirname(MACHINE_SETTINGS), mode=0o755, exist_ok=True)
-        replace_file(MACHINE_SETTINGS, machine_settings(host_name, timezone, layout))
+        replace_file(MACHINE_SETTINGS,
+                     machine_settings(host_name, timezone, layout, locale))
         apply_system(host_name, timezone)
+        apply_language(locale)
         # The password last: until it is set, first boot runs this setup again.
         set_password(password)
         terminal.event("finished")
