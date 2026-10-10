@@ -2,21 +2,6 @@
 
 ## Next, in order
 
-### Close Omarchy's low-battery warning once the battery recovers [t-i2lmhkes]
-
-Found 2026-10-10 by the perl/battery worker, the likely cause of the
-maintainer's "Battery is down to 10%" while the Mac was charged: Omarchy's
-"Time to recharge!" is a critical notification that never expires; it is
-saved under ~/.local/state/omarchy/notifications/ and comes back after every
-shell restart (and, by Omarchy's code, after a reboot), so a real <=10% on
-battery once on that VM disk keeps showing. Decided by the user 2026-10-10:
-a small patch on Omarchy's battery service (shell/plugins/services/battery)
-that closes the warning when the battery is no longer low (charging, AC, or
-above the threshold), and the same change offered to omacom/omarchy (search
-for an existing issue first; the coordinator files it). Needs a guest build;
-verify in a VM through the battery socket (low on battery -> warning;
-charging -> gone, also after a shell restart).
-
 ### Report the battery agent's disconnect bug to Try Omarchy [t-k6j5xgqq]
 
 Decided by the user 2026-10-10: upstream Try Omarchy's battery agent has the
@@ -221,6 +206,40 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### Close Omarchy's low-battery warning once the battery recovers [t-i2lmhkes]
+
+Found 2026-10-10 by the perl/battery worker, the likely cause of the
+maintainer's "Battery is down to 10%" while the Mac was charged: Omarchy's
+"Time to recharge!" is a critical notification that never expires; it is
+saved under ~/.local/state/omarchy/notifications/ and comes back after every
+shell restart (and, by Omarchy's code, after a reboot), so a real <=10% on
+battery once on that VM disk keeps showing. Decided by the user 2026-10-10:
+a small patch on Omarchy's battery service (shell/plugins/services/battery)
+that closes the warning when the battery is no longer low (charging, AC, or
+above the threshold), and the same change offered to omacom/omarchy (search
+for an existing issue first; the coordinator files it). Needs a guest build;
+verify in a VM through the battery socket (low on battery -> warning;
+charging -> gone, also after a shell restart).
+
+Blocked 2026-10-11 on the guest build. The worker's patch is committed on
+branch todo-lowbat (d2d0dee3, worktree kept): the battery service sends
+`omarchy-shell notifications dismiss` (acknowledged, idempotent, on its
+30 s reading) while the battery is not low, and the notification service
+remembers a dismiss that arrives before the saved toasts are restored;
+upstream battery-test.sh and notifications-test.sh pass on the patched tree,
+`make test` passes. Unbuilt and unverified in a VM: the builder VM is not
+running (no serial.sock) and the Mac has 47 GiB free, while a build grows
+the builder's disk by about 40 GiB and the export writes about 17 GiB.
+Upstream already has issue omacom/omarchy#14639 (this bug, restore
+included) and open PRs #14218, #14739, #14825, #11959, #11415; the worker
+recommends a comment on #14639 over a sixth PR (draft ready).
+Free disk space and start the builder for this build?
+Options: free space and start the builder, then the worker builds and checks in a VM | build later, together with the next guest change | drop the Roguix patch and only comment on #14639
+Checked: builder.qcow2 allocates 12 GiB; `df` shows 47 GiB free; the
+builder starts from the command kept next to its disk, then needs a root
+login and the 9p mounts (guest/guix/README.md).
+
 
 ### Background: rebase onto Try Omarchy 0.5 (2026-10-10)
 
