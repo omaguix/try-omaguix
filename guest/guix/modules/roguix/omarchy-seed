@@ -26,6 +26,26 @@ fi
   cp --no-preserve=mode "$roguix_share/30-roguix-cjk.conf" \
     "$HOME/.config/fontconfig/conf.d/30-roguix-cjk.conf"
 
+# Omarchy's screensaver is opt-in here: macOS has its own screensaver and
+# lock, and an animation in the VM costs the Mac's CPU and battery. Turn
+# Omarchy's own screensaver-off toggle on once per account, seeded ones too;
+# Trigger > Toggle > Screensaver in Omarchy's menu turns it on, and that
+# choice is kept.
+if [[ ! -e $state/done/roguix-screensaver-off ]]; then
+  mkdir -p "$state/toggles" "$state/done"
+  touch "$state/toggles/screensaver-off" "$state/done/roguix-screensaver-off"
+fi
+
+# Omarchy's branding files, which the Arch package ships in /etc/skel: the
+# screensaver animates screensaver.txt and About shows about.txt. Copied
+# when missing, so seeded accounts get them too and the owner's stay.
+mkdir -p "$HOME/.config/omarchy/branding"
+for branding in logo.txt:screensaver.txt icon.txt:about.txt; do
+  [[ -e $HOME/.config/omarchy/branding/${branding#*:} ]] || \
+    cp --no-preserve=mode "$omarchy/${branding%%:*}" \
+      "$HOME/.config/omarchy/branding/${branding#*:}"
+done
+
 # Omarchy's passwordless default keyring, as an installed Omarchy has: its
 # own install/user/default-keyring.sh, which only creates what is missing.
 bash "$omarchy/install/user/default-keyring.sh"

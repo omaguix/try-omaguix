@@ -27,6 +27,7 @@ own applications use Qt 6 or GTK.
 | `xdg-desktop-portal-hyprland` | `xdg-desktop-portal-hyprland-0.56` | Guix builds it against its own Hyprland 0.55.4: a second Hyprland in the system, and a 0.55 `hyprctl` in the share picker talking to Roguix's 0.56 compositor, whose dispatchers changed. Roguix rebuilds it against its Hyprland and hypr libraries. |
 | `obs-studio` | `obs-without-vlc` | See above. |
 | `fcitx5-qt` | `fcitx5-qt6` | See above. |
+| `ttfx` | `ttfx` from `modules/roguix/ttfx.scm` | Not in Guix; built from its source with the crates Guix already has. Omarchy's screensaver is off by default in Roguix and runs at 30 fps instead of 120 (`guest/guix/README.md`). |
 
 ## Replaced by a Roguix counterpart
 
@@ -46,7 +47,7 @@ own applications use Qt 6 or GTK.
 | --- | --- |
 | `pinta`, `localsend`, `obsidian` | .NET, Flutter and Electron applications; see `docs/decisions/0003-upstream-binary-packages.md` |
 | `dotnet-runtime` | Only Pinta needs it |
-| `aether`, `omacalc`, `omacut`, `omawrite`, `tensaku`, `tobi-try`, `ttfx`, `usage` | Omarchy-specific or Arch-only tools, not packaged for Guix |
+| `aether`, `omacalc`, `omacut`, `omawrite`, `tensaku`, `tobi-try`, `usage` | Omarchy-specific or Arch-only tools, not packaged for Guix |
 | `hyprland-preview-share-picker` | Not packaged for Guix |
 | `nautilus-python` | Not packaged for Guix |
 | `docker-buildx` | Not packaged for Guix |

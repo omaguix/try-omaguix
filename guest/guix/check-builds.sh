@@ -27,7 +27,7 @@ ${GUIX:-guix} repl -L "$modules/.." -- /dev/stdin > "$names" <<'SCHEME'
                   (package-version package)))))
     (resolve-module name)))
  '((roguix packages) (roguix apps) (roguix omarchy) (roguix integrations)
-   (roguix services) (roguix system)))
+   (roguix services) (roguix system) (roguix ttfx)))
 SCHEME
 ours=$(sort -u "$names")
 [[ -n $ours ]] || { echo "check-builds: found no Roguix packages" >&2; exit 2; }

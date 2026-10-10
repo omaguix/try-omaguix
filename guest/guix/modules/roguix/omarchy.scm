@@ -49,6 +49,7 @@
   #:use-module (gnu system pam)
   #:use-module (roguix apps)
   #:use-module (roguix packages)
+  #:use-module (roguix ttfx)
   #:export (omarchy
             font-jetbrains-mono-nerd
             roguix-omarchy-compat
@@ -216,7 +217,17 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
                   (("var transient = ") "var isTransient = ")
                   (("\\{ transient = ") "{ isTransient = ")
                   (("^( *)transient = !!" _ indent) (string-append indent "isTransient = !!"))
-                  (("return transient [|][|]") "return isTransient ||")))))
+                  (("return transient [|][|]") "return isTransient ||"))
+                ;; The screensaver is opt-in (roguix-omarchy-seed turns
+                ;; Omarchy's screensaver-off toggle on) and runs at 30 fps,
+                ;; not 120: every frame is redrawn by the terminal, copied
+                ;; through virtio-gpu and composited by macOS, all on the
+                ;; Mac's CPU and battery, and a text animation stays smooth
+                ;; at 30.
+                (let ((screensaver (string-append bin "/omarchy-screensaver")))
+                  (substitute* screensaver
+                    (("--frame-rate 120 ") "--frame-rate 30 "))
+                  (invoke "grep" "-q" "-e" "--frame-rate 30 " screensaver)))))
           (add-after 'install 'use-roguix-logo
             ;; omarchy-show-logo and friends print logo.txt: say GUIX, in
             ;; Omarchy's own block lettering, instead of OMARCHY.
@@ -536,7 +547,7 @@ end)
                                     fontconfig procps gawk util-linux curl
                                     `(,gtk+ "bin") libnotify xdg-user-dirs
                                     qtimageformats yaru-theme font-liberation
-                                    font-jetbrains-mono-nerd)
+                                    font-jetbrains-mono-nerd ttfx)
                                %omarchy-applications)))))
    (default-value #f)
    (description "Install Omarchy 4's desktop, shell and theme.")))

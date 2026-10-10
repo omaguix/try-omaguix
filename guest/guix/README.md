@@ -458,6 +458,25 @@ went straight to the desktop.
   `omarchy-audio-c-locale.patch` runs only those parsed `pactl` calls with
   `LC_ALL=C`. Remove it once the pinned Omarchy does the same.
 
+- **Screensaver:** Omarchy's screensaver animates its logo with `ttfx`
+  (Omarchy 4e31b61a), which `modules/roguix/ttfx.scm` builds from source:
+  v0.5.0, whose 28 crates are all in the pinned Guix at the same versions.
+  It is opt-in, since macOS has its own screensaver and lock and every frame
+  costs the Mac's CPU: `roguix-omarchy-seed` turns Omarchy's own
+  `screensaver-off` toggle on once per account, and Omarchy's menu (Trigger →
+  Toggle → Screensaver) turns it on again. It runs at 30 fps instead of
+  Omarchy's 120. **System → Screensaver** in the menu starts it at once
+  either way. The seed also copies Omarchy's branding files
+  (`~/.config/omarchy/branding/screensaver.txt` and `about.txt`, which the
+  Arch package ships in `/etc/skel`) when missing; without them the
+  screensaver showed only ttfx's error. Measured 2026-10-10 in a 4-vCPU
+  test VM on an M1 Pro whose memory was under pressure from another VM, over
+  20 s each: at 30 fps ttfx delivered 25 frames/s (effects restart in
+  between), the guest used 25% of its 4 vCPUs (foot 70% of one, Hyprland
+  10%) and QEMU about 50% of a Mac core; at Omarchy's 120 fps, 82 frames/s,
+  32% (foot 125%, Hyprland 30%) and 75% with stalls; the idle desktop 4–6%
+  and about 15%.
+
 - **Menus without perl:** `omarchy-menu-select` and `omarchy-menu-input`,
   which a dozen Omarchy commands (the time zone menu among them) build on,
   encoded their JSON payload with perl, which the image does not have, so
