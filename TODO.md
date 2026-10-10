@@ -42,6 +42,30 @@ costs the Mac's CPU and battery). First import its Cargo.lock
 git dependencies; then package it, run the screensaver at a lower frame rate
 in the VM and measure delivered fps and guest CPU. Needs a guest build.
 
+### Low-battery warning while the Mac is charged [t-nfcadqmf]
+
+Requested 2026-10-10: "in Try Roguix it shows: battery is down to 10%,
+although my MacBook has 100%." At that moment `pmset -g batt` said AC
+Power, 100%, charged; the VM ran from the pre-rebase development build
+(`try-roguix-v0.5.1-54-g02896d0-dirty`, the old installed Try Roguix.app)
+on the maintainer's existing VM disk.
+Checked: Omarchy's bar (shell/plugins/services/battery) warns only when
+UPower's display device is present, `onBattery` is true, the state is
+Discharging and round(percentage*100) <= 10, and passes that real level to
+`omarchy-battery-low`. The guest module's defaults before any update
+(status Unknown, capacity 0, AC online) cannot trigger it, so a snapshot
+with discharging, AC off and ~10% reached BAT0/ADP0, or UPower derived it.
+Consult round with sol and MiMo (20261010-114058-e44e), ranked: a stale
+10% snapshot kept because the agent rejects every later line (its exact key
+set vs a host sending upstream 0.5's extra fields), the host mapping
+"charged"/"not charging"/charge limit to discharging with AC off, UPower
+computing the display percentage from energy fields the old module lacks.
+Diagnose read-only first: in the guest, BAT0/ADP0 sysfs values and their
+write times, `upower -d`, the battery agent's log (rejected lines, its
+version); on the host, the JSON line the app sends now. Then say whether a
+matching app and image fix it or it is a product bug (state mapping, a
+stale snapshot kept forever), and fix the cause.
+
 ## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
