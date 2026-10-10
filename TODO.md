@@ -94,6 +94,21 @@ only `Try Roguix.app`; make it match development builds too
 that without the grant the VM runs without the Command mapping (the start
 menu's Accessibility row says so). Docs only.
 
+### Clean-account keyboard check before each release [t-cli74btl]
+
+Run a keyboard check on a clean macOS account (no remappers), as sol and
+MiMo suggest, before the next release?
+Options: yes, before the next release | after the next release | no
+Checks: first launch without the grant (VM runs, the start menu shows the
+missing grant and how to fix it), grant flow, Command-Space opens the
+guest's menu and not Spotlight while the VM is focused and Spotlight
+outside it, Command-Return, Command-Tab per its setting, typing/repeat/
+copy-paste unaffected, an ad-hoc update losing the grant and the recovery.
+Needs the maintainer: a second macOS account on their Mac.
+Decided by the user 2026-10-10: yes, before the next release. Add it as a
+step of docs/releasing.md (with the checks above); the maintainer runs it on
+a second macOS account at the release. Docs only for the worker.
+
 ### Narrow omacom/omarchy#14865 to the UTF-8 bug [t-mwepf6tt]
 
 Decided by the user 2026-10-10 (with sol and MiMo): #14865 (rofrol:menu-jq,
@@ -352,18 +367,6 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
-
-### Clean-account keyboard check? [t-cli74btl]
-
-Run a keyboard check on a clean macOS account (no remappers), as sol and
-MiMo suggest, before the next release?
-Options: yes, before the next release | after the next release | no
-Checks: first launch without the grant (VM runs, the start menu shows the
-missing grant and how to fix it), grant flow, Command-Space opens the
-guest's menu and not Spotlight while the VM is focused and Spotlight
-outside it, Command-Return, Command-Tab per its setting, typing/repeat/
-copy-paste unaffected, an ad-hoc update losing the grant and the recovery.
-Needs the maintainer: a second macOS account on their Mac.
 
 ### Background: rebase onto Try Omarchy 0.5 (2026-10-10)
 
