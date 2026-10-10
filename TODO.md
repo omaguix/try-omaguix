@@ -2,17 +2,17 @@
 
 ## Next, in order
 
-### herdr-job does not pass the caller's environment [t-2s62iij4]
+### Omarchy's audio scripts under LC_ALL=C [t-qsseokbf]
 
-Found 2026-10-10 by the guest-05 worker: `herdr-job run` starts the command
-in a new tab without the caller's exported variables, so
-`VM_RUN_SOCKET=... ` set in the worker's shell never reached
-`guest/guix/vm-run`, which then looked for the worktree's own socket and
-exited 125. AGENTS.md ("Building and Running in a Worktree", "Long-Running
-Work") should show the variable passed inside the job's command, e.g.
-`herdr-job run ... -- env VM_RUN_SOCKET=<main checkout>/.build/guix-validation/serial.sock guest/guix/vm-run '<command>'`.
-Added straight to "Next, in order" by the coordinator (follows from an
-approved item, docs only, one revert undoes it).
+Found 2026-10-10 by the worker porting Try Omarchy 0.5's guest changes:
+Omarchy 4.0.4's audio scripts (omarchy-audio-output-set-default,
+-output-sink, -sink-availability, -tuning) parse `pactl` output, which a
+localized session (zh_TW, zh_CN, ko_KR) translates, so switching the output
+may fail there. Decided by the user 2026-10-10: both run these scripts
+with `LC_ALL=C` in Roguix's omarchy package (a patch on the pinned Omarchy,
+dropped once upstream fixes it; needs a guest build, verify output switching
+in a localized VM) and report it to Omarchy (an issue, or a PR with the
+same fix; the worker drafts it and says where it was filed).
 
 ## Proposed
 
