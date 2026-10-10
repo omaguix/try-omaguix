@@ -83,6 +83,7 @@
               ;; background's name is title-cased as UTF-8, not as bytes.
               ;; A theme change stages the store's theme as the owner's, so
               ;; it can replace the current theme (a Guix-only problem).
+              ;; The low-battery warning closes once the battery recovers.
               ;; All but the power profile and theme staging patches differ
               ;; from Try Omarchy: guest/guix/README.md, "Differences from
               ;; Try Omarchy".
@@ -91,7 +92,8 @@
                      (local-file "omarchy-macos-power-profile.patch")
                      (local-file "omarchy-audio-c-locale.patch")
                      (local-file "omarchy-theme-bg-utf8.patch")
-                     (local-file "omarchy-theme-set-store-modes.patch")))))
+                     (local-file "omarchy-theme-set-store-modes.patch")
+                     (local-file "omarchy-battery-warning-dismiss.patch")))))
     (build-system copy-build-system)
     (arguments
      (list

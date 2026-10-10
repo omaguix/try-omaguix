@@ -1,0 +1,351 @@
+Omarchy's "Time to recharge!" warning is critical, so it never expires, and
+the notification service restores it after every shell restart: a warning
+from a battery that was low once kept showing while the Mac charged. The
+battery service now dismisses it whenever the battery is not low (charging,
+on AC, above the threshold or gone) and a warning may still be showing,
+which is also the case at every shell start, for a restored warning. It
+decides only once UPower has read the display device (`ready`), from the
+device's own state: right after a start the device holds defaults that look
+like a battery that is gone or charging, and dismissing then closed a
+restored warning while the battery was still low. Readiness and state
+changes trigger a check, so charging closes the warning at once. It
+dismisses through `omarchy-shell notifications dismiss` without -q, and
+forgets the warning only when that succeeds, so a dismissal the starting
+shell did not take is sent again on the next battery check. The warning and
+its dismissal run one at a time, in order. The notification service applies
+a dismissal that arrives before its restore has run to the popups it
+restores, so a dismissal at shell start does not race the restore.
+Omarchy's battery and notifications tests cover it.
+
+Remove once the pinned Omarchy includes it (offered to omacom/omarchy).
+diff --git a/shell/plugins/notifications/NotificationLogic.js b/shell/plugins/notifications/NotificationLogic.js
+index b5a6f3ea9..08acee8a5 100644
+--- a/shell/plugins/notifications/NotificationLogic.js
++++ b/shell/plugins/notifications/NotificationLogic.js
+@@ -445,6 +445,16 @@ function historyRows(raw, liveRows, normalUrgency, limit) {
+   out.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0) })
+   return out.slice(0, max)
+ }
++// Whether a dismissal by summary substring (the dismiss IPC) covers entry.
++function summaryMatchesAny(entry, needles) {
++  var summary = String((entry || {}).summary || "")
++  var list = Array.isArray(needles) ? needles : []
++  for (var i = 0; i < list.length; i++) {
++    var needle = String(list[i] || "")
++    if (needle && summary.indexOf(needle) !== -1) return true
++  }
++  return false
++}
+ 
+ if (typeof module !== "undefined") {
+   module.exports = {
+@@ -474,6 +484,7 @@ if (typeof module !== "undefined") {
+     serializePopup: serializePopup,
+     parsePopupFiles: parsePopupFiles,
+     popupExpired: popupExpired,
++    summaryMatchesAny: summaryMatchesAny,
+     popupPlacement: popupPlacement
+   }
+ }
+diff --git a/shell/plugins/notifications/Service.qml b/shell/plugins/notifications/Service.qml
+index 0122310ee..a8cdb49ce 100644
+--- a/shell/plugins/notifications/Service.qml
++++ b/shell/plugins/notifications/Service.qml
+@@ -428,6 +428,11 @@ Item {
+   // generations. The replaces_id handling and liveRefs lookups must not
+   // match these rows against fresh notifications.
+   property var restoredPopups: ({})
++  // Until the restore has put the previous shell's popups back, a dismissal
++  // by summary is remembered and applied to them as they are restored: a
++  // caller dismissing at shell start must not race the restore.
++  property bool popupsRestored: false
++  property var dismissedBeforeRestore: []
+ 
+   // Entries are either { command, done } for a file job or { read: true } for
+   // a replay's directory read. Queueing the read rather than running it beside
+@@ -745,11 +750,18 @@ Item {
+       }
+       live.push(entry)
+     }
+-    if (live.length === 0) return
++    if (live.length === 0) {
++      finishRestore()
++      return
++    }
+ 
+     Qt.callLater(function() {
+       for (var j = 0; j < live.length; j++) {
+         var restored = live[j]
++        if (NotificationLogic.summaryMatchesAny(restored, service.dismissedBeforeRestore)) {
++          archivePopupFileFor(restored)
++          continue
++        }
+         // A notification received while the restore was reading the dir can
+         // already occupy this originalId with the same timestamp — then it
+         // IS this entry, live with its own file, and must be left alone. A
+@@ -773,9 +785,15 @@ Item {
+         service.restoredPopups[NotificationLogic.popupFileName(restored)] = true
+         popupModel.append(restored)
+       }
++      service.finishRestore()
+     })
+   }
+ 
++  function finishRestore() {
++    popupsRestored = true
++    dismissedBeforeRestore = []
++  }
++
+   // ---------------------------------------------------- settings persistence
+ 
+   FileView {
+@@ -920,6 +938,8 @@ Item {
+           hit = true
+         }
+       }
++      if (!service.popupsRestored)
++        service.dismissedBeforeRestore = service.dismissedBeforeRestore.concat([needle])
+       return hit ? "ok" : "none"
+     }
+ 
+diff --git a/shell/plugins/services/battery/BatteryModel.js b/shell/plugins/services/battery/BatteryModel.js
+index 2aca5dbd9..a216f5701 100644
+--- a/shell/plugins/services/battery/BatteryModel.js
++++ b/shell/plugins/services/battery/BatteryModel.js
+@@ -7,14 +7,23 @@ function isDischarging(device, onBattery, dischargingState) {
+   return !!(device && device.isPresent && onBattery && device.state === dischargingState)
+ }
+ 
+-function shouldWarnLowBattery(device, onBattery, dischargingState, threshold, alreadyNotified) {
++// warningMayShow: a warning may still be on screen, sent by this service or
++// restored after a shell restart, and no dismissal has been acknowledged since.
++// The dismissal needs a device UPower has read (`ready`): right after a shell
++// start the display device holds defaults, which look like a battery that is
++// gone or not discharging. It reads the device's own state, not onBattery.
++function shouldWarnLowBattery(device, onBattery, dischargingState, threshold, alreadyNotified, warningMayShow) {
++  if (!device || !device.ready) return { level: -1, notify: false, dismiss: false, notifiedLowBattery: !!alreadyNotified }
++
+   var level = batteryPercentage(device)
+-  if (level < 0) return { level: level, notify: false, notifiedLowBattery: false }
++  if (level < 0) return { level: level, notify: false, dismiss: !!warningMayShow, notifiedLowBattery: false }
+ 
+   var low = isDischarging(device, onBattery, dischargingState) && level <= threshold
++  var recovered = device.state !== dischargingState || level > threshold
+   return {
+     level: level,
+     notify: low && !alreadyNotified,
++    dismiss: recovered && !!warningMayShow,
+     notifiedLowBattery: low
+   }
+ }
+diff --git a/shell/plugins/services/battery/Service.qml b/shell/plugins/services/battery/Service.qml
+index 37fdf5c72..1cde684ae 100644
+--- a/shell/plugins/services/battery/Service.qml
++++ b/shell/plugins/services/battery/Service.qml
+@@ -11,12 +11,19 @@ Item {
+   property string omarchyPath: Quickshell.env("OMARCHY_PATH")
+ 
+   readonly property int batteryThreshold: 10
++  // The summary omarchy-battery-low sends.
++  readonly property string warningSummary: "Time to recharge!"
+   property string pendingPowerSource: ""
++  property var pendingWarningCommand: null
+ 
+   PersistentProperties {
+     id: persisted
+     reloadableId: "omarchy-battery"
+     property bool notifiedLowBattery: false
++    // True from the start: the notification service restores a warning left
++    // on screen by the previous shell. Cleared only once the shell
++    // acknowledges a dismissal; a lost one is sent again on the next check.
++    property bool warningMayShow: true
+   }
+ 
+   function batteryPercentage() {
+@@ -28,17 +35,24 @@ Item {
+   }
+ 
+   function checkBattery() {
+-    var state = BatteryModel.shouldWarnLowBattery(UPower.displayDevice, UPower.onBattery, UPowerDeviceState.Discharging, batteryThreshold, persisted.notifiedLowBattery)
++    var state = BatteryModel.shouldWarnLowBattery(UPower.displayDevice, UPower.onBattery, UPowerDeviceState.Discharging, batteryThreshold, persisted.notifiedLowBattery, persisted.warningMayShow)
+     persisted.notifiedLowBattery = state.notifiedLowBattery
+-    if (state.notify) sendLowBatteryWarning(state.level)
++    if (state.notify) runWarningCommand(["omarchy-battery-low", String(state.level)])
++    else if (state.dismiss) runWarningCommand(["omarchy-shell", "notifications", "dismiss", warningSummary])
+   }
+ 
+-  function sendLowBatteryWarning(level) {
+-    if (warningProcess.running) return
+-    warningProcess.command = [
+-      "omarchy-battery-low",
+-      String(level)
+-    ]
++  // One command at a time, the latest last, so a dismissal never overtakes
++  // the warning it closes. omarchy-shell without -q fails when the shell did
++  // not take the dismissal (not ready yet, or not responding).
++  function runWarningCommand(command) {
++    pendingWarningCommand = command
++    if (!warningProcess.running) runPendingWarningCommand()
++  }
++
++  function runPendingWarningCommand() {
++    if (pendingWarningCommand[0] === "omarchy-battery-low") persisted.warningMayShow = true
++    warningProcess.command = pendingWarningCommand
++    pendingWarningCommand = null
+     warningProcess.running = true
+   }
+ 
+@@ -53,7 +67,13 @@ Item {
+     powerProfileProcess.running = true
+   }
+ 
+-  Process { id: warningProcess }
++  Process {
++    id: warningProcess
++    onExited: function(exitCode) {
++      if (exitCode === 0 && warningProcess.command[0] === "omarchy-shell") persisted.warningMayShow = false
++      if (root.pendingWarningCommand) root.runPendingWarningCommand()
++    }
++  }
+ 
+   Process {
+     id: powerProfileProcess
+@@ -75,4 +95,12 @@ Item {
+       root.applyPowerProfile()
+     }
+   }
++
++  // The first check after a start may come before UPower has read the device;
++  // the dismissal waits for these, and charging shows in the device's state.
++  Connections {
++    target: UPower.displayDevice
++    function onReadyChanged() { root.checkBattery() }
++    function onStateChanged() { root.checkBattery() }
++  }
+ }
+diff --git a/test/shell.d/battery-test.sh b/test/shell.d/battery-test.sh
+index 0447779a9..fa2757c76 100644
+--- a/test/shell.d/battery-test.sh
++++ b/test/shell.d/battery-test.sh
+@@ -7,6 +7,7 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
+ run_node_test <<'JS'
+ const battery = requireFromRoot('shell/plugins/services/battery/BatteryModel.js')
+ const discharging = 1
++const charging = 2
+ 
+ assertEqual(battery.batteryPercentage({ isPresent: true, percentage: 0.126 }), 13, 'battery rounds display percentage')
+ assertEqual(battery.batteryPercentage({ isPresent: false, percentage: 0.5 }), -1, 'battery reports missing battery')
+@@ -14,18 +15,72 @@ assert(battery.isDischarging({ isPresent: true, state: discharging }, true, disc
+ assert(!battery.isDischarging({ isPresent: true, state: discharging }, false, discharging), 'battery requires on-battery state')
+ 
+ assertDeepEqual(
+-  battery.shouldWarnLowBattery({ isPresent: true, percentage: 0.08, state: discharging }, true, discharging, 10, false),
+-  { level: 8, notify: true, notifiedLowBattery: true },
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.08, state: discharging }, true, discharging, 10, false),
++  { level: 8, notify: true, dismiss: false, notifiedLowBattery: true },
+   'battery warns once under threshold'
+ )
+ assertDeepEqual(
+-  battery.shouldWarnLowBattery({ isPresent: true, percentage: 0.08, state: discharging }, true, discharging, 10, true),
+-  { level: 8, notify: false, notifiedLowBattery: true },
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.08, state: discharging }, true, discharging, 10, true, true),
++  { level: 8, notify: false, dismiss: false, notifiedLowBattery: true },
+   'battery keeps low-battery notified state'
+ )
+ assertDeepEqual(
+-  battery.shouldWarnLowBattery({ isPresent: true, percentage: 0.4, state: discharging }, true, discharging, 10, true),
+-  { level: 40, notify: false, notifiedLowBattery: false },
+-  'battery clears notified state after recovery'
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.4, state: discharging }, true, discharging, 10, true, true),
++  { level: 40, notify: false, dismiss: true, notifiedLowBattery: false },
++  'battery clears notified state and dismisses the warning after recovery'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.08, state: charging }, false, discharging, 10, true, true),
++  { level: 8, notify: false, dismiss: true, notifiedLowBattery: false },
++  'battery dismisses the warning once the charger is plugged in'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.08, state: charging }, false, discharging, 10, false, true),
++  { level: 8, notify: false, dismiss: true, notifiedLowBattery: false },
++  'battery dismisses a warning restored after a shell restart'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.08, state: discharging }, true, discharging, 10, false, true),
++  { level: 8, notify: true, dismiss: false, notifiedLowBattery: true },
++  'battery warns again after a shell restart while still low'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.4, state: discharging }, true, discharging, 10, false, false),
++  { level: 40, notify: false, dismiss: false, notifiedLowBattery: false },
++  'battery sends no dismissal once one was acknowledged'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: true, isPresent: false }, false, discharging, 10, true, true),
++  { level: -1, notify: false, dismiss: true, notifiedLowBattery: false },
++  'battery dismisses the warning when the battery disappears'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: false, isPresent: false, percentage: 0, state: 0 }, false, discharging, 10, false, true),
++  { level: -1, notify: false, dismiss: false, notifiedLowBattery: false },
++  'battery keeps a restored warning until UPower has read the device'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: false, isPresent: false, percentage: 0, state: 0 }, false, discharging, 10, true, true),
++  { level: -1, notify: false, dismiss: false, notifiedLowBattery: true },
++  'battery keeps its notified state until UPower has read the device'
++)
++assertDeepEqual(
++  battery.shouldWarnLowBattery({ ready: true, isPresent: true, percentage: 0.08, state: discharging }, false, discharging, 10, true, true),
++  { level: 8, notify: false, dismiss: false, notifiedLowBattery: false },
++  'battery keeps the warning while the device still reports discharging'
+ )
+ JS
++
++service_qml="$ROOT/shell/plugins/services/battery/Service.qml"
++summary_in_script=$(sed -n 's/.*-u critical "\([^"]*\)".*/\1/p' "$ROOT/bin/omarchy-battery-low")
++summary_in_service=$(sed -n 's/.*warningSummary: "\([^"]*\)".*/\1/p' "$service_qml")
++[[ -n $summary_in_script && $summary_in_script == "$summary_in_service" ]] || fail 'battery service dismisses the summary omarchy-battery-low sends'
++pass 'battery service dismisses the summary omarchy-battery-low sends'
++
++grep -q '"omarchy-shell", "notifications", "dismiss", warningSummary' "$service_qml" || fail 'battery service dismisses through omarchy-shell without -q'
++grep -q 'exitCode === 0 && warningProcess.command\[0\] === "omarchy-shell") persisted.warningMayShow = false' "$service_qml" || fail 'battery service forgets the warning only when the shell takes the dismissal'
++pass 'battery service forgets the warning only when the shell takes the dismissal'
++
++grep -q 'function onReadyChanged() { root.checkBattery() }' "$service_qml" || fail 'battery service checks again once UPower has read the device'
++grep -q 'function onStateChanged() { root.checkBattery() }' "$service_qml" || fail 'battery service checks again when the device state changes'
++pass 'battery service checks again when the device is read or changes state'
+diff --git a/test/shell.d/notifications-test.sh b/test/shell.d/notifications-test.sh
+index f06e0481f..0acfb9600 100644
+--- a/test/shell.d/notifications-test.sh
++++ b/test/shell.d/notifications-test.sh
+@@ -511,6 +511,10 @@ assertDeepEqual(
+ assert(!notifications.popupExpired({ timestamp: 0 }, 0, 999999), 'critical popups never expire on restore')
+ assert(!notifications.popupExpired({ timestamp: 1000 }, 8000, 5000), 'popups within their lifetime are restored')
+ assert(notifications.popupExpired({ timestamp: 1000 }, 8000, 9000), 'popups past their lifetime are not restored')
++assert(notifications.summaryMatchesAny({ summary: 'Time to recharge!' }, ['recharge']), 'a dismissal matches a summary substring')
++assert(!notifications.summaryMatchesAny({ summary: 'Time to recharge!' }, ['Update']), 'a dismissal leaves other summaries alone')
++assert(!notifications.summaryMatchesAny({ summary: 'Time to recharge!' }, ['']), 'an empty dismissal matches nothing')
++assert(!notifications.summaryMatchesAny({ summary: 'Time to recharge!' }, []), 'no dismissal matches nothing')
+ assert(
+   !notifications.popupExpired({ timestamp: 1000, deadline: 20000 }, 8000, 15000),
+   'a restore-reset deadline outranks the original popup timestamp'
+@@ -719,6 +723,18 @@ assert(
+   /function clear\(\): string \{\s*service\.clearHistory\(\)/.test(serviceQml),
+   'notifications clear IPC forgets the recorded history'
+ )
++assert(
++  /if \(!service\.popupsRestored\)\s*service\.dismissedBeforeRestore = /.test(serviceQml),
++  'notifications dismiss IPC remembers a dismissal that arrives before the restore'
++)
++assert(
++  /summaryMatchesAny\(restored, service\.dismissedBeforeRestore\)\) \{\s*archivePopupFileFor\(restored\)/.test(serviceQml),
++  'notifications restore archives popups dismissed before it ran instead of showing them'
++)
++assert(
++  (serviceQml.match(/finishRestore\(\)/g) || []).length === 3,
++  'notifications restore finishes whether or not it put popups back'
++)
+ assert(
+   !/pendingModel|pastModel/.test(serviceQml),
+   'notifications service keeps no in-memory history models'
