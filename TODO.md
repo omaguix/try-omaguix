@@ -2,15 +2,6 @@
 
 ## Next, in order
 
-### Rebase onto upstream Try Omarchy [t-qxwxwcet]
-
-Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
-Omarchy"). After the items above: rebase `main` onto `upstream/main` and
-force-push with `--force-with-lease=main:<the reviewed old SHA>`, as the
-Roguix section of AGENTS.md and `docs/releasing.md` describe; resolve
-conflicts keeping Roguix's guest and our macOS patches, rerun `make test`,
-and review what upstream changed that Roguix should follow.
-
 ### Remote commands end when the remote work ends [t-gwjmq54j]
 
 Requested 2026-10-10 (the maintainer passed on the herdr coordinator's
@@ -27,6 +18,49 @@ session's stderr; `ssh -n` alone fixes only stdin. The coordinator puts the
 same rule in its worker task texts from now on.
 
 ## Proposed
+
+### Apply the Mac's language once, not on every boot [t-2k7yfxqe]
+
+Proposed 2026-10-10 after the rebase onto Try Omarchy 0.5. Upstream
+(2dbd079) initializes the guest's language from the Mac once at first boot;
+Roguix's tty1 session still sets LANG from `tryomarchy.locale` on every
+boot, so a language changed inside the guest is overwritten at the next
+boot. Port the once-only behavior to the Guix session (sol and MiMo both
+flag it as a user-visible gap). Needs a guest build.
+
+### Korean input and zh_CN from Try Omarchy 0.5 [t-56y7klun]
+
+Proposed 2026-10-10 after the rebase: upstream added ko_KR with fcitx5
+Hangul (3e9f720) and zh_CN (2dbd079). Roguix's image lists only zh_TW in
+`guest.locales`; add the locales, fcitx5 groups and fonts the Guix guest
+needs, so the Mac's language reaches the guest for these too. Needs a guest
+build.
+
+### Port upstream's guest-side 0.5 fixes [t-3jzpekj7]
+
+Proposed 2026-10-10 after the rebase, each to check against Roguix's own
+port before porting: microphone switching in localized sessions (da53e89,
+Roguix's audio routing), draining large clipboard selections (6d480d1,
+the clipboard bridge), the battery mirror reading the charge limits and
+physical data the host now sends (f41da7c, 0c9817d), the screensaver in
+small windows (6bb1359), the time zone as an explicit choice at first boot
+(5cebb9b), and optionally macOS power profiles in the guest (7834690).
+
+### Check the built app's version against the release tag [t-icv2e3ua]
+
+Proposed 2026-10-10 after the rebase: upstream verifies the release app's
+version against the tag (3f77a2f). `macos/release.sh` derives the version
+from the `try-roguix-v*` tag through `scripts/app_version.py`, so they
+agree by construction, but nothing checks the built app; add the assertion
+after the build (a few lines). Decided by the coordinator 2026-10-10 with
+sol and MiMo: keep `release.sh`, do not port upstream's `scripts/release.py`
+(it builds the Arch guest and tags `v*`).
+
+### Mark upstream's Arch guest documents as Try Omarchy's [t-gnl4jgea]
+
+Proposed 2026-10-10 after the rebase: `docs/integration-updates.md`,
+`docs/host-battery.md` and `docs/performance.md` describe the Arch guest and
+came in unchanged; say at their top that they describe Try Omarchy's guest.
 
 ### Register checks for herdr todo run [t-atkjktc5]
 
@@ -198,6 +232,34 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### Development copy named Try Roguix Dev? [t-maseondx]
+
+Should development builds install as `~/Applications/Try Roguix Dev.app`?
+Options: rename to Try Roguix Dev.app | keep ~/Applications/Try Roguix.app
+Checked 2026-10-10 after the rebase onto Try Omarchy 0.5: upstream gave
+development builds their own bundle id and the name "Try Omarchy Dev". The
+rebased dev build has the id `dev.tryroguix.native.development` but `make
+install` still copies it to `~/Applications/Try Roguix.app` (`INSTALLED_APP`
+in the Makefile; docs pin that path), while public releases (0.5.0, 0.5.1)
+ship the same name in the DMG. The worker recommended keeping the path; sol
+and MiMo both recommend renaming, so a dev build cannot be mistaken for or
+replace a release install, at the cost of updating the pinned path in the
+Makefile, docs and scripts. A changed bundle id may also ask again for the
+Accessibility grant.
+
+### Background: rebase onto Try Omarchy 0.5 (2026-10-10)
+
+`main` was rebased onto upstream 3c6056d (46 commits, release 0.5). Three
+own commits dropped as upstream covers them (the VM integrations row and
+the Language row are gone upstream; a reset already erases the old VM);
+two added: the boot-fix review removed from the app (it repairs the Arch
+guest's files), and 0.5's new texts adapted to Try Roguix. Decided by the
+coordinator with sol and MiMo: the host follows upstream's language model
+(the app sends the Mac's primary language when the image lists it; the
+start menu's Language row is gone, so choosing zh_TW on a Mac in another
+language is no longer possible), and releases keep `macos/release.sh`.
+Follow-ups are in "Proposed".
 
 ### Background: KosmicKrisp and Venus
 
