@@ -67,7 +67,15 @@
               (file-name (git-file-name name version))
               (sha256
                (base32
-                "0djxrwz0h8nbisy5j3xdvkicj6v0kl12qxc34dvakscgw0rp3jwy"))))
+                "0djxrwz0h8nbisy5j3xdvkicj6v0kl12qxc34dvakscgw0rp3jwy"))
+              ;; Omarchy #13418 (6762769b, after 4.0.4): menu and panel
+              ;; bindings reach the shell as Hyprland global shortcuts
+              ;; instead of a qs IPC client that omarchy-shell kills on its
+              ;; timeout, which lost or delayed Super+Space. The build fails
+              ;; if the patch no longer applies; remove it once the pin
+              ;; includes 6762769b.
+              (patches
+               (list (local-file "omarchy-global-shortcuts.patch")))))
     (build-system copy-build-system)
     (arguments
      (list

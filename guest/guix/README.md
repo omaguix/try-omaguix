@@ -401,6 +401,15 @@ went straight to the desktop.
   whose guard takes 3 s, pressed 0.2 s after the menu mapped and released 4 s
   later: 2 of 10 clicks ran its action without the substitution, 10 of 10
   with it; quick clicks worked 30 of 30 in both.
+- **Menu and panel keys:** Omarchy 4.0.4 binds Super+Space and the other
+  menu and panel keys to `omarchy-menu`/`omarchy-shell`, which start a
+  `qs ipc` client that `omarchy-shell` kills on its timeout under load, and
+  the toggle is then lost or arrives late. `omarchy-global-shortcuts.patch`
+  backports Omarchy #13418 (6762769b): the shell registers a Hyprland global
+  shortcut for each entry in `default/omarchy/shortcuts`, and the bindings
+  dispatch it with `hl.dsp.global`, so a keypress starts no process. Other
+  callers of `omarchy-shell` keep the old path. Remove the patch once the
+  pinned Omarchy includes 6762769b; the build fails if it no longer applies.
 
 Menus that manage systemd timers (reminders) do nothing here. `gum` and `libvips` are not in this Guix, so gum
 dialogs and background-picker thumbnails are missing.

@@ -1,0 +1,413 @@
+Open shell menus and panels through Hyprland global shortcuts.
+
+Backport of Omarchy pull request #13418 (merged into quattro as 6762769b)
+onto the pinned 4.0.4 tree (c668141e). Super+Space and the other menu and
+panel bindings ran omarchy-menu or omarchy-shell, which start a qs IPC
+client that omarchy-shell kills on its timeout; a killed client loses the
+toggle or delivers it late. The shell now registers a Hyprland global
+shortcut for each entry in default/omarchy/shortcuts, and the bindings
+dispatch it with hl.dsp.global, so a keypress starts no process.
+
+Only the clipboard.lua hunk differs from upstream: its context lines follow
+the pinned tree's universal copy and paste bindings. Remove this patch once
+the pinned Omarchy includes 6762769b.
+
+diff --git a/config/hypr/bindings.lua b/config/hypr/bindings.lua
+index 98d3ecb..bb1636f 100644
+--- a/config/hypr/bindings.lua
++++ b/config/hypr/bindings.lua
+@@ -26,4 +26,4 @@
+ -- Logitech MX Keys examples:
+ -- o.bind("SUPER + SHIFT + S", nil, "omarchy-capture-screenshot")
+ -- o.bind("SUPER + H", nil, "voxtype record toggle")
+--- o.bind("SUPER + PERIOD", nil, "omarchy-shell shell toggle omarchy.emojis")
++-- o.bind("SUPER + PERIOD", nil, { panel = "omarchy.emojis" })
+diff --git a/default/agents/skills/omarchy/hyprland.md b/default/agents/skills/omarchy/hyprland.md
+index 961ff38..df538df 100644
+--- a/default/agents/skills/omarchy/hyprland.md
++++ b/default/agents/skills/omarchy/hyprland.md
+@@ -36,8 +36,12 @@ Edit `~/.config/hypr/bindings.lua`. Format:
+ ```lua
+ o.bind("SUPER + SHIFT + R", "SSH", "alacritty -e ssh your-server")
+ o.bind("SUPER + B", "Browser", { launch = "chromium" })  -- launch wraps with uwsm-app
++o.bind("SUPER + M", "Theme menu", { menu = "theme" })     -- toggle an Omarchy menu route
++o.bind("SUPER + N", "Network", { panel = "omarchy.network" })  -- toggle a shell panel
+ ```
+ 
++Prefer `{ menu = ... }` and `{ panel = ... }` over running `omarchy-menu toggle ...` or `omarchy-shell shell toggle ...` as a command. Routes and panels listed in `$OMARCHY_PATH/default/omarchy/shortcuts` go straight to the running shell as Hyprland global shortcuts, with no process started on each press; any other route or panel still works, through the command.
++
+ View current bindings: `omarchy menu keybindings --print`
+ 
+ **IMPORTANT: When re-binding an existing key:**
+diff --git a/default/hypr/bindings/clipboard.lua b/default/hypr/bindings/clipboard.lua
+index f095ea5..cdaa2c6 100644
+--- a/default/hypr/bindings/clipboard.lua
++++ b/default/hypr/bindings/clipboard.lua
+@@ -45,4 +45,4 @@ end
+ o.bind("SUPER + C", "Universal copy", universal_clipboard_shortcut("CTRL", "C", "CTRL", "Insert"))
+ o.bind("SUPER + V", "Universal paste", universal_clipboard_shortcut("CTRL", "V", "SHIFT", "Insert"))
+ o.bind("SUPER + X", "Universal cut", send_shortcut_once("CTRL", "X"))
+-o.bind("SUPER + CTRL + V", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
++o.bind("SUPER + CTRL + V", "Clipboard manager", { panel = "omarchy.clipboard" })
+diff --git a/default/hypr/bindings/utilities.lua b/default/hypr/bindings/utilities.lua
+index 406b773..20483d2 100644
+--- a/default/hypr/bindings/utilities.lua
++++ b/default/hypr/bindings/utilities.lua
+@@ -1,12 +1,12 @@
+-o.bind("SUPER + SPACE", "Omarchy menu", "omarchy-menu toggle")
+-o.bind("SUPER + ALT + SPACE", "Apps menu", "omarchy-menu toggle apps")
+-o.bind("SUPER + CTRL + E", "Emojis", "omarchy-shell shell toggle omarchy.emojis")
+-o.bind("SUPER + CTRL + C", "Capture menu", "omarchy-menu toggle capture")
+-o.bind("SUPER + CTRL + O", "Toggle menu", "omarchy-menu toggle toggle")
+-o.bind("SUPER + CTRL + H", "Hardware menu", "omarchy-menu toggle hardware")
+-o.bind("SUPER + SHIFT + code:201", "Omarchy menu", "omarchy-menu toggle root")
+-o.bind("SUPER + ESCAPE", "System menu", "omarchy-menu toggle system")
+-o.bind("XF86PowerOff", "Power menu", "omarchy-menu toggle system", { locked = true })
++o.bind("SUPER + SPACE", "Omarchy menu", { menu = "root" })
++o.bind("SUPER + ALT + SPACE", "Apps menu", { menu = "apps" })
++o.bind("SUPER + CTRL + E", "Emojis", { panel = "omarchy.emojis" })
++o.bind("SUPER + CTRL + C", "Capture menu", { menu = "capture" })
++o.bind("SUPER + CTRL + O", "Toggle menu", { menu = "toggle" })
++o.bind("SUPER + CTRL + H", "Hardware menu", { menu = "hardware" })
++o.bind("SUPER + SHIFT + code:201", "Omarchy menu", { menu = "root" })
++o.bind("SUPER + ESCAPE", "System menu", { menu = "system" })
++o.bind("XF86PowerOff", "Power menu", { menu = "system" }, { locked = true })
+ o.bind("SUPER + K", "Keybindings", "omarchy-menu-keybindings")
+ o.bind("SUPER + ALT + K", "Tmux keybindings", "omarchy-menu-tmux-keybindings")
+ o.bind("SUPER + CTRL + K", "Herdr keybindings", "omarchy-menu-herdr-keybindings")
+@@ -14,8 +14,8 @@ o.bind("SUPER + CTRL + Q", "Calculator", "omacalc")
+ o.bind("XF86Calculator", "Calculator", "omacalc")
+ 
+ o.bind_toggle("SUPER + SHIFT + SPACE", "Toggle top bar", "bar")
+-o.bind("SUPER + CTRL + SPACE", "Background switcher", "omarchy-menu toggle background")
+-o.bind("SUPER + SHIFT + CTRL + SPACE", "Theme menu", "omarchy-menu toggle theme")
++o.bind("SUPER + CTRL + SPACE", "Background switcher", { menu = "background" })
++o.bind("SUPER + SHIFT + CTRL + SPACE", "Theme menu", { menu = "theme" })
+ o.bind("SUPER + BACKSPACE", "Toggle window transparency", "omarchy-hyprland-window-transparency-toggle")
+ o.bind("SUPER + SHIFT + BACKSPACE", "Toggle window gaps", "omarchy-hyprland-window-gaps-toggle")
+ o.bind("SUPER + CTRL + BACKSPACE", "Toggle single-window square aspect", "omarchy-hyprland-window-single-square-aspect-toggle")
+@@ -81,11 +81,11 @@ hl.on("layer.closed", function(layer)
+   end
+ end)
+ 
+-o.bind("SUPER + CTRL + S", "Share", "omarchy-menu toggle share")
++o.bind("SUPER + CTRL + S", "Share", { menu = "share" })
+ 
+ o.bind("SUPER + CTRL + PERIOD", "Transcode", "omarchy-transcode")
+ 
+-o.bind("SUPER + CTRL + R", "Set reminder", "omarchy-menu toggle reminder-set")
++o.bind("SUPER + CTRL + R", "Set reminder", { menu = "reminder-set" })
+ o.bind("SUPER + CTRL + ALT + R", "Show reminders", "omarchy-reminder show")
+ o.bind("SUPER + SHIFT + CTRL + R", "Clear reminders", "omarchy-reminder clear")
+ 
+@@ -94,12 +94,12 @@ o.bind("SUPER + CTRL + ALT + B", "Show battery remaining", "omarchy-notification
+ o.bind("SUPER + CTRL + ALT + W", "Toggle weather", "omarchy-notification-weather")
+ 
+ o.bind("SUPER + SHIFT + CTRL + A", "Agent", "omarchy-agent --pick")
+-o.bind("SUPER + CTRL + A", "Audio", "omarchy-shell shell toggle omarchy.audio")
+-o.bind("SUPER + CTRL + B", "Bluetooth", "omarchy-shell shell toggle omarchy.bluetooth")
+-o.bind("SUPER + CTRL + D", "Display", "omarchy-shell shell toggle omarchy.monitor")
+-o.bind("SUPER + CTRL + ALT + D", "Calendar", "omarchy-shell shell toggle omarchy.clock")
+-o.bind("SUPER + CTRL + W", "Network", "omarchy-shell shell toggle omarchy.network")
+-o.bind("SUPER + CTRL + P", "Power", "omarchy-shell shell toggle omarchy.power")
++o.bind("SUPER + CTRL + A", "Audio", { panel = "omarchy.audio" })
++o.bind("SUPER + CTRL + B", "Bluetooth", { panel = "omarchy.bluetooth" })
++o.bind("SUPER + CTRL + D", "Display", { panel = "omarchy.monitor" })
++o.bind("SUPER + CTRL + ALT + D", "Calendar", { panel = "omarchy.clock" })
++o.bind("SUPER + CTRL + W", "Network", { panel = "omarchy.network" })
++o.bind("SUPER + CTRL + P", "Power", { panel = "omarchy.power" })
+ o.bind("SUPER + CTRL + T", "Activity", { tui = "btop" })
+ 
+ -- The letters above name a panel; the numbers count them. 1 is the leftmost
+diff --git a/default/hypr/helpers.lua b/default/hypr/helpers.lua
+index b1eb48f..e471c05 100644
+--- a/default/hypr/helpers.lua
++++ b/default/hypr/helpers.lua
+@@ -1,5 +1,7 @@
+ -- Shared helpers for Hyprland Lua configuration.
+ 
++local paths = require("default.hypr.paths")
++
+ o = o or {}
+ 
+ local function shell_quote(value)
+@@ -53,6 +55,38 @@ function o.cmd_missing(command)
+   return not o.cmd_present(command)
+ end
+ 
++-- The global shortcuts the shell registers, read from the same list it reads.
++local shell_shortcuts = nil
++
++local function shell_shortcut_registered(name)
++  if not shell_shortcuts then
++    shell_shortcuts = {}
++    local file = io.open(paths.omarchy_path .. "/default/omarchy/shortcuts", "r")
++    if file then
++      for line in file:lines() do
++        local kind, target = line:match("^(%a+)%s+(%S+)%s*$")
++        if kind then
++          shell_shortcuts[kind .. "." .. target] = true
++        end
++      end
++      file:close()
++    end
++  end
++
++  return shell_shortcuts[name] == true
++end
++
++-- Reach the shell through its global shortcut when it registers one, so the
++-- keypress spawns nothing. Anything else runs the command as before.
++local function shell_dispatcher(kind, target, command)
++  local name = kind .. "." .. target
++  if shell_shortcut_registered(name) then
++    return hl.dsp.global("omarchy:" .. name)
++  end
++
++  return command
++end
++
+ local function command_from(value, description)
+   if type(value) ~= "table" then
+     return value
+@@ -60,6 +94,10 @@ local function command_from(value, description)
+ 
+   if value.omarchy then
+     return "omarchy-launch-" .. value.omarchy
++  elseif value.menu then
++    return shell_dispatcher("menu", value.menu, "omarchy-menu toggle " .. shell_quote(value.menu))
++  elseif value.panel then
++    return shell_dispatcher("panel", value.panel, "omarchy-shell shell toggle " .. shell_quote(value.panel))
+   elseif value.focus and value.launch then
+     return o.launch_sole(value.focus, value.launch)
+   elseif value.launch then
+diff --git a/default/omarchy/shortcuts b/default/omarchy/shortcuts
+new file mode 100644
+index 0000000..3975edc
+--- /dev/null
++++ b/default/omarchy/shortcuts
+@@ -0,0 +1,24 @@
++# Hyprland global shortcuts the Omarchy shell registers, one per line: a menu
++# route to toggle, or a panel plugin to toggle. A binding written as
++# o.bind(keys, description, { menu = "theme" }) or { panel = "omarchy.emojis" }
++# dispatches the matching shortcut straight to the shell, with no IPC client to
++# spawn per keypress. A route or panel missing here still binds, through the
++# omarchy-menu or omarchy-shell command instead.
++menu root
++menu apps
++menu capture
++menu toggle
++menu hardware
++menu system
++menu background
++menu theme
++menu share
++menu reminder-set
++panel omarchy.clipboard
++panel omarchy.emojis
++panel omarchy.audio
++panel omarchy.bluetooth
++panel omarchy.monitor
++panel omarchy.clock
++panel omarchy.network
++panel omarchy.power
+diff --git a/shell/shell.qml b/shell/shell.qml
+index 0cc0575..e831917 100644
+--- a/shell/shell.qml
++++ b/shell/shell.qml
+@@ -1,6 +1,7 @@
+ import QtQuick
+ import QtQml.Models
+ import Quickshell
++import Quickshell.Hyprland
+ import Quickshell.Io
+ 
+ import qs.Commons
+@@ -1524,6 +1525,51 @@ ShellRoot {
+     }
+   }
+ 
++  // ------------------------------------------------------ global shortcuts
++  //
++  // Bindings that open a menu route or panel dispatch these through Hyprland,
++  // so a keypress reaches the shell without spawning an omarchy-shell IPC
++  // client. The list is shared with default/hypr/helpers.lua, which binds a
++  // route or panel missing from it through the command instead.
++
++  function parseShortcuts(raw) {
++    var entries = []
++    var lines = String(raw || "").split("\n")
++    for (var i = 0; i < lines.length; i++) {
++      var match = /^([A-Za-z]+)\s+(\S+)\s*$/.exec(lines[i])
++      if (match && (match[1] === "menu" || match[1] === "panel"))
++        entries.push({ kind: match[1], target: match[2], name: match[1] + "." + match[2] })
++    }
++    return entries
++  }
++
++  function runShortcut(entry) {
++    if (entry.kind === "menu")
++      shell.toggle("omarchy.menu", JSON.stringify({ menu: entry.target }))
++    else
++      shell.toggle(entry.target, "{}")
++  }
++
++  FileView {
++    id: shortcutsFile
++    path: shell.omarchyPath + "/default/omarchy/shortcuts"
++    watchChanges: true
++    onFileChanged: reload()
++  }
++
++  Variants {
++    model: shell.parseShortcuts(shortcutsFile.text())
++
++    GlobalShortcut {
++      required property var modelData
++
++      appid: "omarchy"
++      name: modelData.name
++      description: modelData.kind === "menu" ? "Toggle the " + modelData.target + " menu" : "Toggle the " + modelData.target + " panel"
++      onPressed: shell.runShortcut(modelData)
++    }
++  }
++
+   // --------------------------------------------------- image selector IPC
+ 
+   function imagePickerItem() {
+diff --git a/test/shell.d/clock-test.sh b/test/shell.d/clock-test.sh
+index 582f773..bc10378 100755
+--- a/test/shell.d/clock-test.sh
++++ b/test/shell.d/clock-test.sh
+@@ -238,7 +238,7 @@ shell_json=$(cd "$ROOT" && jq -r '[.bar.layout.center[].id] | join(",")' config/
+ [[ $shell_json != *"omarchy.calendar"* ]] || fail "clock hosts the calendar instead of a second bar pill" "center: $shell_json"
+ pass "default bar layout includes the clock widget"
+ 
+-grep -q 'o.bind("SUPER + CTRL + ALT + D", "Calendar", "omarchy-shell shell toggle omarchy.clock")' \
++grep -q 'o.bind("SUPER + CTRL + ALT + D", "Calendar", { panel = "omarchy.clock" })' \
+   "$ROOT/default/hypr/bindings/utilities.lua" ||
+   fail "SUPER+CTRL+ALT+D toggles the calendar panel"
+ pass "SUPER+CTRL+ALT+D toggles the calendar panel"
+diff --git a/test/shell.d/shell-shortcuts-test.sh b/test/shell.d/shell-shortcuts-test.sh
+new file mode 100644
+index 0000000..17e211e
+--- /dev/null
++++ b/test/shell.d/shell-shortcuts-test.sh
+@@ -0,0 +1,117 @@
++#!/bin/bash
++
++set -euo pipefail
++
++source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
++
++require_command lua
++
++shortcuts="$ROOT/default/omarchy/shortcuts"
++
++# Load the helpers and every default binding against a stub hl, and print one
++# line per binding: "global <name>" for a global shortcut, "exec <command>" for
++# a command, then its description.
++list_bindings() {
++  HOME="$(mktemp -d)" OMARCHY_PATH="$ROOT" lua <<'LUA'
++package.path = os.getenv("OMARCHY_PATH") .. "/?.lua;" .. package.path
++
++local function proxy()
++  return setmetatable({}, {
++    __index = function(self, key)
++      local value = proxy()
++      rawset(self, key, value)
++      return value
++    end,
++    __call = function()
++      return {}
++    end,
++  })
++end
++
++local dsp = proxy()
++rawset(dsp, "global", function(name) return { global = name } end)
++rawset(dsp, "exec_cmd", function(command) return { exec = command } end)
++
++hl = setmetatable({
++  dsp = dsp,
++  bind = function(keys, dispatcher, opts)
++    local kind, target = "other", ""
++    if type(dispatcher) == "table" and dispatcher.global then
++      kind, target = "global", dispatcher.global
++    elseif type(dispatcher) == "table" and dispatcher.exec then
++      kind, target = "exec", dispatcher.exec
++    end
++    print(kind .. "\t" .. target .. "\t" .. ((opts or {}).description or ""))
++  end,
++}, {
++  __index = function()
++    return function() return {} end
++  end,
++})
++
++require("default.hypr.helpers")
++
++o.bind("A", "listed menu", { menu = "theme" })
++o.bind("B", "unlisted menu", { menu = "setup.power" })
++o.bind("C", "listed panel", { panel = "omarchy.emojis" })
++o.bind("D", "unlisted panel", { panel = "omarchy.wifiqr" })
++
++for _, file in ipairs({ "utilities", "clipboard" }) do
++  dofile(os.getenv("OMARCHY_PATH") .. "/default/hypr/bindings/" .. file .. ".lua")
++end
++LUA
++}
++
++bindings=$(list_bindings)
++
++expect_binding() {
++  local expected="$1"
++  local message="$2"
++  grep -Fxq "$expected" <<<"$bindings" || fail "$message: $(grep -F "$(cut -f3 <<<"$expected")" <<<"$bindings")"
++}
++
++expect_binding $'global\tomarchy:menu.theme\tlisted menu' "a listed menu route binds its global shortcut"
++expect_binding $'exec\tomarchy-menu toggle \'setup.power\'\tunlisted menu' "an unlisted menu route falls back to the command"
++expect_binding $'global\tomarchy:panel.omarchy.emojis\tlisted panel' "a listed panel binds its global shortcut"
++expect_binding $'exec\tomarchy-shell shell toggle \'omarchy.wifiqr\'\tunlisted panel' "an unlisted panel falls back to the command"
++pass "shell bindings use global shortcuts only for what the shell registers"
++
++# Every default binding that toggles a listed route or panel goes through its
++# shortcut, and none toggles one through a command any more.
++! grep -E $'^exec\t(omarchy-menu toggle|omarchy-shell shell toggle) ' <<<"$bindings" | grep -v $'\tunlisted ' ||
++  fail "default bindings toggle menus and panels through global shortcuts"
++expect_binding $'global\tomarchy:menu.root\tOmarchy menu' "SUPER+SPACE opens the menu through its shortcut"
++expect_binding $'global\tomarchy:menu.theme\tTheme menu' "the theme menu binding uses its shortcut"
++expect_binding $'global\tomarchy:panel.omarchy.clipboard\tClipboard manager' "the clipboard binding uses its shortcut"
++pass "default bindings toggle menus and panels through global shortcuts"
++
++# The shell and the helpers read the same list, in the same format.
++while IFS= read -r line; do
++  [[ -z $line || $line == \#* ]] && continue
++  [[ $line =~ ^(menu|panel)\ [^[:space:]]+$ ]] || fail "shortcuts lines are a kind and a target: $line"
++done <"$shortcuts"
++grep -q 'path: shell.omarchyPath + "/default/omarchy/shortcuts"' "$ROOT/shell/shell.qml" ||
++  fail "the shell registers the shortcuts the helpers bind"
++grep -q 'paths.omarchy_path .. "/default/omarchy/shortcuts"' "$ROOT/default/hypr/helpers.lua" ||
++  fail "the helpers bind the shortcuts the shell registers"
++pass "the shell and the helpers share one shortcut list"
++
++# Every default menu binding target is a real menu route.
++run_node_test <<'JS'
++const fs = require('fs')
++const menu = requireFromRoot('shell/plugins/menu/MenuModel.js')
++const entries = menu.parseMenuJsonc(fs.readFileSync(path.join(root, 'default/omarchy/omarchy-menu.jsonc'), 'utf8'))
++const items = {}
++const order = []
++for (const entry of entries) { items[entry.id] = entry; order.push(entry.id) }
++items.root = items.root || { id: 'root' }
++
++const lines = fs.readFileSync(path.join(root, 'default/omarchy/shortcuts'), 'utf8').split('\n')
++for (const line of lines) {
++  const match = /^menu (\S+)$/.exec(line)
++  if (!match) continue
++  const route = match[1]
++  assert(route === 'root' || items[menu.resolveRoute(items, order, route)], `shortcut menu route resolves: ${route}`)
++}
++JS
++pass "every shortcut menu route resolves in the menu"
