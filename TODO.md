@@ -2,49 +2,6 @@
 
 ## Next, in order
 
-### Give the VM window a stable identity (Dock pin, key remappers) [t-kfvugc3r]
-
-Proposed 2026-10-10: the maintainer's Dock icon "Try Roguix" turned out to
-point at the QEMU runtime binary inside an app bundle
-(`.../Try Roguix.app/Contents/Resources/runtime/bin/Try Roguix`), which macOS
-had re-resolved to a worker's worktree build; clicking it starts bare QEMU,
-not the app's start menu, and it breaks when that build is deleted. The
-running VM's Dock tile invites this pin. Check how upstream Try Omarchy
-presents the runtime in the Dock, and make the tile the app itself (or keep
-the runtime out of the Dock) so a pin reopens the app.
-Decided by the user 2026-10-10: approved.
-Re-scoped 2026-10-10 after a second consult round (20261010-155003-355b):
-Roguix needs no third-party tool (see the next item), so this item is about
-the Dock pin; a stable identity only helps remapper users on the side.
-Requested 2026-10-10 as the next item ("clarify the key remapper issue"),
-merged here after a consult round with sol and MiMo (20261010-154703-0ee6):
-the VM window belongs to a bare QEMU Mach-O with no bundle id, so a key
-remapper or automation rule can only match it by path, and that path
-changed when development builds became Try Roguix Dev.app; a rule matching
-the old path stops sending Cmd+Space (Super+Space, the guest's menu key) to
-the guest. Investigate and define a supported identity for the VM window
-across release and development builds (e.g. a nested helper app with its
-own bundle id), verify what macOS and remappers report as the frontmost
-app, decide whether dev and release share it, and document the identifiers.
-A nested bundle alone does not fix the Dock click (it would still start
-QEMU without arguments): the tile must reopen the app, or the runtime stays
-out of the Dock (LSUIElement); also check upstream's approach, signing and
-notarization of a nested helper, TCC/Accessibility attribution, Cmd-Tab
-presence, and divergence from upstream. Prototype before choosing.
-Investigated 2026-10-10 (worker): a pinned bare Mach-O opens in Terminal
-when clicked (probed with NSWorkspace), so "QEMU without arguments reopens
-the app" alone cannot work; a nested bundle Contents/Helpers/<VM>.app gets a
-bundle id at once, launches as an app from the Dock, and keeps Cmd-Tab and
-QEMU's menu bar as upstream has them. Decided by the user 2026-10-10:
-variant B, the nested helper bundle, with separate bundle ids per build
-(dev.tryroguix.native.vm for releases, dev.tryroguix.native.development.vm
-for development builds); a no-argument start of the helper (a pinned tile)
-opens the parent app and exits. Verify the Accessibility grant live (the
-event tap lives in QEMU), signing (ad hoc, the local identity) and the
-notarization layout; document both ids in docs/mac-keyboard.md. After it
-lands, the coordinator updates the maintainer's remapper exemption to
-match the new bundle ids.
-
 ### Roguix needs no key remapper: keyboard docs cover dev builds [t-swnazc5i]
 
 Asked 2026-10-10: "Roguix has to work even if someone has no Karabiner or
@@ -59,6 +16,9 @@ only `Try Roguix.app`; make it match development builds too
 (`Try Roguix( Dev)?\.app`), say plainly that no such tool is needed, and
 that without the grant the VM runs without the Command mapping (the start
 menu's Accessibility row says so). Docs only.
+The exemption example now matches the helper's bundle ids (0f181729,
+"macos: run QEMU from a nested VM helper app"); what is left here is saying
+plainly that no remapper is needed and what happens without the grant.
 
 ### Clean-account keyboard check before each release [t-cli74btl]
 
