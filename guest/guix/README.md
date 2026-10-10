@@ -458,6 +458,13 @@ went straight to the desktop.
   `omarchy-audio-c-locale.patch` runs only those parsed `pactl` calls with
   `LC_ALL=C`. Remove it once the pinned Omarchy does the same.
 
+- **Menus without perl:** `omarchy-menu-select` and `omarchy-menu-input`,
+  which a dozen Omarchy commands (the time zone menu among them) build on,
+  encoded their JSON payload with perl, which the image does not have, so
+  those menus showed nothing. `omarchy-menu-jq.patch` encodes it with jq;
+  `test_omarchy_menu_jq.py` compares both encodings. Remove it once the
+  pinned Omarchy encodes without perl.
+
 - **Power profiles:** the VM has no Linux power profile driver
   (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try
   Omarchy's, makes the power menu and panel show one profile, managed by
