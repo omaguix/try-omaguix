@@ -49,6 +49,33 @@ the name as UTF-8 whatever the locale ("02-über-städte.jpg" -> "Über
 Städte"), with a test; check the menus, capture.sh and both name scripts in
 the VM with perl.
 
+### Give the VM window a stable identity (Dock pin, key remappers) [t-kfvugc3r]
+
+Proposed 2026-10-10: the maintainer's Dock icon "Try Roguix" turned out to
+point at the QEMU runtime binary inside an app bundle
+(`.../Try Roguix.app/Contents/Resources/runtime/bin/Try Roguix`), which macOS
+had re-resolved to a worker's worktree build; clicking it starts bare QEMU,
+not the app's start menu, and it breaks when that build is deleted. The
+running VM's Dock tile invites this pin. Check how upstream Try Omarchy
+presents the runtime in the Dock, and make the tile the app itself (or keep
+the runtime out of the Dock) so a pin reopens the app.
+Decided by the user 2026-10-10: approved.
+Requested 2026-10-10 as the next item ("clarify the key remapper issue"),
+merged here after a consult round with sol and MiMo (20261010-154703-0ee6):
+the VM window belongs to a bare QEMU Mach-O with no bundle id, so a key
+remapper or automation rule can only match it by path, and that path
+changed when development builds became Try Roguix Dev.app; a rule matching
+the old path stops sending Cmd+Space (Super+Space, the guest's menu key) to
+the guest. Investigate and define a supported identity for the VM window
+across release and development builds (e.g. a nested helper app with its
+own bundle id), verify what macOS and remappers report as the frontmost
+app, decide whether dev and release share it, and document the identifiers.
+A nested bundle alone does not fix the Dock click (it would still start
+QEMU without arguments): the tile must reopen the app, or the runtime stays
+out of the Dock (LSUIElement); also check upstream's approach, signing and
+notarization of a nested helper, TCC/Accessibility attribution, Cmd-Tab
+presence, and divergence from upstream. Prototype before choosing.
+
 ### Narrow omacom/omarchy#14865 to the UTF-8 bug [t-mwepf6tt]
 
 Decided by the user 2026-10-10 (with sol and MiMo): #14865 (rofrol:menu-jq,
@@ -85,18 +112,6 @@ stale snapshot kept forever), and fix the cause.
 The packaged guest in build/guix lacks the screensaver branding seed fix
 (ab8f0c4: roguix-omarchy-seed copies screensaver.txt and about.txt); if this
 item builds the guest, that build carries and checks it.
-
-### Pinning the running VM's Dock icon pins the QEMU runtime [t-kfvugc3r]
-
-Proposed 2026-10-10: the maintainer's Dock icon "Try Roguix" turned out to
-point at the QEMU runtime binary inside an app bundle
-(`.../Try Roguix.app/Contents/Resources/runtime/bin/Try Roguix`), which macOS
-had re-resolved to a worker's worktree build; clicking it starts bare QEMU,
-not the app's start menu, and it breaks when that build is deleted. The
-running VM's Dock tile invites this pin. Check how upstream Try Omarchy
-presents the runtime in the Dock, and make the tile the app itself (or keep
-the runtime out of the Dock) so a pin reopens the app.
-Decided by the user 2026-10-10: approved.
 
 ### Warn before a test VM window opens [t-wwhpe6cq]
 
