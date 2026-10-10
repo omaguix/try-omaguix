@@ -66,8 +66,6 @@ version); on the host, the JSON line the app sends now. Then say whether a
 matching app and image fix it or it is a product bug (state mapping, a
 stale snapshot kept forever), and fix the cause.
 
-## Proposed
-
 ### Pinning the running VM's Dock icon pins the QEMU runtime [t-kfvugc3r]
 
 Proposed 2026-10-10: the maintainer's Dock icon "Try Roguix" turned out to
@@ -78,6 +76,9 @@ not the app's start menu, and it breaks when that build is deleted. The
 running VM's Dock tile invites this pin. Check how upstream Try Omarchy
 presents the runtime in the Dock, and make the tile the app itself (or keep
 the runtime out of the Dock) so a pin reopens the app.
+Decided by the user 2026-10-10: approved.
+
+## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
 
