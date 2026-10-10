@@ -2,24 +2,6 @@
 
 ## Next, in order
 
-### Install development builds as Try Roguix Dev [t-maseondx]
-
-Should development builds install as `~/Applications/Try Roguix Dev.app`?
-Options: rename to Try Roguix Dev.app | keep ~/Applications/Try Roguix.app
-Checked 2026-10-10 after the rebase onto Try Omarchy 0.5: upstream gave
-development builds their own bundle id and the name "Try Omarchy Dev". The
-rebased dev build has the id `dev.tryroguix.native.development` but `make
-install` still copies it to `~/Applications/Try Roguix.app` (`INSTALLED_APP`
-in the Makefile; docs pin that path), while public releases (0.5.0, 0.5.1)
-ship the same name in the DMG. The worker recommended keeping the path; sol
-and MiMo both recommend renaming, so a dev build cannot be mistaken for or
-replace a release install, at the cost of updating the pinned path in the
-Makefile, docs and scripts. A changed bundle id may also ask again for the
-Accessibility grant.
-Decided by the user 2026-10-10: rename to Try Roguix Dev.app (update
-`INSTALLED_APP` and the docs and scripts that pin the path; releases keep
-Try Roguix.app).
-
 ### Check the built app's version against the release tag [t-icv2e3ua]
 
 Proposed 2026-10-10 after the rebase: upstream verifies the release app's
