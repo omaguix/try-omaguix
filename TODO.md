@@ -2,20 +2,6 @@
 
 ## Next, in order
 
-### Describe Roguix's differences from Try Omarchy [t-snp6yeux]
-
-Requested 2026-10-10 ("describe these differences"), after the time zone
-port: Try Omarchy stops following the Mac's zone when /etc/localtime is
-replaced by hand; Roguix stops only through its setup or the time zone menu
-(in Guix /etc/localtime comes from the system configuration). Decided with
-sol and MiMo: one canonical "Differences from Try Omarchy" section in
-guest/guix/README.md, a table (feature | Try Omarchy | Roguix | why | patch
-or upstream status), the time zone row first, then the others already known
-(language set once, no Language row, screensaver until ttfx, perl/jq menus,
-Arch-only documents); a one-line pointer comment at each divergent code
-site; and a step in AGENTS.md's rebase notes to review the table on every
-rebase (update, or delete rows where upstream converged). Docs only.
-
 ### Which items run in pane workers and which headless [t-nse2weys]
 
 Decided 2026-10-10 by the herdr coordinator with the models, at the
