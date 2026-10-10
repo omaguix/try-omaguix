@@ -118,6 +118,31 @@ everything else (docs, TODO-only, text changes) in headless workers; the
 headless sandbox is never widened by hand. Add this to AGENTS.md
 ("Delegated Work and Added Delays"). Docs only.
 
+### Close Omarchy's low-battery warning once the battery recovers [t-i2lmhkes]
+
+Found 2026-10-10 by the perl/battery worker, the likely cause of the
+maintainer's "Battery is down to 10%" while the Mac was charged: Omarchy's
+"Time to recharge!" is a critical notification that never expires; it is
+saved under ~/.local/state/omarchy/notifications/ and comes back after every
+shell restart (and, by Omarchy's code, after a reboot), so a real <=10% on
+battery once on that VM disk keeps showing. Decided by the user 2026-10-10:
+a small patch on Omarchy's battery service (shell/plugins/services/battery)
+that closes the warning when the battery is no longer low (charging, AC, or
+above the threshold), and the same change offered to omacom/omarchy (search
+for an existing issue first; the coordinator files it). Needs a guest build;
+verify in a VM through the battery socket (low on battery -> warning;
+charging -> gone, also after a shell restart).
+
+### Report the battery agent's disconnect bug to Try Omarchy [t-k6j5xgqq]
+
+Decided by the user 2026-10-10: upstream Try Omarchy's battery agent has the
+bug Roguix fixed in 33c1628b: after the host bridge dies it keeps
+status=unknown with the last level and AC state, which UPower turns into
+Discharging, so a stale low level raises Omarchy's warning while the Mac
+charges; docs/host-battery.md describes that line. A worker drafts an issue
+(or a PR with the fix and the docs line) for omacom/try-omarchy with the
+VM reproduction; the coordinator files it.
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
