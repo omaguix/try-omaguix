@@ -50,7 +50,7 @@ resources_dir=$(cd "$script_dir/.." && pwd -P)
 contents_dir=$(cd "$resources_dir/.." && pwd -P)
 app_bundle=$(cd "$contents_dir/.." && pwd -P)
 guest_input=${1:-"$resources_dir/guest"}
-qemu_bin="$resources_dir/runtime/bin/Try Roguix"
+qemu_bin="$contents_dir/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix"
 native_bridge="$contents_dir/MacOS/omarchy-vm-helper"
 storage_library="$script_dir/qemu-persistent-storage.sh"
 port_forwarding_library="$script_dir/qemu-port-forwarding.sh"
@@ -92,7 +92,7 @@ esac
   fail "missing bundled UEFI firmware; run make runtime"
 }
 file "$qemu_bin" | grep 'arm64' >/dev/null || fail "staged QEMU is not an ARM64 executable"
-LC_ALL=C grep -aFq 'TryRoguix.icns' "$qemu_bin" || {
+LC_ALL=C grep -aFq 'Try Roguix: cannot open' "$qemu_bin" || {
   fail "staged QEMU lacks the Try Roguix macOS identity; run make runtime"
 }
 for marker in \

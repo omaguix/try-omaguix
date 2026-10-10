@@ -4,14 +4,16 @@ Subject: [PATCH] cocoa: present the VM as Try Roguix on macOS
 Applies after startergo/homebrew-qemu-virgl-kosmickrisp v1.0.27.
 
 QEMU owns the visible Cocoa window, so macOS gives its process the Dock entry
-instead of the accessory launcher app. Publish the product process name before
-NSApplication is created, load the signed app icon from the enclosing bundle,
-and use the product name in QEMU's Cocoa window and application menu.
+instead of the accessory launcher app. The app runs QEMU from a helper bundle
+(Contents/Helpers/Try Roguix.app) that supplies the process name, icon and
+bundle identifier. Use the product name in QEMU's Cocoa window and application
+menu, and hand a launch without arguments (a pinned Dock tile) to the
+enclosing app.
 
 diff --git a/ui/cocoa.m b/ui/cocoa.m
 --- a/ui/cocoa.m
 +++ b/ui/cocoa.m
-@@ -1197,7 +1197,7 @@
+@@ -1215,7 +1215,7 @@ - (void) grabMouse
      COCOA_DEBUG("QemuCocoaView: grabMouse\n");
  
      if (qemu_name)
@@ -20,7 +22,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      else
          [[self window] setTitle:@"QEMU - (Press  " UC_CTRL_KEY " " UC_ALT_KEY " G  to release Mouse)"];
      [self hideCursor];
-@@ -1210,7 +1210,7 @@
+@@ -1228,7 +1228,7 @@ - (void) ungrabMouse
      COCOA_DEBUG("QemuCocoaView: ungrabMouse\n");
  
      if (qemu_name)
@@ -29,7 +31,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      else
          [[self window] setTitle:@"QEMU"];
      [self unhideCursor];
-@@ -1327,7 +1327,9 @@
+@@ -1345,7 +1345,9 @@ - (id) init
          }
          [window setAcceptsMouseMovedEvents:YES];
          [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
@@ -40,7 +42,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
          [window setContentView:cocoaView];
          [window makeKeyAndOrderFront:self];
          [window center];
-@@ -1651,7 +1653,7 @@
+@@ -1667,7 +1669,7 @@ - (BOOL)verifyQuit
  {
      NSAlert *alert = [NSAlert new];
      [alert autorelease];
@@ -49,7 +51,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      [alert addButtonWithTitle: @"Cancel"];
      [alert addButtonWithTitle: @"Quit"];
      if([alert runModal] == NSAlertSecondButtonReturn) {
-@@ -1665,20 +1667,16 @@
+@@ -1681,20 +1683,16 @@ - (BOOL)verifyQuit
  - (IBAction) do_about_menu_item: (id) sender
  {
      NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
@@ -72,7 +74,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      } else {
          options = @{
              NSAboutPanelOptionApplicationVersion : version,
-@@ -1745,17 +1743,17 @@
+@@ -1761,17 +1759,17 @@ static void create_initial_menus(void)
  
      // Application menu
      menu = [[NSMenu alloc] initWithTitle:@""];
@@ -93,45 +95,55 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      menuItem = [[NSMenuItem alloc] initWithTitle:@"Apple" action:nil keyEquivalent:@""];
      [menuItem setSubmenu:menu];
      [[NSApp mainMenu] addItem:menuItem];
-@@ -2421,7 +2419,31 @@
-     assert(o->type == DISPLAY_TYPE_COCOA);
-     if (o->has_gl && o->gl) {
-         display_opengl = 1;
-+    }
-+}
-+
-+static void cocoa_set_product_icon(void)
-+{
-+    NSArray *arguments = [[NSProcessInfo processInfo] arguments];
-+
-+    if ([arguments count] == 0) {
-+        return;
+@@ -2433,6 +2431,51 @@ static void cocoa_display_early_init(DisplayOptions *o)
      }
-+
-+    NSString *executablePath =
-+        [[arguments objectAtIndex:0] stringByStandardizingPath];
-+    NSString *resourcesPath =
-+        [[[executablePath stringByDeletingLastPathComponent]
-+          stringByDeletingLastPathComponent]
-+         stringByDeletingLastPathComponent];
-+    NSString *iconPath =
-+        [resourcesPath stringByAppendingPathComponent:@"TryRoguix.icns"];
-+    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:iconPath];
-+
-+    if (icon) {
-+        [NSApp setApplicationIconImage:icon];
-+        [icon release];
-+    }
  }
  
++/*
++ * The VM runs from a helper app bundle inside Try Roguix.app
++ * (Contents/Helpers), whose Info.plist gives the process its name, icon and
++ * bundle identifier. A Dock tile pinned while the VM ran launches that helper
++ * without arguments; open the enclosing app, whose start menu starts the VM,
++ * instead of starting QEMU without a machine.
++ */
++static void __attribute__((constructor)) cocoa_open_enclosing_app(void)
++{
++    if (*_NSGetArgc() != 1) {
++        return;
++    }
++
++    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
++    NSURL *helpers = [[[NSBundle mainBundle] bundleURL]
++                      URLByDeletingLastPathComponent];
++    NSURL *app = [[helpers URLByDeletingLastPathComponent]
++                  URLByDeletingLastPathComponent];
++
++    if (![[helpers lastPathComponent] isEqualToString:@"Helpers"] ||
++        ![[app pathExtension] isEqualToString:@"app"]) {
++        [pool release];
++        return;
++    }
++
++    dispatch_semaphore_t opened = dispatch_semaphore_create(0);
++    __block int status = 1;
++    [[NSWorkspace sharedWorkspace]
++        openApplicationAtURL:app
++               configuration:[NSWorkspaceOpenConfiguration configuration]
++           completionHandler:^(NSRunningApplication *application,
++                               NSError *error) {
++        if (application) {
++            status = 0;
++        } else {
++            fprintf(stderr, "Try Roguix: cannot open %s: %s\n",
++                    [[app path] UTF8String],
++                    [[error localizedDescription] UTF8String]);
++        }
++        dispatch_semaphore_signal(opened);
++    }];
++    dispatch_semaphore_wait(opened, DISPATCH_TIME_FOREVER);
++    exit(status);
++}
++
  static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
-@@ -2436,7 +2458,9 @@
-     ProcessSerialNumber psn = { 0, kCurrentProcess };
-     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
- 
-+    [[NSProcessInfo processInfo] setProcessName:@"Try Roguix"];
-     [QemuApplication sharedApplication];
-+    cocoa_set_product_icon();
- 
-     dcl.con = qemu_console_lookup_default();
-     kbd = qkbd_state_init(dcl.con);
+ {
+     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];

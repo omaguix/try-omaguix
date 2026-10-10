@@ -54,11 +54,13 @@ trap '/bin/rm -rf "$test_root"; [[ -z "$stale_fixture" ]] || /bin/rm -rf "$stale
 app="$test_root/Try Roguix.app"
 contents="$app/Contents"
 resources="$contents/Resources"
+qemu_fixture="$contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix"
 shim_dir="$test_root/bin"
 mkdir -p \
   "$contents/MacOS" \
   "$resources/guest" \
   "$resources/runtime/bin" \
+  "$contents/Helpers/Try Roguix.app/Contents/MacOS" \
   "$resources/scripts" \
   "$shim_dir"
 
@@ -127,10 +129,10 @@ exit 0
 SH
 chmod 755 "$contents/MacOS/omarchy-vm-helper"
 
-cat >"$resources/runtime/bin/Try Roguix" <<'SH'
+cat >"$qemu_fixture" <<'SH'
 #!/bin/bash
 # Identity markers validated by the production launcher:
-# TryRoguix.icns
+# Try Roguix: cannot open
 # OMARCHY_SDL_AUDIO_CONTROL_DIRECTORY
 # OMARCHY_SDL_INPUT_DEVICE_NAME
 # OMARCHY_SDL_OUTPUT_DEVICE_NAME
@@ -268,7 +270,7 @@ PY
     ;;
 esac
 SH
-chmod 755 "$resources/runtime/bin/Try Roguix"
+chmod 755 "$qemu_fixture"
 
 cat >"$resources/scripts/qemu-persistent-storage.sh" <<'SH'
 #!/bin/bash

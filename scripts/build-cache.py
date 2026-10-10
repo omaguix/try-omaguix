@@ -306,7 +306,7 @@ def validate_app(root: Path, previous: dict[str, Any] | None) -> dict[str, Any]:
     required = [
         app / "Contents/MacOS/omarchy-vm-helper",
         app / "Contents/Resources/TryRoguix.icns",
-        app / "Contents/Resources/runtime/bin/Try Roguix",
+        app / "Contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix",
         app / "Contents/Resources/guest/disk.raw.zst",
         app / "Contents/Resources/guest/guix-manifest.json",
         app / "Contents/Resources/guest/launch.plist",

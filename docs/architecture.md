@@ -277,7 +277,16 @@ unrecognized host files stay untouched, as everywhere else here.
 - `guest/guix/` defines Roguix and builds its image with a pinned Guix in a
   Guix System builder; `make guix-package` compresses it into `build/guix`.
 - `macos/` builds the Swift launcher and a patched QEMU runtime. The runtime is
-  isolated, relocated, and signed before it enters the app bundle.
+  isolated, relocated, and signed before it enters the app bundle. QEMU,
+  which owns the VM window, runs from a nested helper app,
+  `Contents/Helpers/Try Roguix.app`, with its own bundle identifier (the
+  app's identifier plus `.vm`, listed in [Mac keyboard](mac-keyboard.md)) and
+  the runtime's libraries and firmware left in `Contents/Resources/runtime`.
+  Its code signature keeps the app's identifier, so the Accessibility grant
+  its event tap relies on sees the same code identity as before the helper.
+  The VM's Dock tile and Command-Tab entry belong to that helper; a tile
+  pinned from it launches the helper without arguments, which opens the app's
+  start menu and exits.
   Development builds are signed with the persistent local identity from
   `make signing-identity` when it exists, ad hoc otherwise; releases are
   signed as `docs/releasing.md` describes (`macos/README.md`, "Development

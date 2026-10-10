@@ -223,7 +223,7 @@ class BuildCacheTests(unittest.TestCase):
             app = root / "build/dev.noindex/Try Roguix.app"
             for relative in (
                 "Contents/MacOS/omarchy-vm-helper",
-                "Contents/Resources/runtime/bin/Try Roguix",
+                "Contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix",
                 "Contents/Resources/guest/disk.raw.zst",
                 "Contents/Resources/guest/guix-manifest.json",
                 "Contents/Resources/guest/launch.plist",

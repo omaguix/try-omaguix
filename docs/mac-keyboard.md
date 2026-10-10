@@ -81,22 +81,29 @@ key or not at all. For example, a Karabiner rule that turns Command-Space
 into F18 for a launcher makes the guest receive F18 instead of Super+Space.
 
 Exempt the VM window in the Karabiner rule by adding a condition to its
-manipulator. The window belongs to the bundled QEMU process, which has no
-bundle identifier, so match its executable path:
+manipulator. The window belongs to the bundled QEMU process, which runs from
+a helper app inside the app bundle (`Contents/Helpers/Try Roguix.app`) with
+its own bundle identifier, one per build:
+
+| Build | App | VM window |
+| --- | --- | --- |
+| Release | `dev.tryroguix.native` | `dev.tryroguix.native.vm` |
+| Development (`make app`, `Try Roguix Dev.app`) | `dev.tryroguix.native.development` | `dev.tryroguix.native.development.vm` |
 
 ```json
 "conditions": [
   {
     "type": "frontmost_application_unless",
-    "file_paths": ["^.*/Try Roguix\\.app/Contents/Resources/runtime/bin/Try Roguix$"]
+    "bundle_identifiers": ["^dev\\.tryroguix\\.native(\\.development)?\\.vm$"]
   }
 ]
 ```
 
-Check the path in Karabiner-EventViewer's frontmost application view while
-the VM window is focused. Hammerspoon hotkeys and AltTab's shortcut need the
-same treatment: disable them, or scope them so they do not fire while the VM
-window is frontmost, when the guest should receive that chord.
+Check the identifier in Karabiner-EventViewer's frontmost application view
+while the VM window is focused. Hammerspoon hotkeys and AltTab's shortcut need
+the same treatment: disable them, or scope them so they do not fire while the
+VM window (the same bundle identifier) is frontmost, when the guest should
+receive that chord.
 
 ## Validation
 

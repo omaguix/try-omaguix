@@ -42,11 +42,13 @@ trap '/bin/rm -rf "$test_root"' EXIT HUP INT TERM
 app="$test_root/Try Roguix.app"
 contents="$app/Contents"
 resources="$contents/Resources"
+qemu_fixture="$contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix"
 shim_dir="$test_root/bin"
 mkdir -p \
   "$contents/MacOS" \
   "$resources/guest" \
   "$resources/runtime/bin" \
+  "$contents/Helpers/Try Roguix.app/Contents/MacOS" \
   "$resources/scripts" \
   "$shim_dir"
 
@@ -110,10 +112,10 @@ exit 0
 SH
 chmod 755 "$contents/MacOS/omarchy-vm-helper"
 
-cat >"$resources/runtime/bin/Try Roguix" <<'SH'
+cat >"$qemu_fixture" <<'SH'
 #!/bin/bash
 # Identity markers validated by the production launcher:
-# TryRoguix.icns
+# Try Roguix: cannot open
 # OMARCHY_SDL_AUDIO_CONTROL_DIRECTORY
 # OMARCHY_SDL_INPUT_DEVICE_NAME
 # OMARCHY_SDL_OUTPUT_DEVICE_NAME
@@ -218,7 +220,7 @@ PY
     ;;
 esac
 SH
-chmod 755 "$resources/runtime/bin/Try Roguix"
+chmod 755 "$qemu_fixture"
 
 cat >"$resources/scripts/qemu-persistent-storage.sh" <<'SH'
 #!/bin/bash
@@ -441,7 +443,7 @@ run_scenario small-host-default 0 FAKE_HOST_MEMSIZE=7516192768
 assert_line_pair "$test_root/small-host-default/qemu.log" -m 4096M
 
 # An older runtime must not silently claim to reclaim memory on macOS.
-sed -i '' '/^# HVF free-page backing replacement failed$/d' "$resources/runtime/bin/Try Roguix"
+sed -i '' '/^# HVF free-page backing replacement failed$/d' "$qemu_fixture"
 run_scenario old-runtime 1
 assert_contains "$(<"$test_root/old-runtime/stderr")" 'lacks macOS memory reclamation'
 

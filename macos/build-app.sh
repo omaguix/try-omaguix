@@ -117,7 +117,12 @@ mkdir -p "$output_dir" && output_dir=$(cd "$output_dir" && pwd -P) || {
 }
 app="$output_dir/Try Roguix.app"
 contents="$app/Contents"
-bundled_qemu="$contents/Resources/runtime/bin/Try Roguix"
+# QEMU owns the VM window, so it runs from a nested helper app: the window
+# then has its own bundle identifier, and a Dock tile pinned while the VM ran
+# launches the helper, which hands that launch to this app.
+vm_app="$contents/Helpers/Try Roguix.app"
+vm_bundle_identifier="$bundle_identifier.vm"
+bundled_qemu="$vm_app/Contents/MacOS/Try Roguix"
 module_cache="$macos_dir/.build/module-cache"
 runtime_source="$macos_dir/.build/qemu-gpu-runtime"
 guest_dir=${guest_dir:-"$repo_dir/build/guix"}
@@ -229,7 +234,9 @@ mkdir -p \
   "$contents/MacOS" \
   "$contents/Resources/guest" \
   "$contents/Resources/runtime/bin" \
-  "$contents/Resources/scripts"
+  "$contents/Resources/scripts" \
+  "$vm_app/Contents/MacOS" \
+  "$vm_app/Contents/Resources"
 bash "$macos_dir/network-helper/build.sh" "$contents/Resources/network"
 mkdir -p "$contents/Library/LaunchDaemons"
 install -m 0644 "$macos_dir/network-helper/dev.tryroguix.network.plist" "$contents/Library/LaunchDaemons/dev.tryroguix.network.plist"
@@ -260,6 +267,21 @@ python3 "$repo_dir/scripts/app_version.py" \
 install -m 0644 "$macos_dir/Credits.rtf" "$contents/Resources/Credits.rtf"
 install -m 0644 "$repo_dir/LICENSE" "$contents/Resources/LICENSE"
 install -m 0644 "$generated_icon" "$contents/Resources/TryRoguix.icns"
+install -m 0644 "$generated_icon" "$vm_app/Contents/Resources/TryRoguix.icns"
+# The helper shares the app's version, icon and privacy descriptions; only its
+# executable, identifier and name differ.
+python3 - "$contents/Info.plist" "$vm_app/Contents/Info.plist" "$vm_bundle_identifier" <<'PYTHON'
+import plistlib, sys
+from pathlib import Path
+value = plistlib.loads(Path(sys.argv[1]).read_bytes())
+value["CFBundleExecutable"] = "Try Roguix"
+value["CFBundleIdentifier"] = sys.argv[3]
+value["CFBundleName"] = value["CFBundleDisplayName"] = "Try Roguix"
+# QEMU makes itself a foreground app when it opens the VM window; a launch
+# from a pinned Dock tile only opens the app and exits, without a Dock icon.
+value["LSUIElement"] = True
+Path(sys.argv[2]).write_bytes(plistlib.dumps(value))
+PYTHON
 ditto "$runtime_source" "$contents/Resources/runtime"
 install -m 0755 "$macos_dir/run-qemu-gpu.sh" "$contents/Resources/scripts/run-qemu-gpu.sh"
 install -m 0644 "$macos_dir/qemu-persistent-storage.sh" \
@@ -288,6 +310,35 @@ done
 
 mv "$contents/Resources/runtime/bin/qemu-system-aarch64" "$bundled_qemu"
 "$dependency_bundler" --verify-only "$contents/Resources/runtime"
+# The helper's executable loads the runtime's libraries from the main bundle.
+runtime_lib_from_qemu='@executable_path/../../../../Resources/runtime/lib'
+while IFS= read -r dependency; do
+  case "$dependency" in
+    @executable_path/../lib/*)
+      install_name_tool -change "$dependency" \
+        "$runtime_lib_from_qemu/${dependency##*/}" "$bundled_qemu"
+      ;;
+  esac
+done < <(otool -L "$bundled_qemu" | sed -n '2,$p' | \
+  sed -E 's/^[[:space:]]+//; s/ \(compatibility version.*$//')
+install_name_tool -rpath '@executable_path/../lib' "$runtime_lib_from_qemu" \
+  "$bundled_qemu"
+while IFS= read -r dependency; do
+  case "$dependency" in
+    /System/Library/*|/usr/lib/*) ;;
+    "$runtime_lib_from_qemu"/*)
+      [[ -f $contents/Resources/runtime/lib/${dependency##*/} ]] || {
+        echo "build-app: QEMU needs a missing runtime library: $dependency" >&2
+        exit 1
+      }
+      ;;
+    *)
+      echo "build-app: QEMU has an external dependency: $dependency" >&2
+      exit 1
+      ;;
+  esac
+done < <(otool -L "$bundled_qemu" | sed -n '2,$p' | \
+  sed -E 's/^[[:space:]]+//; s/ \(compatibility version.*$//')
 
 sign_options=(--force --sign "$sign_identity")
 if [[ -n $sign_keychain ]]; then
@@ -307,7 +358,6 @@ elif [[ $sign_identity != - ]]; then
   fi
 fi
 app_sign_options=("${sign_options[@]}" --identifier "$bundle_identifier")
-qemu_sign_options=("${sign_options[@]}" --identifier "$bundle_identifier")
 for library in "$contents/Resources/runtime/lib"/*.dylib; do
   codesign "${sign_options[@]}" "$library"
 done
@@ -315,9 +365,13 @@ codesign "${sign_options[@]}" "$contents/Resources/runtime/bin/zstd"
 for network_binary in socket_vmnet omarchy-network-supervisor omarchy-network-client; do
   codesign "${sign_options[@]}" "$contents/Resources/network/$network_binary"
 done
-codesign "${qemu_sign_options[@]}" \
+# QEMU's event tap uses the app's Accessibility grant. Its code identifier
+# stays the app's, as it was before the helper bundle, so the code identity
+# privacy grants see does not change; the bundle identifier (Dock, Command-Tab,
+# key remappers) is the helper's own.
+codesign "${sign_options[@]}" --identifier "$bundle_identifier" \
   --entitlements "$macos_dir/qemu-hvf.entitlements" \
-  "$bundled_qemu"
+  "$vm_app"
 
 bash "$macos_dir/network-helper/build-daemon.sh" "$contents"
 codesign "${sign_options[@]}" "$contents/MacOS/omarchy-network-daemon"
