@@ -22,6 +22,17 @@ A worker prepares the branches and texts in its own clone; the coordinator
 reviews, pushes to the maintainer's fork and opens or updates the PRs.
 One change per PR; no pings.
 
+### The last perl in Omarchy's scripts: sed/bash [t-3eiod7hj]
+
+Found 2026-10-10 by the ttfx/jq worker: `omarchy-theme-bg-current` (the
+background's display name) and `omarchy-games-retro-install` still call perl
+for one-line text munging, so both fail in Roguix. Decided by the user
+2026-10-10: rewrite them with sed/bash in a patch on the pinned Omarchy
+(keep the output identical for the cases the scripts handle, e.g. title
+case of words and stripping a numeric prefix; test against the perl output
+on the host), and add the same change to the upstream jq PR. Needs a guest
+build: share it with the next item that builds the guest.
+
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
 Requested 2026-10-10: "in Try Roguix it shows: battery is down to 10%,
