@@ -2,32 +2,6 @@
 
 ## Next, in order
 
-### Omarchy's audio scripts under LC_ALL=C [t-qsseokbf]
-
-Found 2026-10-10 by the worker porting Try Omarchy 0.5's guest changes:
-Omarchy 4.0.4's audio scripts (omarchy-audio-output-set-default,
--output-sink, -sink-availability, -tuning) parse `pactl` output, which a
-localized session (zh_TW, zh_CN, ko_KR) translates, so switching the output
-may fail there. Decided by the user 2026-10-10: both run these scripts
-with `LC_ALL=C` in Roguix's omarchy package (a patch on the pinned Omarchy,
-dropped once upstream fixes it; needs a guest build, verify output switching
-in a localized VM; shares one guest build with the next item) and report it to Omarchy (an issue, or a PR with the
-same fix; the worker drafts it and says where it was filed).
-
-### Follow the Mac's time zone live, as Try Omarchy does [t-l64hu6wx]
-
-Try Omarchy 0.5 (5cebb9b, docs/host-timezone.md upstream): owner setup
-defaults to "Same as macOS", and the guest then receives the Mac's zone on
-the root-only virtio port `dev.tryomarchy.timezone` every five seconds and
-applies it live; choosing a fixed zone in setup or Omarchy's time zone menu
-stops following, and "Same as macOS" (first in that menu) resumes it.
-Roguix's setup only suggests the Mac's zone once and keeps it fixed; the
-host side already sends the port. Decided by the user 2026-10-10: port it
-to Roguix as Try Omarchy has it (the Guix guest has no systemd/timedatectl;
-use its own way to switch the zone). Needs a guest build, shared with the
-item above; verify a Mac zone change reaching a running VM, a fixed choice
-surviving a reboot, and resuming.
-
 ### Package ttfx for an opt-in screensaver [t-di3m5hza]
 
 Omarchy 4.0.4's screensaver and first-boot logo run `ttfx`, a Rust port of
@@ -77,6 +51,18 @@ running VM's Dock tile invites this pin. Check how upstream Try Omarchy
 presents the runtime in the Dock, and make the tile the app itself (or keep
 the runtime out of the Dock) so a pin reopens the app.
 Decided by the user 2026-10-10: approved.
+
+### Warn before a test VM window opens [t-wwhpe6cq]
+
+Found 2026-10-10: a worker's throwaway VM opens a window named "Try Roguix"
+that takes the keyboard focus; the maintainer, switching the installed app
+at the time, closed it twice and broke the worker's checks. AGENTS.md (the
+VM testing notes in "Building and Running in a Worktree") should say that a
+worker announces a test VM window before starting it (the coordinator or the
+maintainer is told it must stay open) and that the window's title should
+tell it apart from the maintainer's own app if the launcher allows it.
+Added straight to "Next, in order" by the coordinator (follows from an
+approved item, docs only, one revert undoes it).
 
 ## Proposed
 
