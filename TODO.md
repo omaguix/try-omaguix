@@ -2,17 +2,6 @@
 
 ## Next, in order
 
-### Check the built app's version against the release tag [t-icv2e3ua]
-
-Proposed 2026-10-10 after the rebase: upstream verifies the release app's
-version against the tag (3f77a2f). `macos/release.sh` derives the version
-from the `try-roguix-v*` tag through `scripts/app_version.py`, so they
-agree by construction, but nothing checks the built app; add the assertion
-after the build (a few lines). Decided by the coordinator 2026-10-10 with
-sol and MiMo: keep `release.sh`, do not port upstream's `scripts/release.py`
-(it builds the Arch guest and tags `v*`).
-Decided by the user 2026-10-10: approved.
-
 ### Mark upstream's Arch guest documents as Try Omarchy's [t-gnl4jgea]
 
 Proposed 2026-10-10 after the rebase: `docs/integration-updates.md`,
