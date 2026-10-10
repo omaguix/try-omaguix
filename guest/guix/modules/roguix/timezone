@@ -234,6 +234,10 @@ def refresh_desktops():
         runtime = f"/run/user/{user.pw_uid}"
         if not (1000 <= user.pw_uid < 65534 and os.path.isdir(runtime)):
             continue
+        # omarchy-shell requires OMARCHY_PATH, which the session sets.
+        omarchy = os.path.join(user.pw_dir, ".local/share/omarchy")
+        if not os.path.isdir(omarchy):
+            omarchy = "/usr/share/omarchy"
         try:
             subprocess.run(
                 ["/run/current-system/profile/bin/omarchy-shell", "-q",
@@ -241,6 +245,7 @@ def refresh_desktops():
                 user=user.pw_uid, group=user.pw_gid,
                 extra_groups=os.getgrouplist(user.pw_name, user.pw_gid),
                 env={"HOME": user.pw_dir, "XDG_RUNTIME_DIR": runtime,
+                     "OMARCHY_PATH": omarchy,
                      "PATH": "/run/current-system/profile/bin"},
                 cwd="/", check=False, stdin=subprocess.DEVNULL)
         except OSError as error:
