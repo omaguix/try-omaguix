@@ -2,53 +2,6 @@
 
 ## Next, in order
 
-### The last perl in Omarchy's scripts: sed/bash [t-3eiod7hj]
-
-Found 2026-10-10 by the ttfx/jq worker: `omarchy-theme-bg-current` (the
-background's display name) and `omarchy-games-retro-install` still call perl
-for one-line text munging, so both fail in Roguix. Decided by the user
-2026-10-10: rewrite them with sed/bash in a patch on the pinned Omarchy
-(keep the output identical for the cases the scripts handle, e.g. title
-case of words and stripping a numeric prefix; test against the perl output
-on the host), and add the same change to the upstream jq PR. Needs a guest
-build: share it with the next item that builds the guest.
-Requested 2026-10-10: "compare the perl code with sed/bash; maybe the
-rewrite comes out worse." Compared by the coordinator (GNU sed 4.10 vs
-perl 5, UTF-8 locale) and checked with sol and MiMo
-(20261010-143752-68d8): the sed versions are no worse and read the same.
-Script 1 as `sed -E 's/\.[^.]+$//; s/^[0-9]+-//; s/-/ /g; s/\b(\w)/\u\1/g'`
-matches perl on ASCII names and fixes a perl bug: `perl -pe` works on bytes,
-so "02-über-städte.jpg" became "üBer StäDte" (sed: "Über Städte"); say so
-in the upstream PR. Script 2 as `sed -E 's/(^|[[:space:]])([^[:space:]])/\1\u\2/g'`
-matched perl (-Mopen=locale) on every case tried. `\u`, `\b`, `\w` are GNU
-sed extensions (Arch and Guix both ship GNU sed); both versions depend on
-the locale (in the C locale accented initials stay lowercase), as perl's
-did. Pure bash (`${word^}` loops) is longer and no better. Tests: the cases
-above, empty input, no extension, dotfiles, trailing dot, numeric prefix,
-underscores, repeated spaces and tabs, accented initials, in a UTF-8 and the
-C locale; `x.tar.gz` -> `X.Tar` stays as it is.
-Upstream since 2026-10-10: omacom/omarchy#14865 (rofrol:menu-jq) carries
-both the jq menus and this sed rewrite (commit 85dd5be3, using `\U` on
-`[[:lower:]]` initials, which also keeps GNU sed from splitting a multibyte
-letter in the C locale); take that commit as Roguix's patch instead of a
-version of our own, so the patch drops cleanly when the pin includes it.
-Still perl after it: `shell/plugins/clipboard/capture.sh` decodes UTF-16
-clipboard text with perl, so the clipboard capture plugin likely fails in
-Roguix too (not checked in a VM).
-Decided by the user 2026-10-10: add perl to the image for capture.sh (its
-UTF-16 detection is real logic, not a one-liner), in Omarchy's profile only;
-first check in the VM that the clipboard capture plugin fails without it and
-works with it.
-Decided by the user 2026-10-10 after a consult round with sol and MiMo
-(20261010-151028-5fa0), superseding the sed rewrite above: perl goes into the
-image anyway (Omarchy's profile, for capture.sh), so Roguix goes back to
-upstream's perl scripts as they are: revert the jq menus patch (21af39b:
-omarchy-menu-jq.patch and its test) and do not apply the sed commit; carry
-only one patch, `perl -CSD -pe` in omarchy-theme-bg-current, which decodes
-the name as UTF-8 whatever the locale ("02-über-städte.jpg" -> "Über
-Städte"), with a test; check the menus, capture.sh and both name scripts in
-the VM with perl.
-
 ### Give the VM window a stable identity (Dock pin, key remappers) [t-kfvugc3r]
 
 Proposed 2026-10-10: the maintainer's Dock icon "Try Roguix" turned out to
@@ -118,33 +71,12 @@ Arch-visible bug ("02-über-städte.jpg" shows as "üBer StäDte"), a short
 note that the jq/sed scope was dropped because perl stays; force-push the
 narrowed branch (ours, unreviewed). Check the one existing comment first. A
 worker prepares the branch and text; the coordinator pushes and edits the PR.
-
-### Low-battery warning while the Mac is charged [t-nfcadqmf]
-
-Requested 2026-10-10: "in Try Roguix it shows: battery is down to 10%,
-although my MacBook has 100%." At that moment `pmset -g batt` said AC
-Power, 100%, charged; the VM ran from the pre-rebase development build
-(`try-roguix-v0.5.1-54-g02896d0-dirty`, the old installed Try Roguix.app)
-on the maintainer's existing VM disk.
-Checked: Omarchy's bar (shell/plugins/services/battery) warns only when
-UPower's display device is present, `onBattery` is true, the state is
-Discharging and round(percentage*100) <= 10, and passes that real level to
-`omarchy-battery-low`. The guest module's defaults before any update
-(status Unknown, capacity 0, AC online) cannot trigger it, so a snapshot
-with discharging, AC off and ~10% reached BAT0/ADP0, or UPower derived it.
-Consult round with sol and MiMo (20261010-114058-e44e), ranked: a stale
-10% snapshot kept because the agent rejects every later line (its exact key
-set vs a host sending upstream 0.5's extra fields), the host mapping
-"charged"/"not charging"/charge limit to discharging with AC off, UPower
-computing the display percentage from energy fields the old module lacks.
-Diagnose read-only first: in the guest, BAT0/ADP0 sysfs values and their
-write times, `upower -d`, the battery agent's log (rejected lines, its
-version); on the host, the JSON line the app sends now. Then say whether a
-matching app and image fix it or it is a product bug (state mapping, a
-stale snapshot kept forever), and fix the cause.
-The packaged guest in build/guix lacks the screensaver branding seed fix
-(ab8f0c4: roguix-omarchy-seed copies screensaver.txt and about.txt); if this
-item builds the guest, that build carries and checks it.
+Roguix's own patch (2026-10-10, omarchy-theme-bg-utf8.patch) uses
+`perl -CO -MEncode=decode -pe '$_ = decode("UTF-8", $_); ...'` instead of
+`-CSD`: with `-CSD` a file name that is not valid UTF-8 makes perl die with
+an empty result, worse than upstream; decode puts U+FFFD there and the name
+still shows. Accepted by the coordinator on that evidence; use the same in
+the narrowed PR.
 
 ### Warn before a test VM window opens [t-wwhpe6cq]
 
@@ -157,6 +89,10 @@ maintainer is told it must stay open) and that the window's title should
 tell it apart from the maintainer's own app if the launcher allows it.
 Added straight to "Next, in order" by the coordinator (follows from an
 approved item, docs only, one revert undoes it).
+Also from the perl/battery worker (2026-10-10): under host load, QMP
+`send-key` delivered key releases late and the guest repeated characters
+("hhhh"); scripts that type text into a test VM through QMP must check what
+actually reached the field.
 
 ### Describe Roguix's differences from Try Omarchy [t-snp6yeux]
 
