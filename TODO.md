@@ -2,17 +2,6 @@
 
 ## Next, in order
 
-### The factory image still comes out almost fully allocated
-
-Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
-
-Found 2026-10-09 by the TRIM and menu worker: with a8dae12, the app's
-`zstd -d --sparse` on the real `disk.raw.zst` leaves only 3 holes (432 MB of
-its 8.6 GiB of zeros), so a factory image still takes about 20 GiB, although
-synthetic zero files come out sparse. Cause unknown (block alignment of the
-zero runs, zstd's sparse write granularity, or how APFS reports holes).
-In a running VM the hourly trim then frees about 8 GiB of the working disk.
-
 ### Build the image with a smaller --image-size
 
 Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
@@ -156,6 +145,12 @@ app's data folder under `VM/v1/guix/`.
   8.65 GiB of zeros in it as data. It is needed only to create or reset a VM.
   Deletable now: yes, but it frees only about 0.3 GiB (the VM disk shares
   the rest), and a later reset re-extracts it in full.
+- 2026-10-09: new factory images keep their zeros as holes (11.4 GiB
+  allocated). `zstd --sparse` only seeks over zeros, and APFS allocates
+  zeros for a skipped gap shorter than about 16 MiB, and for some longer
+  ones as well (`dd conv=sparse` lost the same runs; a presized target was
+  not reliable either); the helper now punches every zero block with
+  `F_PUNCHHOLE` after decoding.
 - VM disk `disks/current/disk.raw` (64 GiB / 21 GiB): an APFS clone of the
   factory image extended sparsely to 64 GiB; only 0.27 GiB of its first
   20 GiB differ from the factory image, plus 0.73 GiB written beyond it, so

@@ -22,6 +22,32 @@ struct StorageIOTests {
         #expect(try StorageIO.sha256(path: fixture.file.path) == expected)
     }
 
+    @Test("Punching frees every whole zero block, short runs included, and keeps the contents")
+    func punchZeroHoles() throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        // Zero runs of 4 MiB less a block between data, 4 KiB-aligned, plus a
+        // zero tail and a partial last block: APFS keeps such short skips
+        // allocated, so only punching frees them.
+        let block = 4096, run = 4 * 1024 * 1024 - block
+        var data = Data()
+        for index in 0..<4 {
+            data.append(Data(repeating: UInt8(index + 1), count: 3 * block))
+            data.append(Data(count: run))
+        }
+        data.append(Data(repeating: 9, count: 100))
+        try data.write(to: fixture.file)
+        chmod(fixture.file.path, 0o600)
+        try StorageIO.punchZeroHoles(path: fixture.file.path)
+        #expect(try Data(contentsOf: fixture.file) == data)
+        var info = stat()
+        #expect(stat(fixture.file.path, &info) == 0)
+        #expect(Int(info.st_blocks) * 512 == (data.count - 4 * run + block - 1) / block * block)
+        let fd = open(fixture.file.path, O_RDONLY)
+        defer { close(fd) }
+        #expect(lseek(fd, 0, SEEK_HOLE) == off_t(3 * block))
+    }
+
     @Test("Checkpoints flush files and directories without changing their contents")
     func checkpoints() throws {
         let fixture = try Fixture()
@@ -41,6 +67,7 @@ struct StorageIOTests {
         try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: fixture.file)
         #expect(throws: (any Error).self) { try StorageIO.sha256(path: alias.path) }
         #expect(throws: (any Error).self) { try StorageIO.sync(paths: [alias.path]) }
+        #expect(throws: (any Error).self) { try StorageIO.punchZeroHoles(path: alias.path) }
         #expect(throws: (any Error).self) { try StorageIO.sha256(path: fixture.root.path) }
         try FileManager.default.removeItem(at: alias)
         try FileManager.default.linkItem(at: fixture.file, to: alias)

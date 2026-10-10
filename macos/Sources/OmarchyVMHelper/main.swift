@@ -39,6 +39,11 @@ do {
         print(try StorageIO.sha256(path: arguments[1]))
         exit(0)
     }
+    if arguments.first == "--storage-punch-zeros" {
+        guard arguments.count == 2 else { usage() }
+        try StorageIO.punchZeroHoles(path: arguments[1])
+        exit(0)
+    }
     if arguments.first == "--storage-sync" {
         guard arguments.count > 1 else { usage() }
         try StorageIO.sync(paths: Array(arguments.dropFirst()))

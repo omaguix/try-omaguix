@@ -280,17 +280,23 @@ compressed_state="$test_root/compressed-state"
   assert cmp -s "$test_root/actual-phases" "$test_root/expected-phases"
 )
 
-# The real decoder leaves a long zero run as a hole in the prepared disk
-# without changing the content.
+# The prepared disk keeps its zero runs as holes without changing the content.
+# The runs are laid out like the real image's smaller ones (4 MiB less a 4 KiB
+# block, 4 KiB-aligned, between data), which APFS fills with allocated zeros
+# when zstd only skips them.
 real_zstd="$native_dir/.build/qemu-gpu-runtime/bin/zstd"
 # Package managers install zstd as a symlink, which the decoder check refuses.
 [[ -x $real_zstd ]] || real_zstd=$(command -v zstd >/dev/null && /bin/realpath "$(command -v zstd)" || true)
 if [[ -n $real_zstd ]]; then
   sparse_disk="$test_root/sparse-source.raw"
   /bin/cp "$source_disk" "$sparse_disk"
-  dd if=/dev/zero of="$sparse_disk" bs=1048576 seek=1 count=64 conv=notrunc >/dev/null 2>&1
-  printf 'after-the-zeros' >>"$sparse_disk"
+  head -c $((64 * 1048576)) /dev/urandom >>"$sparse_disk"
+  for run in 0 1 2 3 4 5 6 7; do
+    dd if=/dev/zero of="$sparse_disk" bs=4096 seek=$((2 + run * 2048)) count=1022 \
+      conv=notrunc >/dev/null 2>&1
+  done
   sparse_bytes=$(/usr/bin/stat -f '%z' "$sparse_disk")
+  sparse_zero_bytes=$((8 * 1022 * 4096))
   sparse_sha=$(shasum -a 256 "$sparse_disk" | awk '{print $1}')
   "$real_zstd" -q -f "$sparse_disk" -o "$sparse_disk.zst"
   identity_sparse=$(printf 'bundle-sparse' | shasum -a 256 | awk '{print $1}')
@@ -301,7 +307,7 @@ if [[ -n $real_zstd ]]; then
     "$sparse_work" "$sparse_bytes" "$real_zstd"
   sparse_prepared=$QEMU_SELECTED_DISK
   assert_eq "$(shasum -a 256 "$sparse_prepared" | awk '{print $1}')" "$sparse_sha"
-  (( $(/usr/bin/stat -f '%b' "$sparse_prepared") * 512 < sparse_bytes / 8 )) ||
+  (( $(/usr/bin/stat -f '%b' "$sparse_prepared") * 512 <= sparse_bytes - sparse_zero_bytes )) ||
     fail "prepared disk is not sparse: $(/usr/bin/stat -f '%b' "$sparse_prepared") blocks"
 else
   printf 'qemu-persistent-storage.test: no zstd; sparse preparation unchecked\n' >&2

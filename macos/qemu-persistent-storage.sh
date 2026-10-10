@@ -101,6 +101,12 @@ _qps_sha256() {
   /usr/bin/shasum -a 256 "$1" 2>/dev/null | awk '{ print $1 }'
 }
 
+# Without the helper (some tests) the zeros simply stay allocated.
+_qps_punch_zeros() {
+  [[ -n $QEMU_PERSISTENT_STORAGE_HELPER ]] || return 0
+  "$QEMU_PERSISTENT_STORAGE_HELPER" --storage-punch-zeros "$1"
+}
+
 _qps_file_identity() {
   /usr/bin/stat -f '%d:%i' "$1" 2>/dev/null
 }
@@ -706,10 +712,12 @@ _qps_validate_expanded_disk() {
 
 # Write the factory straight into the unpublished writable disk. Compressed
 # bundles never retain an expanded source image in the workspace.
-# `--sparse` leaves the image's all-zero runs (its filesystem's free space) as
-# holes: zstd 1.5.7 writes them as data with `-o FILE` otherwise. The free-space
-# check still asks for the full image size, since only the decoder learns how
-# much of it is zeros.
+# The image's all-zero runs (its filesystem's free space) become holes: zstd
+# 1.5.7 writes them as data with `-o FILE` unless `--sparse`, and even then APFS
+# fills its shorter skips with allocated zeros, so the helper punches every zero
+# block afterwards. The digest check reads the result. The free-space check
+# still asks for the full image size, since only the decoder learns how much of
+# it is zeros.
 _qps_prepare_disk() {
   local qps_source=$1
   local qps_destination=$2
@@ -728,6 +736,11 @@ _qps_prepare_disk() {
     return 1
   fi
   chmod 600 "$qps_destination" || return 1
+  if ! _qps_punch_zeros "$qps_destination"; then
+    /bin/rm -f -- "$qps_destination"
+    _qps_fail 'cannot free the zero blocks of the expanded root disk'
+    return 1
+  fi
   _qps_launch_progress verifying
   if ! _qps_validate_expanded_disk "$qps_destination" "$qps_source_bytes" ||
     [[ $(_qps_sha256 "$qps_destination") != "$qps_source_sha" ]]; then
