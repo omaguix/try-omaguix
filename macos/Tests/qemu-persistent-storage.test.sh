@@ -196,8 +196,8 @@ cp "$source_disk" "$compressed_disk"
 cat >"$zstd_test" <<'EOF'
 #!/bin/bash
 set -euo pipefail
-[[ $# == 5 && $1 == -d && $2 == -f && $4 == -o ]] || exit 64
-/bin/cp "$3" "$5"
+[[ $# == 6 && $1 == -d && $2 == -f && $3 == --sparse && $5 == -o ]] || exit 64
+/bin/cp "$4" "$6"
 EOF
 chmod 700 "$zstd_test"
 compressed_bytes=$(/usr/bin/stat -f '%z' "$compressed_disk")
@@ -279,6 +279,33 @@ compressed_state="$test_root/compressed-state"
   printf '%s\n' preparing verifying finishing >"$test_root/expected-phases"
   assert cmp -s "$test_root/actual-phases" "$test_root/expected-phases"
 )
+
+# The real decoder leaves a long zero run as a hole in the prepared disk
+# without changing the content.
+real_zstd="$native_dir/.build/qemu-gpu-runtime/bin/zstd"
+# Package managers install zstd as a symlink, which the decoder check refuses.
+[[ -x $real_zstd ]] || real_zstd=$(command -v zstd >/dev/null && /bin/realpath "$(command -v zstd)" || true)
+if [[ -n $real_zstd ]]; then
+  sparse_disk="$test_root/sparse-source.raw"
+  /bin/cp "$source_disk" "$sparse_disk"
+  dd if=/dev/zero of="$sparse_disk" bs=1048576 seek=1 count=64 conv=notrunc >/dev/null 2>&1
+  printf 'after-the-zeros' >>"$sparse_disk"
+  sparse_bytes=$(/usr/bin/stat -f '%z' "$sparse_disk")
+  sparse_sha=$(shasum -a 256 "$sparse_disk" | awk '{print $1}')
+  "$real_zstd" -q -f "$sparse_disk" -o "$sparse_disk.zst"
+  identity_sparse=$(printf 'bundle-sparse' | shasum -a 256 | awk '{print $1}')
+  sparse_work="$test_root/sparse-ephemeral"
+  mkdir -m 700 "$sparse_work"
+  qemu_persistent_storage_select \
+    ephemeral "$identity_sparse" "$sparse_disk.zst" "$sparse_sha" "$sparse_bytes" \
+    "$sparse_work" "$sparse_bytes" "$real_zstd"
+  sparse_prepared=$QEMU_SELECTED_DISK
+  assert_eq "$(shasum -a 256 "$sparse_prepared" | awk '{print $1}')" "$sparse_sha"
+  (( $(/usr/bin/stat -f '%b' "$sparse_prepared") * 512 < sparse_bytes / 8 )) ||
+    fail "prepared disk is not sparse: $(/usr/bin/stat -f '%b' "$sparse_prepared") blocks"
+else
+  printf 'qemu-persistent-storage.test: no zstd; sparse preparation unchecked\n' >&2
+fi
 
 # The factory workspace grows sparsely while its immutable source stays at the
 # transport size. Relaunch validates and reuses the expanded workspace.

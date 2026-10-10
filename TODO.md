@@ -12,20 +12,6 @@ export: remove the `/root/<name>.raw` GC root, `guix gc` (check
 then `fstrim -av`. Old image roots under `/root` each pin a 20 GiB image in
 the store plus its `partition.img`.
 
-### Materialize the factory image sparsely
-
-Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09 (see "Background: large VM files"). The pinned
-`zstd` 1.5.7 writes zeros as data with `-d -o FILE`: a 200 MB file of zeros
-came out fully allocated, and 40 KB with `--sparse`. The current factory
-image holds 8.65 GiB of all-zero MiB chunks (free space of the image's ext4),
-all allocated. Add `--sparse` to the `zstd -d` call in
-`macos/qemu-persistent-storage.sh` and cover it in
-`macos/Tests/qemu-persistent-storage.test.sh` (allocated size of a
-materialized image with a zero run). Saves about 8.6 GiB for every new
-factory image and the VM disks cloned from it; it does not change existing
-files, and rewriting the current one would cost space while the VM disk
-still shares its blocks.
-
 ### Pass the VM's TRIM through to the Mac
 
 Approved 2026-10-09 (the maintainer let the coordinator choose); proposed 2026-10-09. The VM disk is attached with `format=raw,cache=writeback`

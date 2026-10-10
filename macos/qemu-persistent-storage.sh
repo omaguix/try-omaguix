@@ -706,6 +706,10 @@ _qps_validate_expanded_disk() {
 
 # Write the factory straight into the unpublished writable disk. Compressed
 # bundles never retain an expanded source image in the workspace.
+# `--sparse` leaves the image's all-zero runs (its filesystem's free space) as
+# holes: zstd 1.5.7 writes them as data with `-o FILE` otherwise. The free-space
+# check still asks for the full image size, since only the decoder learns how
+# much of it is zeros.
 _qps_prepare_disk() {
   local qps_source=$1
   local qps_destination=$2
@@ -718,7 +722,7 @@ _qps_prepare_disk() {
     _qps_clone_disk "$qps_source" "$qps_destination" "$qps_source_bytes"
     return $?
   fi
-  if ! "$qps_zstd" -d -f "$qps_source" -o "$qps_destination" >&2; then
+  if ! "$qps_zstd" -d -f --sparse "$qps_source" -o "$qps_destination" >&2; then
     /bin/rm -f -- "$qps_destination"
     _qps_fail 'cannot expand the bundled root disk'
     return 1
