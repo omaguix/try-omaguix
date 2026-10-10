@@ -203,6 +203,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     private var launchInProgress = false
     private var launchPhase = VMLaunchPhase.checking
     private weak var launchActionButton: OmarchyActionButton?
+    /// Set while a release app downloads its disk on the first launch.
+    private var diskDownloadPercent: Int?
     private var virtualMachineRunning = false
     private var closeRunningSettings: (() -> Void)?
     private var shutdownInProgress = false
@@ -591,6 +593,13 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
 
     /// Clears the launching state when the controller stopped before the
     /// launcher was ever started. The controller presents its own explanation.
+    func launchDidReportDiskDownload(percent: Int) {
+        guard launchInProgress else { return }
+        // The last progress line is 100%; expanding the disk comes next.
+        diskDownloadPercent = percent < 100 ? percent : nil
+        render()
+    }
+
     func launchDidAbort() {
         guard launchInProgress else { return }
         launchInProgress = false
@@ -937,7 +946,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         let resetAction = virtualMachineRunning && canResetStorage ? manage : reset
 
         let fixesPending = GuestBootFixCache.needsUpdate(cacheURL: bootFixCacheURL(), expectedIdentity: bootFixIdentity())
-        let launchButtonTitle = virtualMachineRunning ? "Done" : (launchInProgress ? launchPhase.buttonTitle : (fixesPending ? "Update and Launch" : "Launch Roguix"))
+        let launchButtonTitle = virtualMachineRunning ? "Done"
+            : !launchInProgress ? (fixesPending ? "Update and Launch" : "Launch Roguix")
+            : diskDownloadPercent.map { "Downloading Roguix… \($0)%" } ?? launchPhase.buttonTitle
         let launchButton = OmarchyActionButton(
             title: launchButtonTitle,
             style: .primary,
@@ -1867,6 +1878,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
               !cameraRequestInFlight else { return }
         launchPhase = .checking
         launchInProgress = true
+        diskDownloadPercent = nil
         render()
         action()
     }

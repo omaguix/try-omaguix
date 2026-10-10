@@ -866,4 +866,44 @@ qemu_persistent_storage_select \
   ephemeral "$identity_uefi" "$uefi_source" "$source_sha" "$source_bytes" "$uefi_work" "$uefi_working_bytes"
 assert_eq "$QEMU_SELECTED_DISK" "$uefi_work/disk.raw"
 
+# A release app downloads its compressed disk in parts, appends them, and
+# accepts the result only with the size and digest its launch configuration
+# pins; a completed download is reused until the launch has expanded it.
+download_server="$test_root/release"
+mkdir -p "$download_server"
+download_payload="$test_root/download.raw.zst"
+head -c 10000 /dev/urandom > "$download_payload"
+download_bytes=$(/usr/bin/stat -f '%z' "$download_payload")
+download_sha=$(/usr/bin/shasum -a 256 "$download_payload" | awk '{ print $1 }')
+split -b 4096 -a 2 -d "$download_payload" "$download_server/disk.raw.zst."
+identity_download=dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+export QEMU_PERSISTENT_STORAGE_DOWNLOAD_PROTOCOLS='=file'
+qemu_persistent_storage_fetch_compressed_source \
+  "$identity_download" "file://$download_server/" 4096 \
+  "$download_bytes" "$download_sha" "$source_bytes" 2>"$test_root/download.log"
+assert cmp -s "$QEMU_DOWNLOADED_COMPRESSED_DISK" "$download_payload"
+assert grep -Fq "[qemu-gpu] Downloading Roguix: $download_bytes of $download_bytes bytes" \
+  "$test_root/download.log"
+assert test ! -e "$(dirname "$QEMU_DOWNLOADED_COMPRESSED_DISK")/.$identity_download.download.parts"
+downloaded=$QEMU_DOWNLOADED_COMPRESSED_DISK
+rm -f "$downloaded"
+assert_fails qemu_persistent_storage_fetch_compressed_source \
+  "$identity_download" "file://$download_server/" 4096 \
+  "$download_bytes" "$source_sha" "$source_bytes"
+assert test -z "$QEMU_DOWNLOADED_COMPRESSED_DISK"
+assert_fails qemu_persistent_storage_fetch_compressed_source \
+  "$identity_download" "https://example.invalid/no-slash" 4096 \
+  "$download_bytes" "$download_sha" "$source_bytes"
+qemu_persistent_storage_fetch_compressed_source \
+  "$identity_download" "file://$download_server/" 4096 \
+  "$download_bytes" "$download_sha" "$source_bytes"
+downloaded=$QEMU_DOWNLOADED_COMPRESSED_DISK
+assert_eq "$(dirname "$downloaded")" "$OMARCHY_QEMU_GPU_STATE_ROOT/guix/downloads"
+rm -rf "$download_server"
+qemu_persistent_storage_fetch_compressed_source \
+  "$identity_download" "file://$download_server/" 4096 \
+  "$download_bytes" "$download_sha" "$source_bytes"
+assert_eq "$QEMU_DOWNLOADED_COMPRESSED_DISK" "$downloaded"
+unset QEMU_PERSISTENT_STORAGE_DOWNLOAD_PROTOCOLS
+
 printf 'qemu-persistent-storage.test: PASS\n'

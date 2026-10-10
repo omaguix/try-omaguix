@@ -245,6 +245,11 @@ if [[ -f $launch_configuration && ! -L $launch_configuration ]]; then
     "$(plist_read workingDiskBytes)" \
     "$(plist_read guestLocales || printf -)")
   launch_boot_abi=$(plist_read bootABI || true)
+  # Release apps ship without the compressed disk and download it instead
+  # (qemu_persistent_storage_fetch_compressed_source).
+  disk_download_base=$(plist_read diskDownloadBase || true)
+  disk_download_part_bytes=$(plist_read diskDownloadPartBytes || true)
+  compressed_disk_sha=$(plist_read compressedDiskSHA256 || true)
 else
   [[ -e $guest_dir/guix-manifest.json && ! -L $guest_dir/guix-manifest.json ]] || {
     fail "the guest directory is not a packaged Roguix guest: $guest_dir"
@@ -730,8 +735,22 @@ if (( selected_existing == 0 )); then
   fi
   source_disk="$guest_dir/$source_disk_name"
   source_decoder=''
+  compressed_disk="$guest_dir/$source_disk_name.zst"
+  downloaded_disk=''
+  if [[ ! -e $source_disk && ! -L $source_disk && ! -e $compressed_disk &&
+        -n ${disk_download_base:-} ]]; then
+    qemu_persistent_storage_fetch_compressed_source \
+      "$bundle_identity" \
+      "$disk_download_base" \
+      "$disk_download_part_bytes" \
+      "$compressed_disk_bytes" \
+      "$compressed_disk_sha" \
+      "$source_disk_bytes" || fail "could not download the Roguix disk"
+    compressed_disk=$QEMU_DOWNLOADED_COMPRESSED_DISK
+    downloaded_disk=$compressed_disk
+  fi
   if [[ ! -e $source_disk && ! -L $source_disk ]]; then
-    source_disk="$guest_dir/$source_disk_name.zst"
+    source_disk=$compressed_disk
     source_decoder="$resources_dir/runtime/bin/zstd"
   fi
   if qemu_persistent_storage_select \
@@ -743,7 +762,8 @@ if (( selected_existing == 0 )); then
     "$work_dir" \
     "$expanded_disk_bytes" \
     "$source_decoder"; then
-    :
+    # The expanded disk replaces the download.
+    [[ -z $downloaded_disk ]] || /bin/rm -f -- "$downloaded_disk"
   else
     storage_status=$?
     if (( storage_status == QEMU_PERSISTENT_STORAGE_INCOMPATIBLE_STATUS )); then

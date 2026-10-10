@@ -689,6 +689,8 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                     self?.startMenuWindow?.launchDidProgress(to: phase)
                 case .resetProgress:
                     break
+                case .diskDownload(let percent):
+                    self?.startMenuWindow?.launchDidReportDiskDownload(percent: percent)
                 }
             }
         ) { [weak self] status in
