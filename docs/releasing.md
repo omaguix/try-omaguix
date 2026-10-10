@@ -66,7 +66,9 @@ after the first attempt; never to turn Gatekeeper off.
 4. Tag the release commit: `git tag -a try-roguix-v0.5.1 -m "Try Roguix 0.5.1"`.
 5. `macos/release.sh`: `TryRoguix.dmg`, the disk parts and `SHA256SUMS` in
    `dist/TAG`. It builds the release app in `build/release.noindex`, so a
-   development app running from `~/Applications` is never touched.
+   development app running from `~/Applications` is never touched, and stops
+   before writing any asset unless the built app's version and build
+   description match the tag.
 6. Push the tag and create the release as a prerelease with all of
    `dist/TAG/*`; prerelease assets are already downloadable.
 7. Install `TryRoguix.dmg` on a clean account and launch it: the disk

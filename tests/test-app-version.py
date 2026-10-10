@@ -65,6 +65,34 @@ class AppVersionTests(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn(expected_error, result.stderr)
 
+    def check_app(self, info: dict[str, str], expected_error: str | None = None) -> None:
+        app = self.root / "dist/Try Roguix.app"
+        (app / "Contents").mkdir(parents=True, exist_ok=True)
+        (app / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
+        result = subprocess.run(
+            [sys.executable, str(VERSION_SCRIPT), "--root", str(self.root),
+             "--check-app", str(app)],
+            capture_output=True, text=True,
+        )
+        if expected_error is None:
+            self.assertEqual(0, result.returncode, result.stderr)
+        else:
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn(expected_error, result.stderr)
+
+    def test_built_app_must_match_the_release_tag(self) -> None:
+        self.git("tag", "-a", "try-roguix-v1.2.3", "-m", "Release")
+        built = self.stamp()
+        self.check_app(built)
+        self.check_app({**built, "CFBundleShortVersionString": "1.2.4"},
+                       "CFBundleShortVersionString '1.2.4'")
+        self.check_app({**built, "TryOmarchyBuildDescribe": "try-roguix-v1.2.3-dirty"},
+                       "TryOmarchyBuildDescribe")
+        self.check_app({"CFBundleVersion": "1"}, "CFBundleShortVersionString None")
+        # Like --require-release, the check needs the exact tag at HEAD.
+        self.git("tag", "-d", "try-roguix-v1.2.3")
+        self.check_app(built, "HEAD must carry an exact")
+
     def test_tagged_release_and_ignored_build_outputs(self) -> None:
         self.git("tag", "-a", "try-roguix-v1.2.3", "-m", "Release")
         (self.root / ".build").mkdir()

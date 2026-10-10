@@ -73,10 +73,12 @@ def main() -> None:
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--plist", type=Path)
     action.add_argument("--require-release", action="store_true")
+    action.add_argument("--check-app", type=Path,
+                        help="fail unless this built app carries the release tag at HEAD")
     args = parser.parse_args()
     version = build_version(args.root)
 
-    if args.require_release:
+    if args.require_release or args.check_app:
         if version and version["TryOmarchyBuildDescribe"].endswith("-dirty"):
             raise ValueError("the worktree must be clean before building a signed app")
         if not version or re.fullmatch(
@@ -84,6 +86,14 @@ def main() -> None:
             version["TryOmarchyBuildDescribe"],
         ) is None:
             raise ValueError(f"HEAD must carry an exact {TAG_PREFIX}X.Y.Z release tag")
+        if args.check_app:
+            info = plistlib.loads((args.check_app / "Contents/Info.plist").read_bytes())
+            for key in ("CFBundleShortVersionString", "TryOmarchyBuildDescribe"):
+                if info.get(key) != version[key]:
+                    raise ValueError(
+                        f"{args.check_app} has {key} {info.get(key)!r}, "
+                        f"but {version['TryOmarchyBuildDescribe']} at HEAD needs {version[key]!r}"
+                    )
     elif version is None:
         print(
             f"warning: {args.root} is not a git checkout; "
