@@ -39,6 +39,25 @@ Decided by the user 2026-10-10: add perl to the image for capture.sh (its
 UTF-16 detection is real logic, not a one-liner), in Omarchy's profile only;
 first check in the VM that the clipboard capture plugin fails without it and
 works with it.
+Decided by the user 2026-10-10 after a consult round with sol and MiMo
+(20261010-151028-5fa0), superseding the sed rewrite above: perl goes into the
+image anyway (Omarchy's profile, for capture.sh), so Roguix goes back to
+upstream's perl scripts as they are: revert the jq menus patch (21af39b:
+omarchy-menu-jq.patch and its test) and do not apply the sed commit; carry
+only one patch, `perl -CSD -pe` in omarchy-theme-bg-current, which decodes
+the name as UTF-8 whatever the locale ("02-über-städte.jpg" -> "Über
+Städte"), with a test; check the menus, capture.sh and both name scripts in
+the VM with perl.
+
+### Narrow omacom/omarchy#14865 to the UTF-8 bug [t-mwepf6tt]
+
+Decided by the user 2026-10-10 (with sol and MiMo): #14865 (rofrol:menu-jq,
+no human review yet) becomes a one-change PR: `perl -CSD -pe` in
+omarchy-theme-bg-current with a test, title and description led by the
+Arch-visible bug ("02-über-städte.jpg" shows as "üBer StäDte"), a short
+note that the jq/sed scope was dropped because perl stays; force-push the
+narrowed branch (ours, unreviewed). Check the one existing comment first. A
+worker prepares the branch and text; the coordinator pushes and edits the PR.
 
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
