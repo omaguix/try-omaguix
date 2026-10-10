@@ -477,13 +477,6 @@ went straight to the desktop.
   32% (foot 125%, Hyprland 30%) and 75% with stalls; the idle desktop 4–6%
   and about 15%.
 
-- **Menus without perl:** `omarchy-menu-select` and `omarchy-menu-input`,
-  which a dozen Omarchy commands (the time zone menu among them) build on,
-  encoded their JSON payload with perl, which the image does not have, so
-  those menus showed nothing. `omarchy-menu-jq.patch` encodes it with jq;
-  `test_omarchy_menu_jq.py` compares both encodings. Remove it once the
-  pinned Omarchy encodes without perl.
-
 - **Power profiles:** the VM has no Linux power profile driver
   (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try
   Omarchy's, makes the power menu and panel show one profile, managed by
