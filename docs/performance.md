@@ -1,5 +1,8 @@
 # Performance profiling
 
+> **Roguix:** the method and host side apply; the results were measured on Try
+> Omarchy's Arch guest, which Roguix replaced with a [Guix System guest](../guest/guix/README.md).
+
 CPU instructions execute through HVF on the Apple Silicon CPU. Graphics take a
 longer path: guest Mesa → VirGL → native macOS OpenGL → Cocoa. Accelerated
 graphics therefore still have command translation, synchronization, upload, and

@@ -1,5 +1,8 @@
 # Host battery
 
+> **Roguix:** the protocol and host side apply unchanged; the guest install
+> (DKMS, pacman) is Try Omarchy's Arch guest. See [Roguix's guest](../guest/guix/README.md#macos-integrations).
+
 Try Omarchy mirrors the Mac's battery into the guest as a real
 `/sys/class/power_supply` device: `BAT0` and `ADP0`. Omarchy Quattro's bar is
 Quickshell, and Quickshell's `UPower` bindings read that sysfs tree, so the bar
