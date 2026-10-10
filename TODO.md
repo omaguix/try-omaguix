@@ -2,38 +2,6 @@
 
 ## Next, in order
 
-### Package ttfx for an opt-in screensaver [t-di3m5hza]
-
-Omarchy 4.0.4's screensaver and first-boot logo run `ttfx`, a Rust port of
-terminaltexteffects (Omarchy 4e31b61a: same options, ~1 ms startup instead
-of ~107 ms, far faster heavy effects); Guix has only
-python-terminaltexteffects 0.12.0, so `omarchy-launch-screensaver` exits and
-Roguix has no screensaver. Decided by the user 2026-10-10 after a consult
-round with sol and MiMo: package ttfx for Guix and make the screensaver
-opt-in (macOS has its own screensaver and lock; a 120 fps animation in a VM
-costs the Mac's CPU and battery). First import its Cargo.lock
-(`guix import crate --lockfile`) and report the crate count, licenses and any
-git dependencies; then package it, run the screensaver at a lower frame rate
-in the VM and measure delivered fps and guest CPU. Needs a guest build.
-
-### Omarchy's menus without perl: encode with jq [t-xeioi3lr]
-
-Found 2026-10-10 by the audio/time zone worker: the image has no perl, which
-`omarchy-menu-select` and `omarchy-menu-input` use only to encode their JSON
-payload (Encode + JSON::PP), so the 13 Omarchy menus built on them (the time
-zone menu among them) show nothing. Decided by the user 2026-10-10 after a
-consult round with sol and MiMo: patch both scripts on the pinned Omarchy to
-encode with jq (already used by 169 Omarchy scripts), e.g.
-`jq -cn '$ARGS.positional' --args -- "${options[@]}"`, and propose the same
-change to omacom/omarchy as a PR. Keep the contract: option order, empty
-options and an empty list, tabs (glyph/label/subtext), quotes, backslashes,
-newlines, numeric `width`/`maxHeight` (`--argjson` after validation), no
-failure in the middle of a menu on malformed UTF-8 (jq and perl replace it
-differently: say so in the PR). Read the commit that introduced perl there
-first. The polling wait for the done file stays as upstream has it (out of
-scope; never fix it with a timeout). Shares one guest build with the ttfx
-item.
-
 ### Bring our Omarchy patches upstream [t-t7gyb6ui]
 
 Decided by the user 2026-10-10 after a consult round with sol and MiMo
@@ -77,6 +45,9 @@ write times, `upower -d`, the battery agent's log (rejected lines, its
 version); on the host, the JSON line the app sends now. Then say whether a
 matching app and image fix it or it is a product bug (state mapping, a
 stale snapshot kept forever), and fix the cause.
+The packaged guest in build/guix lacks the screensaver branding seed fix
+(ab8f0c4: roguix-omarchy-seed copies screensaver.txt and about.txt); if this
+item builds the guest, that build carries and checks it.
 
 ### Pinning the running VM's Dock icon pins the QEMU runtime [t-kfvugc3r]
 
