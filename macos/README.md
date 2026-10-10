@@ -65,24 +65,51 @@ macos/build-app.sh \
   --notarize-profile try-omarchy
 ```
 
-Local app builds appear as **Try Omarchy Dev**, with bundle ID
-`dev.tryomarchy.native.development`. They automatically select an installed
-Apple Development certificate (or Developer ID Application if no development
-certificate is available), so Accessibility, Camera, and Microphone grants can
-survive rebuilds after you grant them once. Production keeps
-`dev.tryomarchy.native` and its own privacy decisions. The first development
-build with this new identity needs fresh grants.
+Local app builds appear as **Try Roguix Dev**, with bundle ID
+`dev.tryroguix.native.development`. Production keeps `dev.tryroguix.native`
+and its own privacy decisions. `make build`, `make app`, and `make run` all use
+the development identity; opening the generated `.app` directly works the
+same way. Development signing is local, with secure timestamping disabled, and
+does not notarize the app. Production keeps secure timestamping and the
+release notarization workflow.
 
-`make build`, `make app`, and `make run` all use this development identity;
-opening the generated `.app` directly works the same way. Development signing
-is local, with secure timestamping disabled, and does not notarize the app.
-Production keeps secure timestamping and the release notarization workflow.
+### Development signing identity
 
-If several eligible certificates are installed, choose one explicitly:
+An ad-hoc signature's designated requirement is the build's cdhash, so every
+rebuild is a new app to macOS and loses its Accessibility and other privacy
+grants. Create a persistent local identity once:
+
+```sh
+make signing-identity
+```
+
+It creates a self-signed "Try Roguix Development" code-signing certificate
+(code-signing EKU, valid ten years) in its own keychain,
+`~/Library/Keychains/try-roguix-development.keychain-db`, whose random
+password is in `~/.config/try-roguix/development-keychain-password` (mode
+600). The login keychain, its search list and trust settings are not changed,
+and running it again reuses the identity. `make app` then unlocks that
+keychain and signs with the identity, so the designated requirement becomes
+`identifier "dev.tryroguix.native.development" and certificate leaf = H"..."`
+and stays the same across builds; without it, `make app` signs ad hoc and says
+so. These builds use no hardened runtime: the certificate has no Team ID, so
+library validation would reject the bundled dylibs, and they are never
+notarized. Another identity still wins when given explicitly, and
+`DEVELOPMENT_SIGN_IDENTITY=auto` selects the only installed Apple Development
+(or else Developer ID Application) certificate:
 
 ```sh
 make run DEVELOPMENT_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
 ```
+
+To remove the identity, delete both files:
+
+```sh
+security delete-keychain ~/Library/Keychains/try-roguix-development.keychain-db
+rm ~/.config/try-roguix/development-keychain-password
+```
+
+Releases are unaffected (`docs/releasing.md`, "Signing").
 
 `make package` uses `PACKAGE_SIGN_IDENTITY` and `PACKAGE_NOTARY_PROFILE`, which
 default to the configured release credentials. It fails instead of producing
@@ -213,8 +240,9 @@ parallel forwarding path exists.
 Ad-hoc signing identifies one exact build, so macOS intentionally invalidates
 its privacy grants when that build is replaced. The app's **Open Settings**
 action repairs a stale Accessibility entry and registers the installed build,
-and scopes the repair to the running app's bundle ID. A stable Apple Development
-or Developer ID signature is required for the grant to survive future updates.
+and scopes the repair to the running app's bundle ID. A stable signature (the
+development identity above, Apple Development or Developer ID) is required for
+the grant to survive future updates.
 
 See the root `README.md`, `docs/architecture.md`, and `docs/releasing.md` for the
 supported platform, runtime boundaries, and distribution checklist.

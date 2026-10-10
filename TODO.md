@@ -2,13 +2,6 @@
 
 ## Next, in order
 
-### Sign development builds with a persistent certificate
-
-Decided 2026-10-07: yes. Sign development builds with a persistent local
-self-signed code-signing certificate kept in a dedicated build keychain, so
-the designated requirement is the certificate and an Accessibility grant
-survives rebuilds. See "Background: the Accessibility grant".
-
 ### Diagnose the Accessibility grant
 
 Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
@@ -77,12 +70,14 @@ The Accessibility grant still matters for the rest:
 Command-to-Super mapping of system shortcuts needs the Accessibility
 permission (QEMU's full-grab CGEventTap; `FocusedCommandSuperBridge.swift`
 is never started); without it the app starts the VM without the mapping and
-only logs a warning. Development builds and
-releases are signed ad hoc, so their designated requirement is the cdhash
-(`codesign -d -r-` shows `designated => cdhash H"..."`): every rebuild or
-update is a new identity for TCC, and the earlier grant no longer applies,
-even if System Settings still shows it on. This is the leading hypothesis,
-not yet proven.
+only logs a warning. Releases, and development builds made without
+`make signing-identity`, are signed ad hoc, so their designated requirement
+is the cdhash (`codesign -d -r-` shows `designated => cdhash H"..."`): every
+rebuild or update is a new identity for TCC, and the earlier grant no longer
+applies, even if System Settings still shows it on. This is the leading
+hypothesis, not yet proven. Development builds signed with the local
+identity have `certificate leaf = H"..."` instead, which stays the same
+across rebuilds.
 
 - Diagnose: run only `~/Applications/Try Roguix.app`; check the start
   menu's Accessibility row, the `[input-bridge]` warning, and TCC denials
@@ -92,10 +87,9 @@ not yet proven.
   after `tapDisabledByTimeout`/`ByUserInput`, secure input
   (`ioreg -l -w 0 | grep SecureInput`), and that the tap swallows the event
   so Spotlight does not get Command-Space.
-- Development builds: sign with a persistent local self-signed code-signing
-  certificate (or Apple Development), so the designated requirement is the
-  certificate and a grant survives rebuilds; keep the key in a dedicated
-  build keychain.
+- Development builds: done; `make signing-identity` creates a persistent
+  local self-signed identity in a dedicated keychain and `make app` signs
+  with it (`macos/README.md`, "Development signing identity").
 - Releases: until there is a Developer ID, every ad-hoc update loses the
   grant. Tell the user after an update and offer a user-triggered
   re-grant (`tccutil reset Accessibility dev.tryroguix.native`, then the

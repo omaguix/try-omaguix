@@ -13,6 +13,9 @@ Usage: macos/build-app.sh [--open] [--dmg] [--guest-dir DIR] [--output-dir DIR]
 Build a self-contained Apple Silicon app. Development builds select a stable
 local signing certificate automatically. Production builds require an explicit
 signing identity. --dmg requires --configuration production.
+OMARCHY_CODESIGN_IDENTITY gives a default identity; OMARCHY_CODESIGN_KEYCHAIN
+names the keychain of the local development identity (`make app`), which is
+signed without the hardened runtime.
 --notarize-profile implies --dmg and names a notarytool keychain profile.
 --download-disk-from builds a release app without the compressed disk: it
 downloads the disk's parts from URL (ending in /) on the first launch
@@ -27,6 +30,7 @@ guest_dir=
 configuration=development
 output_dir=
 sign_identity=${OMARCHY_CODESIGN_IDENTITY:-auto}
+sign_keychain=${OMARCHY_CODESIGN_KEYCHAIN:-}
 notarize_profile=
 download_disk_from=
 # GitHub release assets are limited to 2 GiB; parts stay safely below it.
@@ -286,7 +290,12 @@ mv "$contents/Resources/runtime/bin/qemu-system-aarch64" "$bundled_qemu"
 "$dependency_bundler" --verify-only "$contents/Resources/runtime"
 
 sign_options=(--force --sign "$sign_identity")
-if [[ $sign_identity != - ]]; then
+if [[ -n $sign_keychain ]]; then
+  # The local self-signed identity has no Team ID, so the hardened runtime's
+  # library validation would reject the bundled dylibs; it is never notarized,
+  # which is what the hardened runtime and timestamp are for.
+  sign_options+=(--keychain "$sign_keychain")
+elif [[ $sign_identity != - ]]; then
   sign_options+=(--options runtime)
   if [[ $configuration == production ]]; then
     sign_options+=(--timestamp)

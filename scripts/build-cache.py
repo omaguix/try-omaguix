@@ -175,6 +175,7 @@ def context(component: str) -> dict[str, str]:
         "app": {
             "DEVELOPER_DIR",
             "OMARCHY_CODESIGN_IDENTITY",
+            "OMARCHY_CODESIGN_KEYCHAIN",
             "SDKROOT",
             "SWIFTFLAGS",
         },

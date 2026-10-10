@@ -12,7 +12,10 @@ override BUILD_CACHE := $(ROOT)/scripts/build-cache.py
 override BUILD_STATE := $(ROOT)/.build/state
 RELEASE_SIGN_IDENTITY ?= Developer ID Application: Eduardo Martinez (RZC79MPD34)
 RELEASE_NOTARY_PROFILE ?= try-omarchy
-DEVELOPMENT_SIGN_IDENTITY ?= auto
+# Empty means the persistent local identity from `make signing-identity`, or
+# ad hoc (-) when it does not exist; auto picks the only Apple Development or
+# Developer ID certificate (macos/development-sign-identity.py).
+DEVELOPMENT_SIGN_IDENTITY ?=
 PACKAGE_SIGN_IDENTITY ?= $(RELEASE_SIGN_IDENTITY)
 PACKAGE_NOTARY_PROFILE ?= $(RELEASE_NOTARY_PROFILE)
 FORCE ?= 0
@@ -24,7 +27,7 @@ SHELL_TESTS := network-helper qemu-networking qemu-port-forwarding \
 SHELL_TEST_TARGETS := $(addprefix test-shell-,$(SHELL_TESTS))
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor test guix-package runtime app build install run run-isolated run-ephemeral reset version-preflight package package-preflight release release-preflight clean clean-all
+.PHONY: help doctor test guix-package runtime signing-identity app build install run run-isolated run-ephemeral reset version-preflight package package-preflight release release-preflight clean clean-all
 .PHONY: test-all test-contracts test-swift test-shell test-resize $(SHELL_TEST_TARGETS)
 
 help:
@@ -38,10 +41,11 @@ help:
 	  '  make build FORCE=1  Rebuild every component' \
 	  '  make install        Build the app and copy it to ~/Applications' \
 	  '  make run            Install the app and open the installed copy' \
-	  '                      Automatically select a stable development certificate' \
 	  '  make run-isolated   Open the development build with its own VM per build' \
+	  '  make signing-identity  Create the local signing identity once, so macOS' \
+	  '                      privacy grants survive local rebuilds' \
 	  '  make run DEVELOPMENT_SIGN_IDENTITY="Apple Development: ..."' \
-	  '                      Choose a certificate when several are available' \
+	  '                      Sign with another identity instead' \
 	  '  make package        Create a signed and notarized distribution DMG' \
 	  '  make release        Create a signed and notarized distribution DMG' \
 	  '' \
@@ -123,11 +127,21 @@ runtime:
 
 # The guest image is built in a Guix System builder (guest/guix/README.md)
 # and packaged with `make guix-package`; the app embeds build/guix.
+signing-identity:
+	@"$(ROOT)/macos/development-signing-identity.sh" --create
+
 app: runtime
 	@[[ -f "$(GUEST_DIST)/guix-manifest.json" ]] || { echo 'error: build/guix is missing; run make guix-package GUIX_IMAGE=...' >&2; exit 1; }
-	@identity=$$(python3 "$(ROOT)/macos/development-sign-identity.py" "$(DEVELOPMENT_SIGN_IDENTITY)") || exit 1; \
-	  OMARCHY_FORCE_BUILD="$(FORCE)" \
+	@identity="$(DEVELOPMENT_SIGN_IDENTITY)"; keychain=; \
+	if [[ -z $$identity ]]; then \
+	  IFS=$$'\t' read -r identity keychain < <("$(ROOT)/macos/development-signing-identity.sh" --unlock) || true; \
+	  [[ -n $$identity ]] || { identity=-; echo 'Signing ad hoc; run make signing-identity to keep privacy grants across rebuilds.'; }; \
+	else \
+	  identity=$$(python3 "$(ROOT)/macos/development-sign-identity.py" "$$identity") || exit 1; \
+	fi; \
+	OMARCHY_FORCE_BUILD="$(FORCE)" \
 	  OMARCHY_CODESIGN_IDENTITY="$$identity" \
+	  OMARCHY_CODESIGN_KEYCHAIN="$$keychain" \
 	  "$(BUILD_CACHE)" \
 	  --root "$(ROOT)" --state-dir "$(BUILD_STATE)" app -- \
 	  "$(ROOT)/macos/build-app.sh" --guest-dir "$(GUEST_DIST)"

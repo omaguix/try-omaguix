@@ -278,6 +278,10 @@ unrecognized host files stay untouched, as everywhere else here.
   Guix System builder; `make guix-package` compresses it into `build/guix`.
 - `macos/` builds the Swift launcher and a patched QEMU runtime. The runtime is
   isolated, relocated, and signed before it enters the app bundle.
+  Development builds are signed with the persistent local identity from
+  `make signing-identity` when it exists, ad hoc otherwise; releases are
+  signed as `docs/releasing.md` describes (`macos/README.md`, "Development
+  signing identity").
 - `build/` holds what builds produce: the packaged guest (`build/guix`), the
   development app (`build/dev.noindex`) and the release app
   (`build/release.noindex`). `make install` copies the development app to
