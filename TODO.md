@@ -136,6 +136,19 @@ headless sandbox is never widened by hand. Add this to AGENTS.md
 
 ## Proposed
 
+### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
+
+Reported 2026-10-10 by another session at the maintainer's request: during a
+reset, run-qemu-gpu.sh downloads/selects the compressed factory disk (~3 GB)
+before `qemu_persistent_storage_select` erases the old VM
+(`_qps_clear_workspace_locked`), so both coexist briefly and a reset on a
+nearly full disk can still fail for space. Make a reset erase the old VM
+before the fetch (keeping the keep-saved-VM/archive semantics), so it needs
+no more room than the old VM already used. Consequence: a failed or
+interrupted download then leaves no VM, as the dropped 67a8d7a accepted.
+(67a8d7a itself targeted the pre-0.5 base-image flow and was dropped in the
+rebase on purpose.)
+
 ### Register checks for herdr todo run [t-atkjktc5]
 
 Proposed 2026-10-10 by the herdr coordinator: `herdr todo run` (verify,
