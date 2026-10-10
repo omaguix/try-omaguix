@@ -60,6 +60,9 @@ running VM's Dock tile invites this pin. Check how upstream Try Omarchy
 presents the runtime in the Dock, and make the tile the app itself (or keep
 the runtime out of the Dock) so a pin reopens the app.
 Decided by the user 2026-10-10: approved.
+Re-scoped 2026-10-10 after a second consult round (20261010-155003-355b):
+Roguix needs no third-party tool (see the next item), so this item is about
+the Dock pin; a stable identity only helps remapper users on the side.
 Requested 2026-10-10 as the next item ("clarify the key remapper issue"),
 merged here after a consult round with sol and MiMo (20261010-154703-0ee6):
 the VM window belongs to a bare QEMU Mach-O with no bundle id, so a key
@@ -75,6 +78,21 @@ QEMU without arguments): the tile must reopen the app, or the runtime stays
 out of the Dock (LSUIElement); also check upstream's approach, signing and
 notarization of a nested helper, TCC/Accessibility attribution, Cmd-Tab
 presence, and divergence from upstream. Prototype before choosing.
+
+### Roguix needs no key remapper: keyboard docs cover dev builds [t-swnazc5i]
+
+Asked 2026-10-10: "Roguix has to work even if someone has no Karabiner or
+Hammerspoon installed?" Yes (sol and MiMo agree, 20261010-155003-355b): with
+the Accessibility grant, QEMU's own event tap captures Command chords,
+Command-Space included, before Spotlight (verified 2026-10-07, see
+"Background: the Accessibility grant"); Command-Tab follows the "Send
+Command-Tab to Roguix" setting. Remappers are only a problem for those who
+have one: they take a chord before the tap. `docs/mac-keyboard.md` ("Host
+tools that take a chord first") still shows an exemption regex matching
+only `Try Roguix.app`; make it match development builds too
+(`Try Roguix( Dev)?\.app`), say plainly that no such tool is needed, and
+that without the grant the VM runs without the Command mapping (the start
+menu's Accessibility row says so). Docs only.
 
 ### Narrow omacom/omarchy#14865 to the UTF-8 bug [t-mwepf6tt]
 
@@ -334,6 +352,18 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### Clean-account keyboard check? [t-cli74btl]
+
+Run a keyboard check on a clean macOS account (no remappers), as sol and
+MiMo suggest, before the next release?
+Options: yes, before the next release | after the next release | no
+Checks: first launch without the grant (VM runs, the start menu shows the
+missing grant and how to fix it), grant flow, Command-Space opens the
+guest's menu and not Spotlight while the VM is focused and Spotlight
+outside it, Command-Return, Command-Tab per its setting, typing/repeat/
+copy-paste unaffected, an ad-hoc update losing the grant and the recovery.
+Needs the maintainer: a second macOS account on their Mac.
 
 ### Background: rebase onto Try Omarchy 0.5 (2026-10-10)
 
