@@ -1,0 +1,103 @@
+Omarchy 4.0.4's audio scripts parse pactl's text and JSON output, which pactl
+translates in a localized session (zh_TW, zh_CN, ko_KR): "Sink Input #",
+"Name:", "Ports:", "not available", "Mute: yes" no longer match, so output
+switching, the output list and the volume OSD fail there. Run only the parsed
+pactl calls in the C locale (Omarchy itself does this for `pacman -Qi`); the
+rest of each script keeps the session's language. Reported upstream; remove
+once the pinned Omarchy parses pactl in the C locale.
+
+--- a/bin/omarchy-audio-output-set-default
++++ b/bin/omarchy-audio-output-set-default
+@@ -19,7 +19,8 @@
+ # sink input but carries no application.name, and moving it would rewire the
+ # processing itself -- onto headphones, or into its own virtual sink, which is a
+ # cycle. EasyEffects' output stream must stay put for the same reason.
+-timeout 2 pactl list sink-inputs 2>/dev/null | awk '
++# pactl translates its headers; parse them in the C locale.
++LC_ALL=C timeout 2 pactl list sink-inputs 2>/dev/null | awk '
+   /^Sink Input #/ {id = substr($3, 2)}
+   /application\.name = / {
+     app = $0
+--- a/bin/omarchy-audio-output-sink
++++ b/bin/omarchy-audio-output-sink
+@@ -27,7 +27,8 @@
+ 
+ # A DSP sink feeds its physical output through a stream of its own; follow that
+ # stream down to the sink underneath.
+-downstream="$(pactl list sink-inputs 2>/dev/null |
++# pactl translates its headers; parse them in the C locale.
++downstream="$(LC_ALL=C pactl list sink-inputs 2>/dev/null |
+   awk -v virt="$sink" '
+     /^Sink Input #/ {target = ""}
+     /^[[:space:]]*Sink:/ {target = $2}
+--- a/bin/omarchy-audio-output-switch
++++ b/bin/omarchy-audio-output-switch
+@@ -6,7 +6,8 @@
+ # silently bypass the tuning rather than pick a different output.
+ fronted=$(omarchy-audio-tuning fronted-sink 2>/dev/null || true)
+ 
+-sinks=$(timeout 2 pactl -f json list sinks |
++# pactl translates availability, headers and yes/no; parse them in the C locale.
++sinks=$(LC_ALL=C timeout 2 pactl -f json list sinks |
+   jq --arg fronted "$fronted" '[.[]
+     | select((.ports | length == 0) or ([.ports[]? | .availability != "not available"] | any))
+     | select($fronted == "" or .name != $fronted)]')
+@@ -33,10 +34,10 @@
+ # physical sink beneath it, so read the level from whichever sink actually carries
+ # it or the OSD contradicts the volume keys.
+ next_sink_effective=$(omarchy-audio-output-sink "$next_sink_name")
+-next_sink_volume=$(timeout 2 pactl get-sink-volume "$next_sink_effective" 2>/dev/null |
++next_sink_volume=$(LC_ALL=C timeout 2 pactl get-sink-volume "$next_sink_effective" 2>/dev/null |
+   awk 'NR == 1 {for (i = 1; i <= NF; i++) if ($i ~ /%$/) {sub("%", "", $i); print $i; exit}}')
+ [[ -n $next_sink_volume ]] || next_sink_volume=$(jq -r '.volume | to_entries[0].value.value_percent | sub("%"; "") | tonumber' <<<"$next_sink")
+-if [[ $(timeout 2 pactl get-sink-mute "$next_sink_effective" 2>/dev/null) == *yes ]]; then
++if [[ $(LC_ALL=C timeout 2 pactl get-sink-mute "$next_sink_effective" 2>/dev/null) == *yes ]]; then
+   next_sink_is_muted=true
+ else
+   next_sink_is_muted=false
+--- a/bin/omarchy-audio-output-volume
++++ b/bin/omarchy-audio-output-volume
+@@ -22,8 +22,9 @@
+ 
+ # pactl reports the same percentage scale wpctl does (both are the raw volume
+ # over PA_VOLUME_NORM), so the OSD reads identically either way.
++# pactl translates its labels and yes/no; parse them in the C locale.
+ volume_percent() {
+-  pactl get-sink-volume "$sink" 2>/dev/null |
++  LC_ALL=C pactl get-sink-volume "$sink" 2>/dev/null |
+     awk 'NR == 1 {
+       for (i = 1; i <= NF; i++)
+         if ($i ~ /%$/) {sub("%", "", $i); print $i; exit}
+@@ -31,7 +32,7 @@
+ }
+ 
+ volume_muted() {
+-  [[ $(pactl get-sink-mute "$sink" 2>/dev/null) == *yes ]]
++  [[ $(LC_ALL=C pactl get-sink-mute "$sink" 2>/dev/null) == *yes ]]
+ }
+ 
+ case "$action" in
+--- a/bin/omarchy-audio-sink-availability
++++ b/bin/omarchy-audio-sink-availability
+@@ -8,7 +8,8 @@
+ # report it unavailable and keep it out of the output list.
+ fronted="$(omarchy-audio-tuning fronted-sink 2>/dev/null || true)"
+ 
+-pactl list sinks 2>/dev/null | awk -v fronted="$fronted" '
++# pactl translates its headers; parse them in the C locale.
++LC_ALL=C pactl list sinks 2>/dev/null | awk -v fronted="$fronted" '
+   function emit_sink() {
+     if (name == "") return
+     if (fronted != "" && name == fronted) {
+--- a/bin/omarchy-audio-tuning
++++ b/bin/omarchy-audio-tuning
+@@ -127,7 +127,8 @@
+ # a sink input but carries no application.name, and moving it would rewire the
+ # tuning itself.
+ app_streams() {
+-  pactl list sink-inputs 2>/dev/null | awk '
++  # pactl translates its headers; parse them in the C locale.
++  LC_ALL=C pactl list sink-inputs 2>/dev/null | awk '
+     /^Sink Input #/ {id = substr($3, 2)}
+     /application\.name = / {
+       app = $0

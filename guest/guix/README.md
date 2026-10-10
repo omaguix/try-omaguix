@@ -429,6 +429,14 @@ went straight to the desktop.
   callers of `omarchy-shell` keep the old path. Remove the patch once the
   pinned Omarchy includes 6762769b; the build fails if it no longer applies.
 
+- **Audio scripts in other languages:** Omarchy's output scripts
+  (`omarchy-audio-output-set-default`, `-output-sink`, `-output-switch`,
+  `-output-volume`, `-sink-availability`, `-tuning`) parse `pactl`'s
+  output, which pactl translates in a Chinese or Korean session, so output
+  switching and the output list failed there.
+  `omarchy-audio-c-locale.patch` runs only those parsed `pactl` calls with
+  `LC_ALL=C`. Remove it once the pinned Omarchy does the same.
+
 - **Power profiles:** the VM has no Linux power profile driver
   (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try
   Omarchy's, makes the power menu and panel show one profile, managed by

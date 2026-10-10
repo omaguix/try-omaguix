@@ -75,10 +75,13 @@
               ;; if the patch no longer applies; remove it once the pin
               ;; includes 6762769b. The VM has no Linux power profile
               ;; driver: as in Try Omarchy, the power menu and panel show
-              ;; one profile, managed by macOS.
+              ;; one profile, managed by macOS. The audio scripts parse
+              ;; pactl, which a Chinese or Korean session translates, so
+              ;; they read it in the C locale until Omarchy does.
               (patches
                (list (local-file "omarchy-global-shortcuts.patch")
-                     (local-file "omarchy-macos-power-profile.patch")))))
+                     (local-file "omarchy-macos-power-profile.patch")
+                     (local-file "omarchy-audio-c-locale.patch")))))
     (build-system copy-build-system)
     (arguments
      (list
