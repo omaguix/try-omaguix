@@ -549,6 +549,17 @@ it never serves to get past the delay check. A coordinator checks every
 option in a worker's report against this rule before passing it on or
 writing it into TODO.md.
 
+A command run into the guest or another remote (ssh, the serial console)
+must end when the remote work ends, since herdr does not detect a silent
+remote hang and a silence timer or a Bash timeout used as a trigger are
+rejected workarounds. Wrap it so it captures the exit status, prints a
+completion line and exits, e.g. `ssh guest 'test; rc=$?; echo DONE:$rc; exit $rc'`;
+builder work already ends this way through `guest/guix/vm-run`
+([Long-Running Work](#long-running-work)). A process meant to keep running
+remotely gets its own stdin, stdout and stderr, e.g.
+`setsid cmd </dev/null >/tmp/x.log 2>&1 &`, so it does not hold the ssh
+session open; `ssh -n` alone fixes only stdin.
+
 ## Long-Running Work
 
 Run builder VM work that takes more than a minute (image and system builds,
