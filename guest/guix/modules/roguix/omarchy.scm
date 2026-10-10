@@ -39,6 +39,7 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages networking)
+  #:use-module (gnu packages perl)
   #:use-module (gnu packages python)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages terminals)
@@ -78,11 +79,13 @@
               ;; driver: as in Try Omarchy, the power menu and panel show
               ;; one profile, managed by macOS. The audio scripts parse
               ;; pactl, which a Chinese or Korean session translates, so
-              ;; they read it in the C locale until Omarchy does.
+              ;; they read it in the C locale until Omarchy does. The
+              ;; background's name is title-cased as UTF-8, not as bytes.
               (patches
                (list (local-file "omarchy-global-shortcuts.patch")
                      (local-file "omarchy-macos-power-profile.patch")
-                     (local-file "omarchy-audio-c-locale.patch")))))
+                     (local-file "omarchy-audio-c-locale.patch")
+                     (local-file "omarchy-theme-bg-utf8.patch")))))
     (build-system copy-build-system)
     (arguments
      (list
@@ -541,6 +544,9 @@ end)
                                (list omarchy roguix-omarchy-compat quickshell-0.3
                                     foot jq socat inotify-tools hyprsunset ncurses
                                     fzf imv mpv
+                                    ;; Omarchy's menus, clipboard capture and
+                                    ;; name title-casing call perl.
+                                    perl
                                     fontconfig procps gawk util-linux curl
                                     `(,gtk+ "bin") libnotify xdg-user-dirs
                                     qtimageformats yaru-theme font-liberation

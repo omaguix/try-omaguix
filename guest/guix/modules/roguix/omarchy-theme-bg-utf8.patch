@@ -1,0 +1,20 @@
+omarchy-theme-bg-current title-cases the background's file name with perl
+working on bytes, so in a UTF-8 name a letter after an accented one counted
+as a word start: "02-über-städte.jpg" showed as "üBer StäDte". Decode the
+name as UTF-8 whatever the locale, with U+FFFD for bytes that are not UTF-8
+(perl -CSD would die on them and print nothing), and write UTF-8: it shows
+as "Über Städte". ASCII names come out as before (test_omarchy_theme_bg.py).
+Proposed upstream in omacom/omarchy#14865; remove once the pinned Omarchy
+includes it.
+
+--- a/bin/omarchy-theme-bg-current
++++ b/bin/omarchy-theme-bg-current
+@@ -6,7 +6,7 @@
+ BACKGROUND_PATH=$(readlink -f "$HOME/.local/state/omarchy/current/background" 2>/dev/null)
+ 
+ if [[ -n $BACKGROUND_PATH ]]; then
+-  basename -- "$BACKGROUND_PATH" | perl -pe 's/\.[^.]+$//; s/^\d+-//; s/-/ /g; s/\b(\w)/\U$1/g'
++  basename -- "$BACKGROUND_PATH" | perl -CO -MEncode=decode -pe '$_ = decode("UTF-8", $_); s/\.[^.]+$//; s/^\d+-//; s/-/ /g; s/\b(\w)/\U$1/g'
+ else
+   echo "Unknown"
+ fi

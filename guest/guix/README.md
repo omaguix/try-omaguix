@@ -477,6 +477,16 @@ went straight to the desktop.
   32% (foot 125%, Hyprland 30%) and 75% with stalls; the idle desktop 4–6%
   and about 15%.
 
+- **Perl:** Omarchy's `omarchy-menu-select` and `omarchy-menu-input`
+  (which a dozen commands, the time zone menu among them, build on), the
+  clipboard capture plugin (`shell/plugins/clipboard/capture.sh`, which
+  detects and decodes UTF-16 clipboard text) and the background and retro
+  game name title-casing call perl, so Omarchy's profile carries it.
+  `omarchy-theme-bg-utf8.patch` title-cases the background's name as UTF-8
+  instead of bytes ("02-über-städte.jpg" showed as "üBer StäDte");
+  `test_omarchy_theme_bg.py` compares it with upstream. Remove the patch
+  once the pinned Omarchy includes it (proposed in omacom/omarchy#14865).
+
 - **Power profiles:** the VM has no Linux power profile driver
   (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try
   Omarchy's, makes the power menu and panel show one profile, managed by
