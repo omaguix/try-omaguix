@@ -2,13 +2,6 @@
 
 ## Next, in order
 
-### Mark upstream's Arch guest documents as Try Omarchy's [t-gnl4jgea]
-
-Proposed 2026-10-10 after the rebase: `docs/integration-updates.md`,
-`docs/host-battery.md` and `docs/performance.md` describe the Arch guest and
-came in unchanged; say at their top that they describe Try Omarchy's guest.
-Decided by the user 2026-10-10: approved.
-
 ### Apply the Mac's language once, not on every boot [t-2k7yfxqe]
 
 Proposed 2026-10-10 after the rebase onto Try Omarchy 0.5. Upstream
