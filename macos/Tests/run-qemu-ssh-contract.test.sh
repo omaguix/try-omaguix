@@ -79,7 +79,6 @@ printf '{}\n' >"$resources/integrations/manifest.json"
 cp "$macos_dir/guest-settings.service" "$resources/guest-settings/guest-settings.service"
 cp "$macos_dir/../guest/native-overlay/usr/local/bin/omarchy-native-mac-share" "$resources/guest-settings/omarchy-native-mac-share"
 cp "$macos_dir/../guest/scripts/install-settings-integration.py" "$resources/guest-settings/install.py"
-printf '{"identity":"%s"}\n' "$(printf '%064d' 0)" >"$resources/guest-settings/fixes.json"
 
 cat >"$contents/MacOS/omarchy-vm-helper" <<'SH'
 #!/bin/bash
@@ -189,30 +188,11 @@ import threading
 import time
 
 arguments = sys.argv[1:]
-is_recovery = "Try Roguix Boot Recovery" in arguments
-log_variable = "FAKE_QEMU_RECOVERY_LOG" if is_recovery else "FAKE_QEMU_LOG"
 geometry = os.environ.get("TRYOMARCHY_KEYBOARD", "")
-Path(os.environ[log_variable]).write_text(
+Path(os.environ["FAKE_QEMU_LOG"]).write_text(
     "\n".join(arguments) + f"\nTRYOMARCHY_KEYBOARD={geometry}\n"
 )
-Path(os.environ[log_variable] + ".pid").write_text(str(os.getpid()))
-
-if is_recovery:
-    export_path = None
-    for argument in arguments:
-        if argument.startswith("local,id=omarchy-boot-export,"):
-            for field in argument.split(","):
-                if field.startswith("path="):
-                    export_path = Path(field[5:])
-    if export_path is None:
-        raise SystemExit("recovery invocation has no boot-export path")
-    export_path.joinpath("kernel").write_text("recovered-kernel\n")
-    export_path.joinpath("initramfs").write_text("recovered-initramfs\n")
-    export_path.joinpath("build-spec.json").write_text(
-        '{"runtime":{"kernelCommandLine":"root=/dev/vda rw rootwait '
-        'console=tty0 console=hvc0 loglevel=3"}}\n'
-    )
-    export_path.joinpath("complete").write_text("try-omarchy-boot-export-v1\n")
+Path(os.environ["FAKE_QEMU_LOG"] + ".pid").write_text(str(os.getpid()))
 qmp_paths = {
     arguments[index + 1][5:].split(",", 1)[0]
     for index, argument in enumerate(arguments[:-1])
@@ -304,26 +284,18 @@ QEMU_SELECTED_STORAGE_MODE=''
 QEMU_PERSISTENT_STORAGE_DIRECTORY=''
 QEMU_PERSISTENT_STORAGE_ROOT=''
 QEMU_PERSISTENT_STORAGE_IDENTITY=''
-QEMU_SELECTED_KERNEL=''
-QEMU_SELECTED_INITRAMFS=''
-QEMU_SELECTED_KERNEL_COMMAND_LINE=''
-QEMU_PERSISTENT_STORAGE_NEEDS_BOOT_RECOVERY=0
 _qps_owner() { /usr/bin/stat -f '%u' "$1"; }
 _qps_permissions() { /usr/bin/stat -f '%Lp' "$1"; }
 _qps_lstat_kind() { /usr/bin/stat -f '%HT' "$1"; }
 _qps_size() { /usr/bin/stat -f '%z' "$1"; }
 qemu_persistent_storage_release_lock() { :; }
-qemu_persistent_storage_configure_guest() {
-  printf 'configure %s\n' "$1" >>"$FAKE_STORAGE_LOG"
-}
 qemu_persistent_storage_reset() {
   printf 'clear\n' >>"$FAKE_STORAGE_LOG"
-  /bin/rm -f "$FAKE_PERSISTENT_ROOT/rootfs.ext4"
-  /bin/rm -rf "$FAKE_PERSISTENT_ROOT/boot"
+  /bin/rm -f "$FAKE_PERSISTENT_ROOT/disk.raw"
 }
 qemu_persistent_storage_select_existing() {
   printf 'select-existing\n' >>"$FAKE_STORAGE_LOG"
-  QEMU_SELECTED_DISK="$FAKE_PERSISTENT_ROOT/rootfs.ext4"
+  QEMU_SELECTED_DISK="$FAKE_PERSISTENT_ROOT/disk.raw"
   if [[ ! -f $QEMU_SELECTED_DISK ]]; then
     QEMU_SELECTED_DISK=''
     return "$QEMU_PERSISTENT_STORAGE_MISSING_STATUS"
@@ -333,50 +305,22 @@ qemu_persistent_storage_select_existing() {
   QEMU_PERSISTENT_STORAGE_DIRECTORY=$FAKE_PERSISTENT_ROOT
   QEMU_PERSISTENT_STORAGE_ROOT=$FAKE_PERSISTENT_ROOT
   QEMU_PERSISTENT_STORAGE_IDENTITY=${FAKE_SAVED_IDENTITY:-saved-vm}
-  if [[ -f $FAKE_PERSISTENT_ROOT/boot/kernel && \
-        -f $FAKE_PERSISTENT_ROOT/boot/initramfs && \
-        -f $FAKE_PERSISTENT_ROOT/boot/command-line ]]; then
-    QEMU_SELECTED_KERNEL="$FAKE_PERSISTENT_ROOT/boot/kernel"
-    QEMU_SELECTED_INITRAMFS="$FAKE_PERSISTENT_ROOT/boot/initramfs"
-    QEMU_SELECTED_KERNEL_COMMAND_LINE=$(<"$FAKE_PERSISTENT_ROOT/boot/command-line")
-    QEMU_PERSISTENT_STORAGE_NEEDS_BOOT_RECOVERY=0
-  else
-    QEMU_SELECTED_KERNEL=''
-    QEMU_SELECTED_INITRAMFS=''
-    QEMU_SELECTED_KERNEL_COMMAND_LINE=''
-    QEMU_PERSISTENT_STORAGE_NEEDS_BOOT_RECOVERY=1
-  fi
-}
-qemu_persistent_storage_stage_selected_boot_kit() {
-  printf 'stage-recovered-boot\n' >>"$FAKE_STORAGE_LOG"
-  mkdir -p "$FAKE_PERSISTENT_ROOT/boot"
-  /bin/cp "$1" "$FAKE_PERSISTENT_ROOT/boot/kernel"
-  /bin/cp "$2" "$FAKE_PERSISTENT_ROOT/boot/initramfs"
-  printf '%s\n' "$3" >"$FAKE_PERSISTENT_ROOT/boot/command-line"
-  QEMU_SELECTED_KERNEL="$FAKE_PERSISTENT_ROOT/boot/kernel"
-  QEMU_SELECTED_INITRAMFS="$FAKE_PERSISTENT_ROOT/boot/initramfs"
-  QEMU_SELECTED_KERNEL_COMMAND_LINE=$3
-  QEMU_PERSISTENT_STORAGE_NEEDS_BOOT_RECOVERY=0
 }
 qemu_persistent_storage_select() {
   printf 'select %s\n' "$1" >>"$FAKE_STORAGE_LOG"
   if [[ $1 == ephemeral ]]; then
     mkdir -p "$6"
-    QEMU_SELECTED_DISK="$6/rootfs.ext4"
+    QEMU_SELECTED_DISK="$6/disk.raw"
     /bin/cp "$3" "$QEMU_SELECTED_DISK"
     chmod 600 "$QEMU_SELECTED_DISK"
     QEMU_SELECTED_STORAGE_MODE=ephemeral
     QEMU_PERSISTENT_STORAGE_DIRECTORY=''
     QEMU_PERSISTENT_STORAGE_ROOT=''
     QEMU_PERSISTENT_STORAGE_IDENTITY=''
-    QEMU_SELECTED_KERNEL=$8
-    QEMU_SELECTED_INITRAMFS=$9
-    QEMU_SELECTED_KERNEL_COMMAND_LINE=${10}
-    QEMU_PERSISTENT_STORAGE_NEEDS_BOOT_RECOVERY=0
     return 0
   fi
   mkdir -p "$FAKE_PERSISTENT_ROOT"
-  QEMU_SELECTED_DISK="$FAKE_PERSISTENT_ROOT/rootfs.ext4"
+  QEMU_SELECTED_DISK="$FAKE_PERSISTENT_ROOT/disk.raw"
   if [[ $1 != reset && -f $QEMU_SELECTED_DISK ]]; then
     printf 'reuse\n' >>"$FAKE_STORAGE_LOG"
   else
@@ -388,16 +332,6 @@ qemu_persistent_storage_select() {
   QEMU_PERSISTENT_STORAGE_DIRECTORY=$FAKE_PERSISTENT_ROOT
   QEMU_PERSISTENT_STORAGE_ROOT=$FAKE_PERSISTENT_ROOT
   QEMU_PERSISTENT_STORAGE_IDENTITY=${FAKE_SAVED_IDENTITY:-saved-vm}
-  QEMU_PERSISTENT_STORAGE_NEEDS_BOOT_RECOVERY=0
-  # A UEFI guest passes no boot kit.
-  [[ -n ${8:-} ]] || return 0
-  mkdir -p "$FAKE_PERSISTENT_ROOT/boot"
-  /bin/cp "$8" "$FAKE_PERSISTENT_ROOT/boot/kernel"
-  /bin/cp "$9" "$FAKE_PERSISTENT_ROOT/boot/initramfs"
-  printf '%s\n' "${10}" >"$FAKE_PERSISTENT_ROOT/boot/command-line"
-  QEMU_SELECTED_KERNEL="$FAKE_PERSISTENT_ROOT/boot/kernel"
-  QEMU_SELECTED_INITRAMFS="$FAKE_PERSISTENT_ROOT/boot/initramfs"
-  QEMU_SELECTED_KERNEL_COMMAND_LINE=${10}
 }
 SH
 chmod 644 "$resources/scripts/qemu-persistent-storage.sh"
@@ -478,151 +412,48 @@ SH
 chmod 755 "$shim_dir"/*
 
 guest="$resources/guest"
-printf 'kernel\n' >"$guest/vmlinuz-linux"
-printf 'initramfs\n' >"$guest/initramfs-linux.img"
-printf 'factory\n' >"$guest/rootfs.ext4"
+firmware="$resources/runtime/share/qemu/edk2-aarch64-code.fd"
+mkdir -p "$resources/runtime/share/qemu"
+printf 'firmware\n' >"$firmware"
+printf 'factory\n' >"$guest/disk.raw"
 /usr/bin/plutil -create xml1 "$guest/launch.plist"
 /usr/bin/plutil -insert bundleIdentity -string "$(printf 'a%.0s' {1..64})" "$guest/launch.plist"
 /usr/bin/plutil -insert sourceDiskSHA256 -string "$(printf 'b%.0s' {1..64})" "$guest/launch.plist"
 /usr/bin/plutil -insert sourceDiskBytes -integer 8 "$guest/launch.plist"
 /usr/bin/plutil -insert compressedDiskBytes -integer 4 "$guest/launch.plist"
 /usr/bin/plutil -insert workingDiskBytes -integer 16 "$guest/launch.plist"
-/usr/bin/plutil -insert kernelCommandLine -string \
-  'root=/dev/vda rw rootwait console=tty0 console=hvc0 loglevel=4 systemd.show_status=false rd.systemd.show_status=false mitigations=off nowatchdog' \
-  "$guest/launch.plist"
+/usr/bin/plutil -insert bootABI -string uefi-gpt-v1 "$guest/launch.plist"
 
 launcher="$resources/scripts/run-qemu-gpu.sh"
 persistent_root="$test_root/persistent"
 
-# Exercise the repo-local development path, where release-time launch.plist is
-# absent and the launcher validates build-spec.json directly.
+# The repo-local development path has no launch.plist: the launcher asks the
+# bundled guix-artifact.py for the launch record (test_artifact.py covers its
+# validation) and only accepts a packaged Roguix guest directory.
+development_record="$(printf 'c%.0s' {1..64})	$(printf 'd%.0s' {1..64})	8	4	16"
+printf '%s\n' \
+  'import sys' \
+  'assert sys.argv[1:2] == ["launch-record"]' \
+  "print('$development_record')" \
+  >"$resources/scripts/guix-artifact.py"
 development_guest="$resources/development-guest"
 mkdir -p "$development_guest"
-/bin/cp "$macos_dir/Tests/fixtures/direct-boot-build-spec.json" "$development_guest/build-spec.json"
-DEVELOPMENT_GUEST="$development_guest" /usr/bin/python3 <<'PY'
-import hashlib
-import json
-import os
-from pathlib import Path
-
-
-guest = Path(os.environ["DEVELOPMENT_GUEST"])
-spec = json.loads(guest.joinpath("build-spec.json").read_text())
-files = {
-    "LICENSE.omarchy": b"MIT\n",
-    "initramfs-linux.img": b"070701",
-    "packages.lock.txt": b"fixture\n",
-    "provenance.json": b"{}\n",
-    "rootfs.ext4.zst": b"\x28\xb5\x2f\xfd",
-}
-kernel = bytearray(60)
-kernel[56:60] = b"ARM\x64"
-files["vmlinuz-linux"] = bytes(kernel)
-for name, data in files.items():
-    guest.joinpath(name).write_bytes(data)
-
-metadata = {
-    "LICENSE.omarchy": ("guest-license", "text/plain"),
-    "build-spec.json": ("guest-metadata", "application/json"),
-    "initramfs-linux.img": ("guest-initramfs", "application/vnd.linux.initramfs"),
-    "packages.lock.txt": ("guest-metadata", "text/plain"),
-    "provenance.json": ("guest-metadata", "application/json"),
-    "rootfs.ext4": ("guest-rootfs", "application/vnd.omarchy.ext4"),
-    "rootfs.ext4.zst": ("guest-rootfs-compressed", "application/zstd"),
-    "vmlinuz-linux": ("guest-kernel", "application/vnd.linux.kernel"),
-}
-records = []
-checksums = {}
-for name, (role, media_type) in metadata.items():
-    if name == "rootfs.ext4":
-        size = spec["image"]["sizeMiB"] * 1024 * 1024
-        digest = "0" * 64
-    else:
-        data = guest.joinpath(name).read_bytes()
-        size = len(data)
-        digest = hashlib.sha256(data).hexdigest()
-    records.append(
-        {
-            "bytes": size,
-            "mediaType": media_type,
-            "path": name,
-            "role": role,
-            "sha256": digest,
-        }
-    )
-    checksums[name] = digest
-
-manifest = {
-    "artifacts": records,
-    "build": {},
-    "guest": {
-        "architecture": "aarch64",
-        "display": spec["guest"]["virtualDisplay"],
-        "distribution": "Arch Linux",
-        "kernelCommandLine": spec["runtime"]["kernelCommandLine"],
-        "profile": "factory",
-        "username": None,
-    },
-    "kind": "try-omarchy-guest-artifacts",
-    "normalizedUpstreamTree": {},
-    "schemaVersion": 1,
-    "upstream": {},
-}
-manifest_data = (json.dumps(manifest, separators=(",", ":")) + "\n").encode()
-guest.joinpath("guest-manifest.json").write_bytes(manifest_data)
-checksums["guest-manifest.json"] = hashlib.sha256(manifest_data).hexdigest()
-guest.joinpath("SHA256SUMS").write_text(
-    "".join(f"{checksums[name]}  {name}\n" for name in sorted(checksums)),
-    encoding="ascii",
-)
-PY
-
 development_stderr="$test_root/development-validation.stderr"
+if env PATH="$shim_dir:/usr/bin:/bin:/usr/sbin:/sbin" OMARCHY_QEMU_GPU_INSPECT_ONLY=1 \
+  "$launcher" "$development_guest" >/dev/null 2>"$development_stderr"; then
+  fail 'a directory without guix-manifest.json passed development validation'
+fi
+assert_contains "$(<"$development_stderr")" 'not a packaged Roguix guest'
+printf '{}\n' >"$development_guest/guix-manifest.json"
 if ! development_validation=$(env \
   PATH="$shim_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
   OMARCHY_QEMU_GPU_INSPECT_ONLY=1 \
   "$launcher" "$development_guest" 2>"$development_stderr"); then
   /bin/cat "$development_stderr" >&2 || true
-  fail 'generated build spec failed repo-local development validation'
+  fail 'the development launch record failed validation'
 fi
-assert_contains "$development_validation" \
-  'root=/dev/vda rw rootwait console=tty0 console=hvc0'
-
-# Verified older factories retain their creation-time host renderer metadata.
-# Accept that known ABI, but reject arbitrary backends before launching QEMU.
-for renderer in angle-metal unsupported-renderer macos-opengl; do
-  /usr/bin/python3 - "$development_guest" "$renderer" <<'PY_GRAPHICS'
-import hashlib
-import json
-from pathlib import Path
-import sys
-
-guest = Path(sys.argv[1])
-spec_path = guest / "build-spec.json"
-spec = json.loads(spec_path.read_text())
-spec["runtime"]["graphics"]["hostRenderer"] = sys.argv[2]
-spec_path.write_text(json.dumps(spec) + "\n")
-manifest_path = guest / "guest-manifest.json"
-manifest = json.loads(manifest_path.read_text())
-for artifact in manifest["artifacts"]:
-    if artifact["path"] == "build-spec.json":
-        artifact["bytes"] = spec_path.stat().st_size
-        artifact["sha256"] = hashlib.sha256(spec_path.read_bytes()).hexdigest()
-manifest_path.write_text(json.dumps(manifest) + "\n")
-checksums = {artifact["path"]: artifact["sha256"] for artifact in manifest["artifacts"]}
-checksums["guest-manifest.json"] = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-(guest / "SHA256SUMS").write_text("".join(f"{digest}  {name}\n" for name, digest in sorted(checksums.items())))
-PY_GRAPHICS
-  graphics_status=0
-  env PATH="$shim_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
-    OMARCHY_QEMU_GPU_INSPECT_ONLY=1 "$launcher" "$development_guest" \
-    >"$test_root/graphics-$renderer.stdout" 2>"$test_root/graphics-$renderer.stderr" || graphics_status=$?
-  if [[ $renderer == unsupported-renderer ]]; then
-    [[ $graphics_status != 0 ]] || fail 'unsupported graphics backend was accepted'
-  else
-    [[ $graphics_status == 0 ]] || fail "compatible graphics metadata rejected: $renderer"
-  fi
-done
+[[ $development_validation == "$development_record" ]] || \
+  fail "unexpected development launch record: $development_validation"
 
 run_scenario() {
   local scenario=$1
@@ -665,15 +496,6 @@ assert_contains "$(<"$test_root/timezone-injection/stderr")" 'invalid Mac time z
 run_scenario timezone-traversal 1 '' FAKE_HOST_TIMEZONE=../UTC
 assert_contains "$(<"$test_root/timezone-traversal/stderr")" 'invalid Mac time zone'
 assert_contains "$disabled_qemu" 'systemd.wants=try-omarchy-settings.service'
-assert_not_contains "$disabled_qemu" 'tryomarchy.fixes='
-fixes_identity=$(printf '%064d' 0)
-fixes_inode=$(stat -f %i "$persistent_root/rootfs.ext4")
-run_scenario boot-fixes-approved 0 '' "OMARCHY_QEMU_GPU_GUEST_FIXES_CONSENT=$fixes_identity:$fixes_inode"
-assert_contains "$(<"$test_root/boot-fixes-approved/qemu.log")" "tryomarchy.fixes=$fixes_identity"
-run_scenario boot-fixes-wrong-disk 1 '' "OMARCHY_QEMU_GPU_GUEST_FIXES_CONSENT=$fixes_identity:0"
-assert_contains "$(<"$test_root/boot-fixes-wrong-disk/stderr")" 'the reviewed VM or fixes changed'
-run_scenario boot-fixes-invalid 1 '' 'OMARCHY_QEMU_GPU_GUEST_FIXES_CONSENT=not-a-consent'
-assert_contains "$(<"$test_root/boot-fixes-invalid/stderr")" 'invalid guest fixes consent'
 assert_contains "$disabled_qemu" "systemd.set_credential_binary=systemd.extra-unit.try-omarchy-settings.service:$(base64 < "$macos_dir/guest-settings.service" | tr -d '\r\n')"
 assert_line_pair "$test_root/disabled/qemu.log" -fsdev \
   "local,id=omarchy-settings,path=$resources/guest-settings,security_model=none,readonly=on"
@@ -685,8 +507,15 @@ assert_not_contains "$disabled_qemu" gic-version=2
 assert_line_pair "$test_root/disabled/qemu.log" -netdev 'user,id=omarchy-net'
 assert_line_pair "$test_root/disabled/qemu.log" -chardev \
   "stdio,id=omarchy-hvc0,signal=off,logfile=$persistent_root/console.log,logappend=off"
-assert_line_pair "$test_root/disabled/qemu.log" -kernel "$persistent_root/boot/kernel"
-assert_line_pair "$test_root/disabled/qemu.log" -initrd "$persistent_root/boot/initramfs"
+assert_line_pair "$test_root/disabled/qemu.log" -bios "$firmware"
+for option in -kernel -initrd -append; do
+  ! grep -Fxq -- "$option" "$test_root/disabled/qemu.log" || fail "UEFI launch passed $option"
+done
+assert_line_pair "$test_root/disabled/qemu.log" -name 'Try Roguix'
+assert_line_pair "$test_root/disabled/qemu.log" -smbios 'type=11,value=omarchy.qemu_virgl=1'
+# UEFI has no virtio keyboard driver; GRUB's menu reads the USB keyboard.
+assert_line_pair "$test_root/disabled/qemu.log" -device 'usb-kbd,bus=roguix-usb.0'
+assert_contains "$disabled_qemu" "file=$persistent_root/disk.raw"
 assert_not_contains "$disabled_qemu" hostfwd
 assert_not_contains "$disabled_qemu" tryomarchy.ssh_access
 assert_keyboard_lockstep "$test_root/disabled/qemu.log" iso
@@ -910,50 +739,23 @@ run_scenario hvf-trace-relative 1 '' OMARCHY_QEMU_GPU_HVF_TRACE_LOG=hvf-trace.lo
 assert_contains "$(<"$test_root/hvf-trace-relative/stderr")" 'must be an absolute path'
 [[ ! -f $test_root/hvf-trace-relative/qemu.log ]] || fail 'relative HVF trace path started QEMU'
 
-# The selected disk owns locale support. Unsupported images ignore the hint;
-# legacy every-boot writers are masked, and new images seed only once.
-run_scenario locale-unsupported 0 '' OMARCHY_QEMU_GPU_LOCALE=zh_TW.UTF-8
-assert_not_contains "$(<"$test_root/locale-unsupported/qemu.log")" 'tryomarchy.locale='
-run_scenario locale-korean-unsupported 0 '' OMARCHY_QEMU_GPU_LOCALE=ko_KR.UTF-8
-assert_not_contains "$(<"$test_root/locale-korean-unsupported/qemu.log")" 'tryomarchy.locale='
+# An app update must not advertise its own locale capability for an older
+# selected disk. Check both the rejection and a supported saved boot kit.
+run_scenario locale-unsupported 1 '' OMARCHY_QEMU_GPU_LOCALE=zh_TW.UTF-8
+assert_contains "$(<"$test_root/locale-unsupported/stderr")" 'does not support language selection'
+[[ ! -f $test_root/locale-unsupported/qemu.log ]] || fail 'unsupported locale started QEMU'
 saved_command_line=$(<"$persistent_root/boot/command-line")
 printf '%s tryomarchy.locale_support=1\n' "$saved_command_line" >"$persistent_root/boot/command-line"
-run_scenario locale-legacy 0 '' OMARCHY_QEMU_GPU_LOCALE=zh_TW.UTF-8
-assert_contains "$(<"$test_root/locale-legacy/qemu.log")" 'systemd.mask=try-omarchy-locale.service'
-assert_not_contains "$(<"$test_root/locale-legacy/qemu.log")" 'tryomarchy.locale='
-run_scenario locale-legacy-no-hint 0 '' OMARCHY_QEMU_GPU_LOCALE=
-assert_contains "$(<"$test_root/locale-legacy-no-hint/qemu.log")" 'systemd.mask=try-omarchy-locale.service'
-printf '%s tryomarchy.locale_support=2\n' "$saved_command_line" >"$persistent_root/boot/command-line"
-for locale in en_US.UTF-8 zh_TW.UTF-8 zh_CN.UTF-8; do
-  run_scenario "locale-$locale" 0 '' "OMARCHY_QEMU_GPU_LOCALE=$locale"
-  assert_contains "$(<"$test_root/locale-$locale/qemu.log")" "tryomarchy.locale=$locale"
-done
-run_scenario locale-korean-v2 0 '' OMARCHY_QEMU_GPU_LOCALE=ko_KR.UTF-8
-assert_contains "$(<"$test_root/locale-korean-v2/qemu.log")" 'tryomarchy.locale=en_US.UTF-8'
-assert_not_contains "$(<"$test_root/locale-korean-v2/qemu.log")" 'tryomarchy.locale=ko_KR.UTF-8'
-printf '%s tryomarchy.locale_support=3\n' "$saved_command_line" >"$persistent_root/boot/command-line"
-for locale in en_US.UTF-8 zh_TW.UTF-8 zh_CN.UTF-8 ko_KR.UTF-8; do
-  run_scenario "locale-v3-$locale" 0 '' "OMARCHY_QEMU_GPU_LOCALE=$locale"
-  assert_contains "$(<"$test_root/locale-v3-$locale/qemu.log")" "tryomarchy.locale=$locale"
-done
-run_scenario locale-invalid 1 '' OMARCHY_QEMU_GPU_LOCALE=fr_FR.UTF-8
-assert_contains "$(<"$test_root/locale-invalid/stderr")" 'unsupported guest locale'
-run_scenario locale-default 0 '' OMARCHY_QEMU_GPU_LOCALE=
-assert_not_contains "$(<"$test_root/locale-default/qemu.log")" 'tryomarchy.locale='
+run_scenario locale-supported 0 '' OMARCHY_QEMU_GPU_LOCALE=zh_TW.UTF-8
+assert_contains "$(<"$test_root/locale-supported/qemu.log")" 'tryomarchy.locale=zh_TW.UTF-8'
+run_scenario locale-english 0 '' OMARCHY_QEMU_GPU_LOCALE=
+assert_not_contains "$(<"$test_root/locale-english/qemu.log")" 'tryomarchy.locale='
 printf '%s\n' "$saved_command_line" >"$persistent_root/boot/command-line"
 
 # Simulate installing a newer app build after the first VM was created. The
 # saved VM must be selected before the launcher even considers the absent new
-# factory image, and it must boot with the kernel, initramfs, and base command
-# line that were paired with its disk.
-/bin/rm -f "$guest/rootfs.ext4"
-printf 'new-kernel\n' >"$guest/vmlinuz-linux"
-printf 'new-initramfs\n' >"$guest/initramfs-linux.img"
-/usr/bin/plutil -replace kernelCommandLine -string \
-  'root=/dev/vda rw rootwait console=tty0 console=hvc0 loglevel=5 systemd.show_status=false rd.systemd.show_status=false mitigations=off nowatchdog tryomarchy.locale_support=2' \
-  "$guest/launch.plist"
-run_scenario locale-older-disk-new-app 0 '' OMARCHY_QEMU_GPU_LOCALE=zh_TW.UTF-8
-assert_not_contains "$(<"$test_root/locale-older-disk-new-app/qemu.log")" 'tryomarchy.locale='
+# factory image.
+/bin/rm -f "$guest/disk.raw"
 printf 'previous boot console\n' >"$persistent_root/console.log"
 run_scenario enabled 0 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2223:22
 [[ -f $persistent_root/console.log.1 ]] || \
@@ -963,114 +765,12 @@ run_scenario enabled 0 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2223:22
 enabled_qemu=$(<"$test_root/enabled/qemu.log")
 assert_line_pair "$test_root/enabled/qemu.log" -netdev \
   'user,id=omarchy-net,hostfwd=tcp:127.0.0.1:2223-:22'
-assert_line_pair "$test_root/enabled/qemu.log" -kernel "$persistent_root/boot/kernel"
-assert_line_pair "$test_root/enabled/qemu.log" -initrd "$persistent_root/boot/initramfs"
-assert_contains "$enabled_qemu" tryomarchy.ssh_access=1
-assert_keyboard_lockstep "$test_root/enabled/qemu.log" iso
-assert_contains "$enabled_qemu" loglevel=4
-assert_not_contains "$enabled_qemu" loglevel=5
+assert_line_pair "$test_root/enabled/qemu.log" -smbios 'type=11,value=tryomarchy.ssh_access=1'
 assert_not_contains "$enabled_qemu" 0.0.0.0
 assert_contains "$(<"$test_root/enabled/storage.log")" reuse
 assert_not_contains "$(<"$test_root/enabled/storage.log")" materialize
 assert_not_contains "$(<"$test_root/enabled/storage.log")" 'select persistent'
-assert_contains "$(<"$persistent_root/boot/kernel")" kernel
-assert_not_contains "$(<"$persistent_root/boot/kernel")" new-kernel
-printf 'factory\n' >"$guest/rootfs.ext4"
-
-# Older schema-2 disks have no host-side boot kit. Merely selecting one asks
-# the app for explicit consent (status 80) and does not start either recovery
-# or the normal VM.
-recovery_root="$test_root/recovery-persistent"
-mkdir -p "$recovery_root"
-printf 'legacy-user-disk\n' >"$recovery_root/rootfs.ext4"
-chmod 600 "$recovery_root/rootfs.ext4"
-run_scenario recovery-consent-required 80 '' \
-  "FAKE_PERSISTENT_ROOT=$recovery_root" \
-  "FAKE_QEMU_RECOVERY_LOG=$test_root/recovery-consent-required/recovery.log"
-assert_contains "$(<"$test_root/recovery-consent-required/storage.log")" reuse
-assert_not_contains "$(<"$test_root/recovery-consent-required/storage.log")" stage-recovered-boot
-assert_contains "$(<"$test_root/recovery-consent-required/stderr")" \
-  'needs consent for one-time read-only boot pairing'
-[[ ! -e $test_root/recovery-consent-required/qemu.log ]] || \
-  fail 'recovery consent request started the normal VM'
-[[ ! -e $test_root/recovery-consent-required/recovery.log ]] || \
-  fail 'recovery consent request started recovery QEMU'
-[[ ! -e $recovery_root/boot ]] || fail 'recovery consent request staged boot files'
-
-# A recovery-specific failure keeps its own status so the app can explain that
-# the saved VM remains intact and offer another attempt instead of blaming the
-# installed app generally.
-recovery_failure_root="$test_root/recovery-failure-persistent"
-mkdir -p "$recovery_failure_root"
-printf 'legacy-user-disk\n' >"$recovery_failure_root/rootfs.ext4"
-chmod 600 "$recovery_failure_root/rootfs.ext4"
-run_scenario recovery-failed 81 '' \
-  "FAKE_PERSISTENT_ROOT=$recovery_failure_root" \
-  "FAKE_QEMU_RECOVERY_LOG=$test_root/recovery-failed/recovery.log" \
-  OMARCHY_QEMU_GPU_ALLOW_BOOT_RECOVERY=1 \
-  FAKE_QEMU_STATUS=17
-assert_contains "$(<"$test_root/recovery-failed/stderr")" \
-  'the one-time boot recovery exited with status 17'
-[[ ! -e $test_root/recovery-failed/qemu.log ]] || \
-  fail 'failed recovery started the normal VM'
-[[ ! -e $recovery_failure_root/boot ]] || \
-  fail 'failed recovery staged a boot kit'
-assert_contains "$(<"$recovery_failure_root/rootfs.ext4")" legacy-user-disk
-
-# With consent, the recovery boot exposes the disk read-only and exports only
-# its matching boot pair. The subsequent normal boot consumes the newly staged
-# files and the recovered base command line.
-run_scenario recovery-allowed 0 '' \
-  "FAKE_PERSISTENT_ROOT=$recovery_root" \
-  "FAKE_QEMU_RECOVERY_LOG=$test_root/recovery-allowed/recovery.log" \
-  OMARCHY_QEMU_GPU_ALLOW_BOOT_RECOVERY=1
-recovery_qemu=$(<"$test_root/recovery-allowed/recovery.log")
-assert_line_pair "$test_root/recovery-allowed/recovery.log" -machine \
-  'virt,accel=hvf,gic-version=3'
-assert_not_contains "$recovery_qemu" gic-version=2
-assert_line_pair "$test_root/recovery-allowed/recovery.log" -drive \
-  "if=none,id=omarchy-recovery-root,file=$recovery_root/rootfs.ext4,format=raw,media=disk,cache=none,readonly=on"
-assert_line_pair "$test_root/recovery-allowed/recovery.log" -device \
-  'virtio-9p-pci,fsdev=omarchy-boot-export,mount_tag=try-omarchy-boot-export,romfile='
-assert_contains "$recovery_qemu" 'root=/dev/vda ro rootwait'
-assert_contains "$recovery_qemu" 'rootflags=noload fsck.mode=skip tryomarchy.export_boot=1'
-assert_not_contains "$recovery_qemu" 'root=/dev/vda rw rootwait'
-[[ $(grep -o 'rootflags=noload' \
-  "$test_root/recovery-allowed/recovery.log" | wc -l | tr -d ' ') == 1 ]] || \
-  fail 'recovery must force exactly one read-only no-journal mount option'
-[[ $(grep -o 'tryomarchy.export_boot=1' \
-  "$test_root/recovery-allowed/recovery.log" | wc -l | tr -d ' ') == 1 ]] || \
-  fail 'recovery must append exactly one boot-export activation token'
-assert_contains "$(<"$test_root/recovery-allowed/storage.log")" stage-recovered-boot
-assert_line_pair "$test_root/recovery-allowed/qemu.log" -kernel "$recovery_root/boot/kernel"
-assert_line_pair "$test_root/recovery-allowed/qemu.log" -initrd "$recovery_root/boot/initramfs"
-assert_contains "$(<"$test_root/recovery-allowed/qemu.log")" loglevel=3
-assert_not_contains "$(<"$test_root/recovery-allowed/qemu.log")" loglevel=5
-assert_not_contains "$(<"$test_root/recovery-allowed/recovery.log")" tryomarchy.keyboard=
-[[ $(grep -c '^TRYOMARCHY_KEYBOARD=$' "$test_root/recovery-allowed/recovery.log") == 1 ]] || \
-  fail 'recovery QEMU must not inherit TRYOMARCHY_KEYBOARD'
-assert_keyboard_lockstep "$test_root/recovery-allowed/qemu.log" iso
-assert_contains "$(<"$recovery_root/boot/kernel")" recovered-kernel
-assert_contains "$(<"$recovery_root/boot/initramfs")" recovered-initramfs
-assert_contains "$(<"$recovery_root/boot/command-line")" loglevel=3
-assert_contains "$(<"$recovery_root/rootfs.ext4")" legacy-user-disk
-
-# Once paired, the same VM launches without consent and without another
-# recovery invocation.
-run_scenario recovery-relaunch 0 '' \
-  "FAKE_PERSISTENT_ROOT=$recovery_root" \
-  "FAKE_QEMU_RECOVERY_LOG=$test_root/recovery-relaunch/recovery.log"
-assert_contains "$(<"$test_root/recovery-relaunch/storage.log")" reuse
-assert_not_contains "$(<"$test_root/recovery-relaunch/storage.log")" stage-recovered-boot
-assert_not_contains "$(<"$test_root/recovery-relaunch/stderr")" 'needs consent'
-[[ ! -e $test_root/recovery-relaunch/recovery.log ]] || \
-  fail 'a paired VM unnecessarily ran boot recovery again'
-assert_line_pair "$test_root/recovery-relaunch/qemu.log" -kernel "$recovery_root/boot/kernel"
-assert_line_pair "$test_root/recovery-relaunch/qemu.log" -initrd "$recovery_root/boot/initramfs"
-assert_contains "$(<"$test_root/recovery-relaunch/qemu.log")" loglevel=3
-assert_keyboard_lockstep "$test_root/recovery-relaunch/qemu.log" iso
-assert_not_contains "$(<"$recovery_root/boot/command-line")" tryomarchy.keyboard=
-assert_contains "$(<"$recovery_root/rootfs.ext4")" legacy-user-disk
+printf 'factory\n' >"$guest/disk.raw"
 
 # Old persistent guests must receive the safe mount unit with their own boot kit.
 assert_not_contains "$disabled_qemu" 'systemd.mask=omarchy-native-mac-share.service'
@@ -1133,9 +833,7 @@ assert_contains "$(<"$test_root/ephemeral/qemu.log")" \
 assert_contains "$(<"$test_root/ephemeral/qemu.log")" tryomarchy.ssh_access=1
 assert_keyboard_lockstep "$test_root/ephemeral/qemu.log" iso
 assert_contains "$(<"$test_root/ephemeral/storage.log")" 'select ephemeral'
-assert_line_pair "$test_root/ephemeral/qemu.log" -kernel "$guest/vmlinuz-linux"
-assert_line_pair "$test_root/ephemeral/qemu.log" -initrd "$guest/initramfs-linux.img"
-assert_contains "$(<"$test_root/ephemeral/qemu.log")" loglevel=5
+assert_line_pair "$test_root/ephemeral/qemu.log" -bios "$firmware"
 
 run_scenario malformed 1 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:02222:22
 [[ ! -s $test_root/malformed/storage.log ]] || fail 'malformed mapping touched storage'
@@ -1146,9 +844,8 @@ run_scenario reset-only 0 --reset-storage-only \
   FAKE_HOST_KEYBOARD_FAIL=1
 assert_contains "$(<"$test_root/reset-only/storage.log")" 'clear'
 [[ ! -e $test_root/reset-only/qemu.log ]] || fail 'reset-only launch started QEMU'
-[[ ! -e $persistent_root/rootfs.ext4 ]] || fail 'reset-only kept or created a disk'
+[[ ! -e $persistent_root/disk.raw ]] || fail 'reset-only kept or created a disk'
 assert_not_contains "$(<"$test_root/reset-only/stderr")" tryomarchy.ssh_access
-[[ ! -e $persistent_root/boot ]] || fail 'reset-only kept or created a boot kit'
 
 # Dry runs must construct a bridge without requesting administrator access.
 run_scenario bridge-preview 0 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1 \
@@ -1180,76 +877,18 @@ run_scenario large-process-list 0 '' FAKE_LARGE_PROCESS_LIST=1
 [[ -f $stale_fixture/sentinel ]] || fail 'large process list removed an active run'
 assert_not_contains "$(<"$test_root/large-process-list/stderr")" 'Broken pipe'
 
-/usr/bin/plutil -replace kernelCommandLine -string \
-  'root=/dev/vda rw rootwait console=tty0 console=hvc0 tryomarchy.ssh_access=0' \
-  "$guest/launch.plist"
-run_scenario prebaked-token 1 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2222:22
-[[ ! -s $test_root/prebaked-token/storage.log ]] || fail 'prebaked token touched storage'
-assert_contains "$(<"$test_root/prebaked-token/stderr")" 'launcher-owned SSH activation argument'
-
-/usr/bin/plutil -replace kernelCommandLine -string \
-  'root=/dev/vda rw rootwait console=tty0 console=hvc0 tryomarchy.keyboard=iso' \
-  "$guest/launch.plist"
-run_scenario prebaked-keyboard 1 ''
-[[ ! -s $test_root/prebaked-keyboard/storage.log ]] || fail 'prebaked keyboard token touched storage'
-assert_contains "$(<"$test_root/prebaked-keyboard/stderr")" \
-  'launcher-owned keyboard geometry argument'
-
-# A Guix guest boots the runtime's EDK2 firmware from its GPT disk: no
-# -kernel/-initrd/-append, a UEFI storage mode, and a launch.plist that
-# declares the boot ABI instead of a kernel command line.
-guix_guest="$resources/guix-guest"
-mkdir -p "$guix_guest" "$resources/runtime/share/qemu"
-printf 'firmware\n' >"$resources/runtime/share/qemu/edk2-aarch64-code.fd"
-printf '{}\n' >"$guix_guest/guix-manifest.json"
-printf 'factory\n' >"$guix_guest/disk.raw"
-/usr/bin/plutil -create xml1 "$guix_guest/launch.plist"
-/usr/bin/plutil -insert bundleIdentity -string "$(printf 'c%.0s' {1..64})" "$guix_guest/launch.plist"
-/usr/bin/plutil -insert sourceDiskSHA256 -string "$(printf 'd%.0s' {1..64})" "$guix_guest/launch.plist"
-/usr/bin/plutil -insert sourceDiskBytes -integer 8 "$guix_guest/launch.plist"
-/usr/bin/plutil -insert compressedDiskBytes -integer 4 "$guix_guest/launch.plist"
-/usr/bin/plutil -insert workingDiskBytes -integer 16 "$guix_guest/launch.plist"
-/usr/bin/plutil -insert bootABI -string uefi-gpt-v1 "$guix_guest/launch.plist"
-guix_root="$test_root/guix-persistent"
-run_scenario guix-uefi 0 "$guix_guest" FAKE_PERSISTENT_ROOT="$guix_root"
-guix_arguments=$(<"$test_root/guix-uefi/qemu.log")
-assert_line_pair "$test_root/guix-uefi/qemu.log" -bios \
-  "$resources/runtime/share/qemu/edk2-aarch64-code.fd"
-assert_line_pair "$test_root/guix-uefi/qemu.log" -name 'Try Roguix'
-assert_contains "$guix_arguments" "file=$guix_root/rootfs.ext4"
-for option in -kernel -initrd -append; do
-  ! grep -Fxq -- "$option" "$test_root/guix-uefi/qemu.log" || fail "UEFI launch passed $option"
-done
-assert_contains "$(<"$test_root/guix-uefi/storage.log")" 'configure uefi'
-assert_line_pair "$test_root/guix-uefi/qemu.log" -smbios 'type=11,value=omarchy.qemu_virgl=1'
-assert_not_contains "$guix_arguments" 'tryomarchy.ssh_access'
-# UEFI (GRUB's menu) reads only the USB keyboard; the direct-boot guest has none.
-assert_line_pair "$test_root/guix-uefi/qemu.log" -device 'usb-kbd,bus=roguix-usb.0'
-run_scenario guix-ssh 0 "$guix_guest" FAKE_PERSISTENT_ROOT="$test_root/guix-ssh-root" \
-  OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2222:22
-assert_line_pair "$test_root/guix-ssh/qemu.log" -smbios 'type=11,value=tryomarchy.ssh_access=1'
-assert_contains "$(<"$test_root/disabled/storage.log")" 'configure direct'
-assert_not_contains "$(<"$test_root/disabled/qemu.log")" 'usb-kbd'
-
-/usr/bin/plutil -insert kernelCommandLine -string 'root=/dev/vda rw' "$guix_guest/launch.plist"
-run_scenario guix-command-line 1 "$guix_guest" FAKE_PERSISTENT_ROOT="$guix_root"
-assert_contains "$(<"$test_root/guix-command-line/stderr")" 'must not carry a kernel command line'
-/usr/bin/plutil -remove kernelCommandLine "$guix_guest/launch.plist"
-/usr/bin/plutil -remove bootABI "$guix_guest/launch.plist"
-run_scenario guix-no-boot-abi 1 "$guix_guest" FAKE_PERSISTENT_ROOT="$guix_root"
-assert_contains "$(<"$test_root/guix-no-boot-abi/stderr")" 'does not declare the UEFI boot ABI'
-/usr/bin/plutil -insert bootABI -string uefi-gpt-v1 "$guix_guest/launch.plist"
-/bin/rm "$resources/runtime/share/qemu/edk2-aarch64-code.fd"
-run_scenario guix-no-firmware 1 "$guix_guest" FAKE_PERSISTENT_ROOT="$guix_root"
-assert_contains "$(<"$test_root/guix-no-firmware/stderr")" 'missing bundled UEFI firmware'
-for scenario in guix-command-line guix-no-boot-abi guix-no-firmware; do
+# A guest that does not declare the UEFI boot ABI, or an app without its
+# firmware, never reaches storage or QEMU.
+/usr/bin/plutil -remove bootABI "$guest/launch.plist"
+run_scenario no-boot-abi 1 ''
+assert_contains "$(<"$test_root/no-boot-abi/stderr")" 'does not declare the UEFI boot ABI'
+/usr/bin/plutil -insert bootABI -string uefi-gpt-v1 "$guest/launch.plist"
+/bin/rm "$firmware"
+run_scenario no-firmware 1 ''
+assert_contains "$(<"$test_root/no-firmware/stderr")" 'missing bundled UEFI firmware'
+for scenario in no-boot-abi no-firmware; do
+  [[ ! -s $test_root/$scenario/storage.log ]] || fail "$scenario touched storage"
   [[ ! -e $test_root/$scenario/qemu.log ]] || fail "$scenario started QEMU"
 done
-
-# The Arch guest must never declare a UEFI boot ABI.
-/usr/bin/plutil -insert bootABI -string uefi-gpt-v1 "$guest/launch.plist"
-run_scenario arch-boot-abi 1 ''
-assert_contains "$(<"$test_root/arch-boot-abi/stderr")" 'must not declare a boot ABI'
-/usr/bin/plutil -remove bootABI "$guest/launch.plist"
 
 printf 'run-qemu-ssh-contract.test: PASS\n'

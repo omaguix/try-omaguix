@@ -86,7 +86,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
     private var childRunning = false
     private var applicationTerminationPending = false
     private var virtualMachineReachedStart = false
-    private var activeLaunchAllowedBootRecovery = false
     private var activeBootFixConsent: String?
     private var activeBootFixCacheURL: URL?
     private var bootFixResultReceived = false
@@ -389,7 +388,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         return GuestBootFixCache.url(storageRoot: root, diskURL: disk)
     }
 
-    private func startVirtualMachine(allowBootRecovery: Bool = false, reviewBootFixes: Bool = false) {
+    private func startVirtualMachine(reviewBootFixes: Bool = false) {
         cancelHostWakeRetry()
         virtualMachineReachedStart = false
         pendingHostSleepControlFailure = nil
@@ -432,31 +431,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                     fixesConsent = GuestBootFixCache.consent(cacheURL: fixesURL, identity: GuestBootFixCache.bundledIdentity)
                 }
             }
-            var approvedBootRecovery = allowBootRecovery
-            if !approvedBootRecovery {
-                let preflight: BootRecoveryLaunchPreflight
-                if initialArguments.first == QEMUGPUStorageOption.ephemeral.rawValue {
-                    preflight = .notRequired
-                } else {
-                    preflight = QEMUGPUStorageSpaceEstimate.bootRecoveryPreflight(
-                        environment: baseEnvironment,
-                        bundleIdentity: bundledMetrics?.identity,
-                        preference: storageLocationStore.load()
-                    )
-                }
-                switch BootRecoveryLaunchGate.decide(
-                    preflight: preflight,
-                    confirm: { [weak self] in
-                        self?.startMenuWindow?.confirmBootRecovery() ?? false
-                    }
-                ) {
-                case .cancel:
-                    startMenuWindow?.launchDidAbort()
-                    return
-                case .launch(let allowBootRecovery):
-                    approvedBootRecovery = allowBootRecovery
-                }
-            }
             let cameraDecision = CameraPreflight.decision()
             if let warning = cameraDecision.warning {
                 fputs("[camera] \(warning)\n", stderr)
@@ -466,7 +440,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             }
             try launch(
                 arguments: launchArguments(),
-                allowBootRecovery: approvedBootRecovery,
                 bootFixConsent: fixesConsent
             )
         } catch {
@@ -686,7 +659,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func launch(arguments: [String], allowBootRecovery: Bool = false, bootFixConsent: String? = nil) throws {
+    private func launch(arguments: [String], bootFixConsent: String? = nil) throws {
         let context = childLaunchContext()
         // The UI gate above normally resolves this first; failing closed here
         // too keeps a silent fallback impossible for any future caller.
@@ -700,36 +673,26 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         try PortForwardAvailability.validate(context.portForwardMappings)
         activeStateRoot = context.stateRoot
         var environment = context.environment
-        if allowBootRecovery {
-            environment = QEMUGPURuntimeEnvironment.withBootRecoveryConsent(environment)
-        }
         if let bootFixConsent { environment[QEMUGPURuntimeEnvironment.guestFixesConsentKey] = bootFixConsent }
         activeBootFixConsent = bootFixConsent
         activeBootFixCacheURL = bootFixCacheURL()
         bootFixResultReceived = false
-
-        activeLaunchAllowedBootRecovery = allowBootRecovery
-        do {
-            try supervisor.start(
-                executableURL: launcherURL,
-                arguments: arguments,
-                environment: environment,
-                launchEvent: { [weak self] event in
-                    switch event {
-                    case .virtualMachineReady(let qmpSocketPath):
-                        self?.virtualMachineDidStart(qmpSocketPath: qmpSocketPath)
-                    case .launchProgress(let phase):
-                        self?.startMenuWindow?.launchDidProgress(to: phase)
-                    case .resetProgress:
-                        break
-                    }
+        try supervisor.start(
+            executableURL: launcherURL,
+            arguments: arguments,
+            environment: environment,
+            launchEvent: { [weak self] event in
+                switch event {
+                case .virtualMachineReady(let qmpSocketPath):
+                    self?.virtualMachineDidStart(qmpSocketPath: qmpSocketPath)
+                case .launchProgress(let phase):
+                    self?.startMenuWindow?.launchDidProgress(to: phase)
+                case .resetProgress:
+                    break
                 }
-            ) { [weak self] status in
-                self?.childDidExit(status: status)
             }
-        } catch {
-            activeLaunchAllowedBootRecovery = false
-            throw error
+        ) { [weak self] status in
+            self?.childDidExit(status: status)
         }
         childRunning = true
     }
@@ -1205,8 +1168,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             startMenuWindow?.dismiss()
             startMenuWindow = nil
         }
-        let launchAllowedBootRecovery = activeLaunchAllowedBootRecovery
-        let bootFixConsent = activeBootFixConsent
         bootFixResultTimer?.invalidate()
         bootFixResultTimer = nil
         if activeBootFixConsent != nil, !bootFixResultReceived, let identity = GuestBootFixCache.bundledIdentity {
@@ -1220,7 +1181,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         }
         activeBootFixConsent = nil
         activeBootFixCacheURL = nil
-        activeLaunchAllowedBootRecovery = false
         cancelHostWakeRetry()
         hostSleepCoordinator.disconnect()
         let recentStandardError = supervisor.recentStandardError
@@ -1270,43 +1230,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             if presentation.requiresWorkspaceReset {
                 startMenuWindow?.launchRequiresReset()
                 return
-            }
-            switch BootRecoveryChildExitGate.decide(
-                presentation: presentation,
-                launchWasAuthorized: launchAllowedBootRecovery
-            ) {
-            case .reportFailure:
-                startMenuWindow?.launchDidFail(
-                    errorMessage: "Try Roguix could not complete the one-time boot-file pairing. The saved VM was not reset or upgraded. You can safely try again."
-                )
-                return
-            case .requestConfirmation:
-                switch BootRecoveryLaunchGate.decide(
-                    preflight: .requiresConfirmation,
-                    confirm: { [weak self] in
-                        self?.startMenuWindow?.confirmBootRecovery() ?? false
-                    }
-                ) {
-                case .cancel:
-                    startMenuWindow?.launchDidAbort()
-                case .launch:
-                    // Retry the same configured workspace directly. Re-running
-                    // availability resolution here could offer to switch from
-                    // a just-disconnected external VM to the default one, then
-                    // accidentally spend consent on a different saved disk.
-                    do {
-                        try launch(
-                            arguments: launchArguments(),
-                            allowBootRecovery: true,
-                            bootFixConsent: bootFixConsent
-                        )
-                    } catch {
-                        failLaunch(error)
-                    }
-                }
-                return
-            case .unrelated:
-                break
             }
             if presentation.showsStartupFailure {
                 let message = VMStartupFailure.message(

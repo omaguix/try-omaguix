@@ -97,30 +97,20 @@ to `dist/`. The generated app lives inside `dist/app.noindex/`, which keeps a
 development build from appearing beside an installed copy in Command-Space.
 
 Normal app launches and `make run` maintain one stable user VM disk under
-`~/Library/Application Support/Try Roguix/VM/v1`, reused across factory builds.
-Use `make reset` to replace it with the current factory or `make run-ephemeral`
-to test that factory without retaining its disk. Storage integration tests and
-specialized direct-script runs can opt into identity-keyed parallel disks by
-setting `OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`; the development app wrapper
+`~/Library/Application Support/Try Roguix/VM/v1/guix`, reused across factory
+builds. Use `make reset` to replace it with the current factory or
+`make run-ephemeral` to test that factory without retaining its disk. Storage
+integration tests and specialized direct-script runs can opt into
+identity-keyed parallel disks by setting
+`OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1`; the development app wrapper
 explicitly disables this mode. Each persistent disk keeps the identity of the
-factory that created it and is paired with a private, validated boot kit containing that factory's
-kernel, initramfs, and base command line. App updates reuse the disk and its
-boot kit; the current bundled factory is selected only for a new, reset, or
-ephemeral VM. This keeps an older root filesystem on its matching kernel-module
-ABI and lets an existing VM launch without first materializing the new factory
-disk.
+factory that created it and boots through the runtime's UEFI firmware from its
+own GRUB and Guix System generations. App updates reuse the disk; the current
+bundled factory is selected only for a new, reset, or ephemeral VM, so an
+existing VM launches without first preparing the new factory disk.
 
-Schema-2 disks created before boot kits use a one-time preserving migration.
-The first launcher pass reports that consent is required and exits before QEMU
-starts. The start menu then explains that the disk and data stay intact, the
-new factory is ignored for this VM, and the operation neither resets nor
-upgrades Roguix. **Cancel** returns to the menu; **Continue** authorizes only
-that retry. The recovery-capable initramfs then attaches the old disk read-only,
-exports its installed `/boot/Image`, `/boot/initramfs-linux.img`, and recorded
-base command line over a private 9p share, and powers off without entering the
-old userspace. The launcher validates and atomically stages that boot kit before
-the normal launch. Unsupported storage or boot ABIs, and ambiguous multiple
-legacy disks, still use the user-facing, confirmed Reset Roguix flow.
+Unsupported storage or boot ABIs, and ambiguous multiple legacy disks, use the
+user-facing, confirmed Reset Roguix flow.
 That destructive flow keeps **Reset** disabled until the user types
 `Try Roguix` exactly in a native sheet. Cancelling or dismissing the sheet
 returns control without invoking the storage reset. During reset, the disabled
