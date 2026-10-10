@@ -36,7 +36,7 @@ Decided by the user 2026-10-10: approved.
 Proposed 2026-10-10 after the rebase: `docs/integration-updates.md`,
 `docs/host-battery.md` and `docs/performance.md` describe the Arch guest and
 came in unchanged; say at their top that they describe Try Omarchy's guest.
-Decided by the user 2026-10-10: approved. The three guest items share one guest build: implement them in order, build once after the last.
+Decided by the user 2026-10-10: approved.
 
 ### Apply the Mac's language once, not on every boot [t-2k7yfxqe]
 
