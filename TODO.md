@@ -35,6 +35,10 @@ version of our own, so the patch drops cleanly when the pin includes it.
 Still perl after it: `shell/plugins/clipboard/capture.sh` decodes UTF-16
 clipboard text with perl, so the clipboard capture plugin likely fails in
 Roguix too (not checked in a VM).
+Decided by the user 2026-10-10: add perl to the image for capture.sh (its
+UTF-16 detection is real logic, not a one-liner), in Omarchy's profile only;
+first check in the VM that the clipboard capture plugin fails without it and
+works with it.
 
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
