@@ -56,6 +56,9 @@ clean; edit them only upstream. Where they differ, this repository follows:
   decision is the maintainer's, not something to infer from forks or pull
   requests. Release tags are never moved, and upstream's tags are fetched as
   `try-omarchy/*` (`docs/releasing.md`).
+- On every such rebase, review the table in "Differences from Try Omarchy"
+  (`guest/guix/README.md`) against what upstream changed: update the rows
+  that moved, and delete those where upstream converged with Roguix.
 - Repository files (TODO.md, docs, commit messages) never carry details
   private to the maintainer's machine: paths outside this repository and its
   documented app locations, other projects, personal dotfiles or tools.

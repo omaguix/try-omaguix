@@ -459,6 +459,7 @@ Roguix battery agent sets from the host.")
 ;;; the root-only dev.tryomarchy.timezone port every five seconds. A zone
 ;;; chosen in the setup or in Omarchy's time zone menu stops following;
 ;;; "Same as macOS" in that menu resumes it.
+;;; See guest/guix/README.md, "Differences from Try Omarchy".
 
 (define roguix-timezone
   (guest-python-script "roguix-timezone" "timezone"

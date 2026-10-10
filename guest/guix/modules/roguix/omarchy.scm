@@ -81,6 +81,8 @@
               ;; pactl, which a Chinese or Korean session translates, so
               ;; they read it in the C locale until Omarchy does. The
               ;; background's name is title-cased as UTF-8, not as bytes.
+              ;; All but the power profile patch differ from Try Omarchy:
+              ;; guest/guix/README.md, "Differences from Try Omarchy".
               (patches
                (list (local-file "omarchy-global-shortcuts.patch")
                      (local-file "omarchy-macos-power-profile.patch")
@@ -99,6 +101,7 @@
             ;; the AUR: the menu's Install, Remove and Update entries are
             ;; Guix's (omarchy-menu.py), Omarchy's package helpers call
             ;; roguix-pkg, and its Arch-only package commands are gone.
+            ;; See guest/guix/README.md, "Differences from Try Omarchy".
             (lambda* (#:key native-inputs inputs #:allow-other-keys)
               (let* ((omarchy (string-append #$output "/share/omarchy"))
                      (bin (string-append omarchy "/bin"))
@@ -144,6 +147,7 @@
                   (chmod file #o555))
                 ;; Web apps need a Chromium-family --app window; Roguix's
                 ;; browser is LibreWolf, so they open in a new browser window.
+                ;; See guest/guix/README.md, "Differences from Try Omarchy".
                 (let ((file (string-append bin "/omarchy-launch-webapp")))
                   (call-with-output-file file
                     (lambda (port)
@@ -155,6 +159,7 @@
                 ;; again, any zone fixes it. system.scm's sudoers allows
                 ;; exactly this command without a password, as Omarchy does
                 ;; for timedatectl.
+                ;; See guest/guix/README.md, "Differences from Try Omarchy".
                 (let ((file (string-append bin "/omarchy-menu-timezone")))
                   (call-with-output-file file
                     (lambda (port)
@@ -182,6 +187,7 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
                 ;; with it. Rebuild only on a change. Derived from Omarchy
                 ;; c668141e (unchanged on master 988f44ea); remove once
                 ;; Omarchy takes the fix.
+                ;; See guest/guix/README.md, "Differences from Try Omarchy".
                 (let ((qml (string-append omarchy "/shell/plugins/menu/Menu.qml")))
                   (substitute* qml
                     (("root\\.whenResults = nextWhen")
@@ -224,6 +230,7 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
                 ;; through virtio-gpu and composited by macOS, all on the
                 ;; Mac's CPU and battery, and a text animation stays smooth
                 ;; at 30.
+                ;; See guest/guix/README.md, "Differences from Try Omarchy".
                 (let ((screensaver (string-append bin "/omarchy-screensaver")))
                   (substitute* screensaver
                     (("--frame-rate 120 ") "--frame-rate 30 "))
@@ -231,6 +238,7 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
           (add-after 'install 'use-roguix-logo
             ;; omarchy-show-logo and friends print logo.txt: say GUIX, in
             ;; Omarchy's own block lettering, instead of OMARCHY.
+            ;; See guest/guix/README.md, "Differences from Try Omarchy".
             (lambda _
               (copy-file #$(local-file "roguix-logo.txt")
                          (string-append #$output "/share/omarchy/logo.txt"))))
@@ -278,6 +286,7 @@ configuration, Quickshell desktop shell, themes and helper commands.")
 ;; packages, LibreWolf standing in for Chromium, and (roguix apps) for those
 ;; Guix lacks. Not provided: LibreOffice, Pinta, LocalSend, Signal, Obsidian;
 ;; docs/omarchy-packages.md lists every difference from Omarchy's list.
+;; See guest/guix/README.md, "Differences from Try Omarchy".
 (define %omarchy-applications
   (append
    (map specification->package
