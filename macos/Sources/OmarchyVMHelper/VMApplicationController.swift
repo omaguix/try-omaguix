@@ -519,7 +519,11 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         } else {
             startMenuWindow?.resetDidFinish(
                 errorMessage: StorageSpaceFailure.message(standardError: supervisor.recentStandardError)
-                    ?? "The VM disk could not be reset. Try again, or reinstall the latest Try Roguix app."
+                    ?? LauncherFailureReport.detail(
+                        summary: "The VM disk could not be reset.",
+                        standardError: supervisor.recentStandardError,
+                        logURL: supervisor.log?.url
+                    )
             )
         }
     }
@@ -1252,9 +1256,20 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                 let alert = NSAlert()
                 alert.alertStyle = .critical
                 alert.messageText = "Try Roguix couldn’t start"
-                alert.informativeText = message
+                // The message already quotes the launcher's explanation; name
+                // the log that holds the rest.
+                alert.informativeText = supervisor.log.map {
+                    "\(message)\n\nThe full log is \(LauncherFailureReport.displayPath($0.url))."
+                } ?? message
                 alert.addButton(withTitle: "Close")
-                alert.runModal()
+                if let logURL = supervisor.log?.url {
+                    alert.addButton(withTitle: "Show Log")
+                    if alert.runModal() == .alertSecondButtonReturn {
+                        NSWorkspace.shared.activateFileViewerSelecting([logURL])
+                    }
+                } else {
+                    alert.runModal()
+                }
             }
             finish(status: status)
         }

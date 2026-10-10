@@ -722,6 +722,9 @@ final class QEMUGPUProcessSupervisor: @unchecked Sendable {
 
     private static let standardErrorReadBudget = 64 * 1_024
 
+    /// Where the launcher's stderr is kept beyond the in-memory tail; nil
+    /// keeps it in memory only (tests).
+    let log: LauncherLog?
     private let lock = NSLock()
     private let standardErrorReadLock = NSLock()
     private var child: Process?
@@ -731,6 +734,10 @@ final class QEMUGPUProcessSupervisor: @unchecked Sendable {
     private var resetProgressStream: VMProgressStream<VMResetPhase>?
     private var launchProgressStream: VMProgressStream<VMLaunchPhase>?
     private var lastReportedDownloadPercent: Int?
+
+    init(log: LauncherLog? = nil) {
+        self.log = log
+    }
 
     func start(
         executableURL: URL,
@@ -802,6 +809,7 @@ final class QEMUGPUProcessSupervisor: @unchecked Sendable {
         resetProgressStream = isReset ? VMProgressStream(operation: .reset) : nil
         launchProgressStream = isReset ? nil : VMProgressStream(operation: .launch)
         lock.unlock()
+        log?.beginRun()
 
         do {
             try process.run()
@@ -857,6 +865,7 @@ final class QEMUGPUProcessSupervisor: @unchecked Sendable {
             )
         }
         try? FileHandle.standardError.write(contentsOf: drain.data)
+        log?.append(drain.data)
         return StandardErrorConsumption(
             reachedEnd: drain.reachedEnd,
             launchEvents: recordStandardError(drain.data)

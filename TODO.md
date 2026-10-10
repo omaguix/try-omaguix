@@ -2,19 +2,6 @@
 
 ## Next, in order
 
-### Say why a launch did not happen
-
-Reported 2026-10-03 twice: "Try Roguix does not start". Cause: a Dock tile
-pinned to the old development build (`dist/app.noindex`), deleted by the
-build-layout change; clicking it did nothing and logged nothing. The tile now
-points to `~/Applications/Try Roguix.app`, and `make install` and
-docs/architecture.md say to pin that copy.
-
-The app could not have reported that, since it never ran. For failures after
-it starts: keep the launcher's stderr in `~/Library/Logs/Try Roguix/` and
-`os_log`, and replace the generic "couldn't start, reinstall" alert with the
-log's last lines. Lower priority than the restart hang.
-
 ### Document chords that host tools take before the VM
 
 Write the user-facing note from "Background: Command-Space" below:

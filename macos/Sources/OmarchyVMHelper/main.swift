@@ -277,7 +277,8 @@ do {
             application.setActivationPolicy(ApplicationPresentation.prelaunchActivationPolicy)
             let controller = VMApplicationController(
                 launcherURL: launcher,
-                initialArguments: launcherArguments
+                initialArguments: launcherArguments,
+                supervisor: QEMUGPUProcessSupervisor(log: LauncherLog(url: LauncherLog.defaultURL()))
             )
             ApplicationPresentation.installMainMenu(
                 in: application,

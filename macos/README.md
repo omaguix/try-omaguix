@@ -110,6 +110,14 @@ generations. App updates reuse the disk; the current bundled factory is
 selected only for a new, reset, or ephemeral VM, so an existing VM launches
 without first preparing the new factory disk.
 
+The helper keeps the launcher's stderr (`run-qemu-gpu.sh` and QEMU) in
+`~/Library/Logs/Try Roguix/launcher.log` and in the unified log (subsystem
+`dev.tryroguix.native`, category `launcher`). Each launch or reset starts a new
+file and keeps the previous one as `launcher.log.1`; a run that passes 1 MiB
+rotates the same way. When the VM stops during startup without a more specific
+explanation, the alert quotes the log's last lines and **Show Log** reveals it
+in Finder.
+
 Unsupported storage or boot ABIs, and ambiguous multiple legacy disks, use the
 user-facing, confirmed Reset Roguix flow.
 That destructive flow keeps **Reset** disabled until the user types
