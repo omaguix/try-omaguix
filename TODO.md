@@ -28,6 +28,20 @@ use its own way to switch the zone). Needs a guest build, shared with the
 item above; verify a Mac zone change reaching a running VM, a fixed choice
 surviving a reboot, and resuming.
 
+### Package ttfx for an opt-in screensaver [t-di3m5hza]
+
+Omarchy 4.0.4's screensaver and first-boot logo run `ttfx`, a Rust port of
+terminaltexteffects (Omarchy 4e31b61a: same options, ~1 ms startup instead
+of ~107 ms, far faster heavy effects); Guix has only
+python-terminaltexteffects 0.12.0, so `omarchy-launch-screensaver` exits and
+Roguix has no screensaver. Decided by the user 2026-10-10 after a consult
+round with sol and MiMo: package ttfx for Guix and make the screensaver
+opt-in (macOS has its own screensaver and lock; a 120 fps animation in a VM
+costs the Mac's CPU and battery). First import its Cargo.lock
+(`guix import crate --lockfile`) and report the crate count, licenses and any
+git dependencies; then package it, run the screensaver at a lower frame rate
+in the VM and measure delivered fps and guest CPU. Needs a guest build.
+
 ## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
