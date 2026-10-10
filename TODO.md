@@ -34,6 +34,26 @@ first. The polling wait for the done file stays as upstream has it (out of
 scope; never fix it with a timeout). Shares one guest build with the ttfx
 item.
 
+### Bring our Omarchy patches upstream [t-t7gyb6ui]
+
+Decided by the user 2026-10-10 after a consult round with sol and MiMo
+(20261010-133308-c01f), once Roguix's own image verifies each change; each
+checked against current omacom/omarchy `quattro` first (applies cleanly,
+upstream's tests pass there; record the tested commit), not only on 4.0.4:
+- omacom/omarchy#14740 (menu rows): answer Greptile's P2 with a behavioral
+  test of the rebuild decision (unchanged guard results keep the rows,
+  changed ones rebuild), as a new commit on the PR branch, no force-push;
+  reply under the finding.
+- omacom/omarchy#14850 (audio scripts under LC_ALL=C): open a PR on
+  `quattro` for the five scripts, linking the issue (search for a duplicate
+  fix first).
+- The jq menus change (item above): open a PR; say plainly that Arch has
+  perl, so the gain is one dependency fewer (jq is already used by 169
+  scripts), and test the real helpers, not only the encoder.
+A worker prepares the branches and texts in its own clone; the coordinator
+reviews, pushes to the maintainer's fork and opens or updates the PRs.
+One change per PR; no pings.
+
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
 Requested 2026-10-10: "in Try Roguix it shows: battery is down to 10%,
