@@ -237,12 +237,13 @@ if [[ -f $launch_configuration && ! -L $launch_configuration ]]; then
   plist_read() {
     /usr/libexec/PlistBuddy -c "Print :$1" "$launch_configuration" 2>/dev/null
   }
-  bundle_validation=$(printf '%s\t%s\t%s\t%s\t%s' \
+  bundle_validation=$(printf '%s\t%s\t%s\t%s\t%s\t%s' \
     "$(plist_read bundleIdentity)" \
     "$(plist_read sourceDiskSHA256)" \
     "$(plist_read sourceDiskBytes)" \
     "$(plist_read compressedDiskBytes)" \
-    "$(plist_read workingDiskBytes)")
+    "$(plist_read workingDiskBytes)" \
+    "$(plist_read guestLocales || printf -)")
   launch_boot_abi=$(plist_read bootABI || true)
 else
   [[ -e $guest_dir/guix-manifest.json && ! -L $guest_dir/guix-manifest.json ]] || {
@@ -259,8 +260,10 @@ else
   launch_boot_abi=$uefi_boot_abi
 fi
 IFS=$'\t' read -r bundle_identity source_disk_sha source_disk_bytes compressed_disk_bytes \
-  expanded_disk_bytes \
+  expanded_disk_bytes guest_locales \
   <<<"$bundle_validation"
+[[ $guest_locales =~ ^(-|[A-Za-z0-9_.-]+(,[A-Za-z0-9_.-]+)*)$ ]] || \
+  fail "validated guest locales are invalid"
 [[ $bundle_identity =~ ^[0-9a-f]{64}$ ]] || fail "validated bundle identity is invalid"
 [[ $source_disk_sha =~ ^[0-9a-f]{64}$ ]] || fail "validated disk digest is invalid"
 [[ $source_disk_bytes =~ ^[1-9][0-9]*$ ]] || fail "validated disk size is invalid"
@@ -440,16 +443,22 @@ if [[ -n $shared_folder ]]; then
   shared_folder_setting="omarchy.shared_folder_name=$shared_folder_name_encoded"
 fi
 
-# The native app supplies the Mac's primary language for first-boot seeding.
-# Validate direct script callers against the factory-generated locales too.
+# The native app supplies the Mac's primary language. Validate direct script
+# callers against the locales the app can request, too.
 guest_locale=${OMARCHY_QEMU_GPU_LOCALE:-}
 if [[ -n $guest_locale ]]; then
   case $guest_locale in
-    zh_TW.UTF-8) ;;
+    en_US.UTF-8 | zh_TW.UTF-8 | zh_CN.UTF-8 | ko_KR.UTF-8) ;;
     *)
       fail "unsupported guest locale: $guest_locale"
       ;;
   esac
+fi
+# The image declares the languages it can switch to. Any other language,
+# English included, leaves the guest at its default (English).
+locale_setting=''
+if [[ -n $guest_locale && ,$guest_locales, == *",$guest_locale,"* ]]; then
+  locale_setting="tryomarchy.locale=$guest_locale"
 fi
 
 work_dir=""
@@ -703,7 +712,7 @@ boot_args=(-bios "$uefi_firmware")
 # name=value with a base64url or literal value, so none contains a space or
 # comma.
 for launcher_setting in omarchy.qemu_virgl=1 omarchy.virgl_dual_source=1 \
-  $shared_folder_setting $ssh_setting $keyboard_setting; do
+  $shared_folder_setting $ssh_setting $keyboard_setting $locale_setting; do
   boot_args+=(-smbios "type=11,value=$launcher_setting")
 done
 
@@ -712,10 +721,6 @@ if [[ -n $disk_capacity_bytes && $storage_mode == persistent && ${OMARCHY_QEMU_G
     fail 'could not apply maximum disk size'
 fi
 
-# Roguix has no guest locale switch yet; the app offers none for its image.
-if [[ -n $guest_locale ]]; then
-  fail 'Roguix does not support language selection yet; use English.'
-fi
 
 case ${OMARCHY_QEMU_GPU_IMMERSIVE:-1} in
   1)

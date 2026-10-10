@@ -60,3 +60,17 @@ struct LanguageLaunchConfigurationTests {
         }
     }
 }
+
+@Suite("Roguix guest languages")
+struct RoguixGuestLanguageTests {
+    @Test("a Roguix image offers the languages its launch.plist lists")
+    func guestLocalesFromLaunchConfiguration() {
+        #expect(GuestLocaleCatalog.supportsSelection(guestLocales: "zh_TW.UTF-8"))
+        #expect(GuestLocaleCatalog.supportsSelection(guestLocales: "de_DE.UTF-8,zh_TW.UTF-8"))
+        #expect(!GuestLocaleCatalog.supportsSelection(guestLocales: "-"))
+        #expect(!GuestLocaleCatalog.supportsSelection(guestLocales: ""))
+        #expect(!GuestLocaleCatalog.supportsSelection(guestLocales: "zh_TW.UTF-8 "))
+        #expect(!GuestLocaleCatalog.supportsSelection(guestLocales: "zh_TW.UTF-8", requiresKorean: true))
+        #expect(GuestLocaleCatalog.supportsSelection(guestLocales: "zh_TW.UTF-8,ko_KR.UTF-8", requiresKorean: true))
+    }
+}
