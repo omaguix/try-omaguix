@@ -123,6 +123,15 @@
                     "exec roguix-pkg pick-add")
                    ("omarchy-pkg-remove" "choose Guix packages to remove"
                     "exec roguix-pkg pick-remove")))
+;; Try Omarchy's microphone helper: Omarchy's moves every
+                ;; recording to the chosen source, including the audio
+                ;; bridge's own module-remap-source stream, which then
+                ;; records from itself and the Mac microphone falls silent.
+                (let ((file (string-append bin "/omarchy-audio-input-set-default")))
+                  (copy-file #$(local-file "audio-input-set-default") file)
+                  (chmod file #o755)
+                  (substitute* file (("^#!/bin/bash") (string-append "#!" bash)))
+                  (chmod file #o555))
                 ;; Web apps need a Chromium-family --app window; Roguix's
                 ;; browser is LibreWolf, so they open in a new browser window.
                 (let ((file (string-append bin "/omarchy-launch-webapp")))

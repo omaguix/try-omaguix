@@ -506,7 +506,10 @@ from Try Omarchy's Arch guest, unchanged; only their startup differs.
   quantum file is installed as `/etc/pipewire/pipewire.conf.d/`
   `90-try-omarchy-quantum.conf`, and PulseAudio's client `autospawn` is off so
   `pactl` never starts a real PulseAudio daemon. The session runs inside
-  `dbus-run-session`.
+  `dbus-run-session`. Try Omarchy's `omarchy-audio-input-set-default`
+  replaces Omarchy's: choosing a microphone moves only application
+  recordings, never the remap source's own stream (which would then record
+  itself), and reads `pactl` in the C locale (`test_audio_input_helper.py`).
 - **Camera.** `v4l2loopback-linux-module` is a loadable module, loaded at boot
   with the Arch guest's options (`/dev/video42`, "Mac Camera",
   `exclusive_caps`); `camera-bridge` runs under `roguix-agent`. udev gives
