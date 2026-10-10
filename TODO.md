@@ -31,6 +31,19 @@ QEMU without arguments): the tile must reopen the app, or the runtime stays
 out of the Dock (LSUIElement); also check upstream's approach, signing and
 notarization of a nested helper, TCC/Accessibility attribution, Cmd-Tab
 presence, and divergence from upstream. Prototype before choosing.
+Investigated 2026-10-10 (worker): a pinned bare Mach-O opens in Terminal
+when clicked (probed with NSWorkspace), so "QEMU without arguments reopens
+the app" alone cannot work; a nested bundle Contents/Helpers/<VM>.app gets a
+bundle id at once, launches as an app from the Dock, and keeps Cmd-Tab and
+QEMU's menu bar as upstream has them. Decided by the user 2026-10-10:
+variant B, the nested helper bundle, with separate bundle ids per build
+(dev.tryroguix.native.vm for releases, dev.tryroguix.native.development.vm
+for development builds); a no-argument start of the helper (a pinned tile)
+opens the parent app and exits. Verify the Accessibility grant live (the
+event tap lives in QEMU), signing (ad hoc, the local identity) and the
+notarization layout; document both ids in docs/mac-keyboard.md. After it
+lands, the coordinator updates the maintainer's remapper exemption to
+match the new bundle ids.
 
 ### Roguix needs no key remapper: keyboard docs cover dev builds [t-swnazc5i]
 
