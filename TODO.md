@@ -11,8 +11,22 @@ localized session (zh_TW, zh_CN, ko_KR) translates, so switching the output
 may fail there. Decided by the user 2026-10-10: both run these scripts
 with `LC_ALL=C` in Roguix's omarchy package (a patch on the pinned Omarchy,
 dropped once upstream fixes it; needs a guest build, verify output switching
-in a localized VM) and report it to Omarchy (an issue, or a PR with the
+in a localized VM; shares one guest build with the next item) and report it to Omarchy (an issue, or a PR with the
 same fix; the worker drafts it and says where it was filed).
+
+### Follow the Mac's time zone live, as Try Omarchy does [t-l64hu6wx]
+
+Try Omarchy 0.5 (5cebb9b, docs/host-timezone.md upstream): owner setup
+defaults to "Same as macOS", and the guest then receives the Mac's zone on
+the root-only virtio port `dev.tryomarchy.timezone` every five seconds and
+applies it live; choosing a fixed zone in setup or Omarchy's time zone menu
+stops following, and "Same as macOS" (first in that menu) resumes it.
+Roguix's setup only suggests the Mac's zone once and keeps it fixed; the
+host side already sends the port. Decided by the user 2026-10-10: port it
+to Roguix as Try Omarchy has it (the Guix guest has no systemd/timedatectl;
+use its own way to switch the zone). Needs a guest build, shared with the
+item above; verify a Mac zone change reaching a running VM, a fixed choice
+surviving a reboot, and resuming.
 
 ## Proposed
 
@@ -199,6 +213,10 @@ coordinator with sol and MiMo: the host follows upstream's language model
 start menu's Language row is gone, so choosing zh_TW on a Mac in another
 language is no longer possible), and releases keep `macos/release.sh`.
 Follow-ups are in "Proposed".
+Declined by the user 2026-10-10: Pinyin input for zh_CN (upstream has none),
+a KR font for Korean text in zh_TW sessions, and migrating older VMs'
+language (a VM set up before the once-only language returns to English after
+a reconfigure; set `#:locale` in /etc/config.scm).
 
 ### Background: KosmicKrisp and Venus
 
