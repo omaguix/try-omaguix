@@ -145,6 +145,25 @@
                     (lambda (port)
                       (format port "#!~a~%# Roguix: open a web app in a new window of the default browser.~%exec omarchy-launch-browser --new-window \"$1\"~%" bash)))
                   (chmod file #o555))
+                ;; Omarchy's time zone menu calls timedatectl. Roguix's
+                ;; lists "Same as macOS" first while the Mac's zone is
+                ;; known (Try Omarchy 5cebb9b): choosing it follows the Mac
+                ;; again, any zone fixes it. system.scm's sudoers allows
+                ;; exactly this command without a password, as Omarchy does
+                ;; for timedatectl.
+                (let ((file (string-append bin "/omarchy-menu-timezone")))
+                  (call-with-output-file file
+                    (lambda (port)
+                      (format port "#!~a
+# Roguix: choose a fixed time zone, or follow the Mac's.
+set -e
+helper=/run/current-system/profile/bin/roguix-timezone
+timezone=$({ $helper --mirror-label 2>/dev/null || true; $helper --list; } | omarchy-menu-select \"Set timezone\" -- --width 520 --maxheight 520) || exit 1
+sudo -n /run/current-system/profile/bin/roguix-timezone --select \"$timezone\"
+omarchy-shell -q omarchy.clock refresh
+omarchy-notification-send \"Timezone is now set to $timezone\"
+" bash)))
+                  (chmod file #o555))
                 ;; Desktop files live in Guix profiles, not /usr.
                 (substitute* (string-append bin "/omarchy-launch-browser")
                   (("\\{~/\\.local,~/\\.nix-profile,/usr\\}")

@@ -159,6 +159,27 @@ name, `/etc/hostname`, `/etc/hosts`, `/etc/localtime`, `/etc/vconsole.conf`
 reconfigure, for example when a package is added, builds the values in and
 the service has nothing left to do.
 
+The time zone works as in Try Omarchy 0.5 (its `docs/host-timezone.md`).
+When the launcher passed the Mac's zone, the setup offers **Same as macOS**
+first and preselected; the settings file then records the zone with
+`timezone-follows-mac` `"yes"`, and any other choice (even the Mac's own
+zone) records `"no"`. A settings file without the key keeps its zone fixed.
+While following, `roguix-timezone` (`modules/roguix/timezone`, a root
+Shepherd service, `test_timezone.py`) reads the zone the host writes every
+five seconds on the root-only `dev.tryomarchy.timezone` port and applies a
+change at once: it replaces `/etc/localtime`, records the zone in the
+settings file, so the next boot and reconfigure keep it, and refreshes
+Omarchy's clock in the running session. Omarchy's time zone menu is
+Roguix's: it lists **Same as macOS** first while the Mac's zone is known,
+which follows the Mac again from the latest zone it sent, and any zone
+fixes it. The menu runs without a terminal, so `/etc/sudoers` lets
+`wheel` run `roguix-timezone --select` with a valid zone or **Same as
+macOS** without a password, as Omarchy's own `omarchy-tzupdate` rule does
+for `timedatectl set-timezone`. The service logs to
+`/var/log/roguix-timezone.log`. Replacing `/etc/localtime` by hand or
+`#:timezone` in `/etc/config.scm` does not stop following; choose a zone in
+the menu instead.
+
 The language follows the Mac without a question: the launcher passes the
 Mac's primary language (`tryomarchy.locale`) when the image lists it in
 `guest.locales`, and the setup records it as `locale` (English otherwise).

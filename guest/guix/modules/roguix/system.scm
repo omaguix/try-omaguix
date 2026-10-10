@@ -218,6 +218,18 @@ defaults."
                    (password "!")
                    (supplementary-groups '("wheel" "netdev" "audio" "video")))
                   %base-user-accounts))
+    ;; Omarchy's time zone menu runs without a terminal, where sudo cannot
+    ;; ask for the password; Omarchy lets wheel set the zone without one
+    ;; (etc/sudoers.d/omarchy-tzupdate), and so does this rule for its
+    ;; replacement, roguix-timezone, which checks the zone itself.
+    (sudoers-file
+     (plain-file "sudoers"
+                 (string-append
+                  (plain-file-content %sudoers-specification)
+                  "%wheel ALL=(root) NOPASSWD: "
+                  "/run/current-system/profile/bin/roguix-timezone "
+                  "^--select (Same as macOS|[A-Za-z0-9_+][A-Za-z0-9_+-]*"
+                  "(/[A-Za-z0-9_+][A-Za-z0-9_+-]*)*)$\n")))
 
     ;; Foot avoids the separate Kitty OpenGL-context workaround in the Arch
     ;; guest. Keep compositor rendering on VirGL, without a software override.
@@ -266,6 +278,7 @@ defaults."
             (service roguix-audio-service-type)
             (service roguix-camera-service-type)
             (service roguix-battery-service-type)
+            (service roguix-timezone-service-type)
             (service roguix-settings-service-type)
             ;; Omarchy's Hyprland input reads the layout from systemd's
             ;; vconsole.conf; Guix keeps it in keyboard-layout instead.

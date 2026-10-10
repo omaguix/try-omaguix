@@ -3,8 +3,10 @@
 
 It asks in Omarchy's order (install/provisioning/setup-form.sh): keyboard
 layout, the password of the account, an optional Git name and email, the host
-name and the time zone. The Mac app suggests the keyboard layout and time zone
-through the launcher's settings (/run/roguix/host-settings). The system's
+name and the time zone. The Mac app suggests the keyboard layout through the
+launcher's settings (/run/roguix/host-settings). The time zone offers "Same
+as macOS" first, as Try Omarchy does: roguix-timezone then follows the Mac's
+zone live, and any other choice fixes the zone. The system's
 language is the Mac's (tryomarchy.locale) without a question, set this once:
 later boots and Mac language changes leave the guest's choice alone.
 
@@ -35,6 +37,9 @@ import termios
 ACCOUNT = "guest"
 MACHINE_SETTINGS = "/var/lib/roguix/machine-settings.scm"
 HOST_SETTINGS = "/run/roguix/host-settings"
+# The Mac's latest zone, which roguix-timezone receives this boot.
+HOST_ZONE = "/run/roguix/host-timezone"
+FOLLOW_MAC = "Same as macOS"
 
 
 def system_zoneinfo():
@@ -134,13 +139,19 @@ def suggested_layout(settings):
     return LAYOUTS[0]
 
 
-def suggested_timezone(settings):
-    encoded = settings.get("tryomarchy.timezone", "")
+def mac_timezone(settings, latest=None):
+    """The Mac's zone: the latest one roguix-timezone received, else the
+    one the launcher passed at launch; None when unknown or invalid."""
     try:
-        zone = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode()
-    except (ValueError, UnicodeDecodeError):
-        return "Etc/UTC"
-    return zone if valid_timezone(zone) else "Etc/UTC"
+        with open(latest or HOST_ZONE, encoding="utf-8") as stream:
+            zone = stream.read().strip()
+    except OSError:
+        encoded = settings.get("tryomarchy.timezone", "")
+        try:
+            zone = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode()
+        except (ValueError, UnicodeDecodeError):
+            return None
+    return zone if valid_timezone(zone) else None
 
 
 def suggested_locale(settings):
@@ -159,11 +170,12 @@ def scheme_string(text):
     return '"' + text + '"'
 
 
-def machine_settings(host_name, timezone, layout, locale):
-    """The machine settings file's text: data that /etc/config.scm and the
-    roguix-machine-settings service read, never load."""
+def machine_settings(host_name, timezone, follows_mac, layout, locale):
+    """The machine settings file's text: data that /etc/config.scm, the
+    roguix-machine-settings service and roguix-timezone read, never load."""
     _, xkb_layout, variant, keymap = layout
     fields = (("host-name", host_name), ("timezone", timezone),
+              ("timezone-follows-mac", "yes" if follows_mac else "no"),
               ("keyboard-layout", xkb_layout), ("keyboard-variant", variant),
               ("console-keymap", keymap), ("locale", locale))
     return (";; Written by roguix-setup; read by /etc/config.scm and at boot.\n("
@@ -401,9 +413,18 @@ def zones(zoneinfo=None):
     return sorted(set(found))
 
 
-def ask_timezone(terminal, suggestion):
-    chosen = terminal.choose("time-zone", "Time zone", zones(), suggestion)
-    return chosen if valid_timezone(chosen) else suggestion
+def ask_timezone(terminal, mac_zone):
+    """(zone, follows the Mac). With the Mac's zone known, "Same as macOS"
+    comes first and is preselected; choosing a zone fixes it, even the
+    Mac's own."""
+    if mac_zone is None:
+        chosen = terminal.choose("time-zone", "Time zone", zones(), "Etc/UTC")
+        return (chosen if valid_timezone(chosen) else "Etc/UTC"), False
+    chosen = terminal.choose("time-zone", "Time zone", [FOLLOW_MAC] + zones(),
+                             FOLLOW_MAC)
+    if chosen != FOLLOW_MAC and valid_timezone(chosen):
+        return chosen, False
+    return mac_zone, True
 
 
 def run(*command, **kwargs):
@@ -489,12 +510,14 @@ def ask_all(terminal, settings):
         name = terminal.ask("git-name", "Your name for Git commits (optional)")
         email = terminal.ask("git-email", "Your email for Git commits (optional)")
         host_name = ask_host_name(terminal)
-        timezone = ask_timezone(terminal, suggested_timezone(settings))
+        timezone, follows_mac = ask_timezone(terminal, mac_timezone(settings))
+        shown_zone = f"{FOLLOW_MAC} ({timezone})" if follows_mac else timezone
         summary = [f"Keyboard:  {layout[0]}", f"Host name: {host_name}",
-                   f"Time zone: {timezone}", f"Language:  {locale} (the Mac's)",
+                   f"Time zone: {shown_zone}", f"Language:  {locale} (the Mac's)",
                    f"Git:       {name or '-'} <{email or '-'}>"]
         if terminal.confirm("confirm", summary, "Save these settings?"):
-            return layout, password, name, email, host_name, timezone, locale
+            return (layout, password, name, email, host_name, timezone,
+                    follows_mac, locale)
 
 
 def open_events():
@@ -510,12 +533,13 @@ def open_events():
 def main():
     settings = host_settings()
     with Terminal(events=open_events()) as terminal:
-        layout, password, name, email, host_name, timezone, locale = \
+        layout, password, name, email, host_name, timezone, follows_mac, locale = \
             ask_all(terminal, settings)
         set_git_identity(name, email)
         os.makedirs(os.path.dirname(MACHINE_SETTINGS), mode=0o755, exist_ok=True)
         replace_file(MACHINE_SETTINGS,
-                     machine_settings(host_name, timezone, layout, locale))
+                     machine_settings(host_name, timezone, follows_mac, layout,
+                                      locale))
         apply_system(host_name, timezone)
         apply_language(locale)
         # The password last: until it is set, first boot runs this setup again.

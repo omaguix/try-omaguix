@@ -49,6 +49,8 @@
             roguix-settings
             roguix-setup
             roguix-settings-service-type
+            roguix-timezone
+            roguix-timezone-service-type
             roguix-touch-id
             roguix-touch-id-service-type
             roguix-ssh-access-service-type))
@@ -451,6 +453,49 @@ Roguix battery agent sets from the host.")
                              battery-shepherd-service)))
    (default-value #f)
    (description "Load the battery module and run the macOS battery agent.")))
+
+;;; Time zone: while the machine settings follow the Mac (roguix-setup's
+;;; "Same as macOS"), roguix-timezone applies the zone the launcher sends on
+;;; the root-only dev.tryomarchy.timezone port every five seconds. A zone
+;;; chosen in the setup or in Omarchy's time zone menu stops following;
+;;; "Same as macOS" in that menu resumes it.
+
+(define roguix-timezone
+  (guest-python-script "roguix-timezone" "timezone"
+                       (local-file "timezone")
+                       #:synopsis "Follow the Mac's time zone"))
+
+(define (timezone-shepherd-service _)
+  (list (shepherd-service
+         (provision '(roguix-timezone))
+         ;; The settings file is applied before following resumes from it.
+         (requirement '(udev roguix-host-settings roguix-machine-settings))
+         (respawn? #t)
+         (documentation "Follow the Mac's time zone while chosen.")
+         (start #~(lambda _
+                    ;; Only a launcher VM has the port; otherwise stay stopped.
+                    (and (file-exists? "/dev/virtio-ports/dev.tryomarchy.timezone")
+                         (fork+exec-command
+                          (list #$(file-append roguix-timezone
+                                               "/bin/roguix-timezone"))
+                          #:log-file "/var/log/roguix-timezone.log"))))
+         (stop #~(make-kill-destructor)))))
+
+(define roguix-timezone-service-type
+  (service-type
+   (name 'roguix-timezone)
+   (extensions
+    (list (service-extension udev-service-type
+                             (const
+                              (list (udev-rule
+                                     "96-roguix-timezone.rules"
+                                     "SUBSYSTEM==\"virtio-ports\", ATTR{name}==\"dev.tryomarchy.timezone\", OWNER=\"root\", GROUP=\"root\", MODE=\"0600\"\n"))))
+          (service-extension shepherd-root-service-type
+                             timezone-shepherd-service)
+          (service-extension profile-service-type
+                             (const (list roguix-timezone)))))
+   (default-value #f)
+   (description "Follow the Mac's time zone until a fixed one is chosen.")))
 
 ;;; First-start setup: Omarchy's owner setup questions (keyboard, password,
 ;;; Git identity, host name, time zone) on tty1, suggested by the Mac; it

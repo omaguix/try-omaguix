@@ -192,8 +192,9 @@ fi
 "))
 
 ;; The first-start setup's answers (roguix-setup writes the file): an alist of
-;; host-name, timezone, keyboard-layout, keyboard-variant, console-keymap and
-;; locale, each a string. Data, never code: it is read, not loaded.
+;; host-name, timezone, timezone-follows-mac, keyboard-layout,
+;; keyboard-variant, console-keymap and locale, each a string; while the zone
+;; follows the Mac, roguix-timezone keeps timezone current. Data, never code: it is read, not loaded.
 (define %roguix-machine-settings-file "/var/lib/roguix/machine-settings.scm")
 
 (define (read-machine-settings)

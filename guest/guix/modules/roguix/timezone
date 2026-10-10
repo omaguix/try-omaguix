@@ -1,0 +1,336 @@
+#!/usr/bin/env python3
+"""roguix-timezone: follow the Mac's time zone, or keep a fixed one.
+
+Try Omarchy's try-omarchy-timezone (5cebb9b, docs/host-timezone.md) for a
+guest without systemd: the policy and the zone live in the machine settings
+file that roguix-setup writes (/var/lib/roguix/machine-settings.scm), as
+`timezone-follows-mac' ("yes" or "no") and `timezone'. A file without the
+first key, from before this existed, keeps its zone fixed.
+
+  roguix-timezone            (root) read the Mac's zone from the root-only
+                             dev.tryomarchy.timezone port, which the host
+                             writes every five seconds; while following,
+                             apply each change at once
+  roguix-timezone --select ZONE
+                             (root) fix the zone at ZONE and stop following,
+                             or with "Same as macOS" follow again, starting
+                             from the latest zone the Mac sent
+  roguix-timezone --mirror-label
+                             print "Same as macOS" when the Mac's zone is
+                             known, for the setup and the menu
+  roguix-timezone --list     print the zones a user may choose
+
+Applying a zone replaces /etc/localtime, as roguix-setup does, and records
+it in the settings file, so that the next boot (roguix-machine-settings)
+and the next reconfigure (/etc/config.scm) keep it.
+"""
+
+import base64
+import fcntl
+import json
+import os
+import pwd
+import re
+import signal
+import subprocess
+import sys
+import tempfile
+
+PORT = "/dev/virtio-ports/dev.tryomarchy.timezone"
+MACHINE_SETTINGS = "/var/lib/roguix/machine-settings.scm"
+LOCK = "/var/lib/roguix/timezone.lock"
+HOST_SETTINGS = "/run/roguix/host-settings"
+HOST_ZONE = "/run/roguix/host-timezone"
+LOCALTIME = "/etc/localtime"
+FOLLOW_MAC_LABEL = "Same as macOS"
+ZONE = re.compile(r"^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$")
+SETTING = re.compile(r'\(([a-z-]+) \. "([A-Za-z0-9_+./-]*)"\)')
+
+
+def system_zoneinfo():
+    """The zoneinfo directory of the running system's tzdata (as in
+    roguix-setup: Guix keeps tzdata out of the system profile)."""
+    tzdir = os.environ.get("TZDIR", "")
+    if os.path.isdir(tzdir):
+        return tzdir
+    target = os.path.realpath("/run/current-system/etc/localtime")
+    marker = "/share/zoneinfo/"
+    if marker in target:
+        return target[:target.index(marker) + len(marker) - 1]
+    return "/usr/share/zoneinfo"
+
+
+ZONEINFO = system_zoneinfo()
+
+
+def zone_path(zone, zoneinfo=None):
+    """The zoneinfo file of ZONE; ValueError for anything else."""
+    zoneinfo = zoneinfo or ZONEINFO
+    if not isinstance(zone, str) or not 0 < len(zone) <= 128 \
+            or not ZONE.match(zone) or ".." in zone:
+        raise ValueError(f"invalid time zone {zone!r}")
+    path = os.path.join(zoneinfo, zone)
+    if not os.path.isfile(path):
+        raise ValueError(f"time zone {zone} is not in this system's tzdata")
+    return path
+
+
+def zones(zoneinfo=None):
+    """Region/City zone names, plus UTC: the setup's list."""
+    zoneinfo = zoneinfo or ZONEINFO
+    found = ["UTC"]
+    for directory, _, files in os.walk(zoneinfo):
+        for name in files:
+            zone = os.path.relpath(os.path.join(directory, name), zoneinfo)
+            if "/" in zone and zone[0].isupper() and ZONE.match(zone) \
+                    and not zone.startswith(("Etc/", "SystemV/", "posix/", "right/")):
+                found.append(zone)
+    return sorted(set(found))
+
+
+def read_settings(path=MACHINE_SETTINGS):
+    """The settings file as an ordered list of (key, value), or None."""
+    try:
+        with open(path, encoding="utf-8") as stream:
+            return SETTING.findall(stream.read())
+    except FileNotFoundError:
+        return None
+
+
+def settings_text(settings):
+    """The settings file's text, in roguix-setup's format."""
+    return (";; Written by roguix-setup; read by /etc/config.scm and at boot.\n("
+            + "\n ".join(f'({key} . "{value}")' for key, value in settings)
+            + ")\n")
+
+
+def with_values(settings, **values):
+    """SETTINGS with VALUES (underscores in keys become hyphens) replaced
+    in place or appended."""
+    values = {key.replace("_", "-"): value for key, value in values.items()}
+    result = [(key, values.pop(key, value)) for key, value in settings]
+    return result + list(values.items())
+
+
+def replace_file(path, text, mode=0o644):
+    """Write PATH atomically: a reader sees the old or the new text."""
+    descriptor, staging = tempfile.mkstemp(prefix=".roguix-timezone-",
+                                           dir=os.path.dirname(path))
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(text)
+            stream.flush()
+            os.fchmod(stream.fileno(), mode)
+            os.fsync(stream.fileno())
+        os.replace(staging, path)
+    finally:
+        if os.path.exists(staging):
+            os.unlink(staging)
+
+
+def link_localtime(zone, localtime=LOCALTIME, zoneinfo=None):
+    """Point LOCALTIME at ZONE; True when it changed."""
+    target = zone_path(zone, zoneinfo)
+    if os.path.islink(localtime) and os.readlink(localtime) == target:
+        return False
+    staging = localtime + ".roguix-timezone"
+    if os.path.lexists(staging):
+        os.remove(staging)
+    os.symlink(target, staging)
+    os.replace(staging, localtime)
+    return True
+
+
+def boot_hint(path=HOST_SETTINGS):
+    """The Mac's zone at launch (tryomarchy.timezone, base64url), or None."""
+    try:
+        with open(path, encoding="utf-8") as stream:
+            tokens = stream.read().split()
+    except OSError:
+        return None
+    for token in tokens:
+        if token.startswith("tryomarchy.timezone="):
+            encoded = token.split("=", 1)[1]
+            try:
+                return base64.urlsafe_b64decode(
+                    encoded + "=" * (-len(encoded) % 4)).decode()
+            except (ValueError, UnicodeDecodeError):
+                return None
+    return None
+
+
+def host_zone(path=HOST_ZONE, settings=HOST_SETTINGS, zoneinfo=None):
+    """The latest zone the Mac sent this boot, else its launch zone; None
+    without a valid one."""
+    try:
+        with open(path, encoding="utf-8") as stream:
+            zone = stream.read().strip()
+    except OSError:
+        zone = boot_hint(settings)
+    try:
+        zone_path(zone, zoneinfo)
+    except ValueError:
+        return None
+    return zone
+
+
+def record_host_zone(zone, path=HOST_ZONE):
+    os.makedirs(os.path.dirname(path), mode=0o755, exist_ok=True)
+    try:
+        with open(path, encoding="utf-8") as stream:
+            if stream.read().strip() == zone:
+                return
+    except FileNotFoundError:
+        pass
+    replace_file(path, zone + "\n")
+
+
+def follow(zone, settings_path=MACHINE_SETTINGS, localtime=LOCALTIME, zoneinfo=None):
+    """Apply the Mac's ZONE if the settings follow the Mac; True when
+    /etc/localtime changed."""
+    zone_path(zone, zoneinfo)
+    settings = read_settings(settings_path)
+    if settings is None or dict(settings).get("timezone-follows-mac") != "yes":
+        return False
+    if dict(settings).get("timezone") != zone:
+        replace_file(settings_path, settings_text(with_values(settings, timezone=zone)))
+    return link_localtime(zone, localtime, zoneinfo)
+
+
+def select(choice, settings_path=MACHINE_SETTINGS, localtime=LOCALTIME,
+           zoneinfo=None, latest=None):
+    """Fix the zone at CHOICE, or follow the Mac for "Same as macOS"
+    starting from LATEST (default: host_zone()); True when /etc/localtime
+    changed."""
+    settings = read_settings(settings_path)
+    if settings is None:
+        raise ValueError(f"{settings_path} does not exist yet; finish the setup first")
+    if choice == FOLLOW_MAC_LABEL:
+        zone = latest or host_zone(zoneinfo=zoneinfo)
+        if zone is None:
+            raise ValueError("the Mac has not sent its time zone")
+        follows = "yes"
+    else:
+        zone, follows = choice, "no"
+    zone_path(zone, zoneinfo)
+    replace_file(settings_path, settings_text(
+        with_values(settings, timezone=zone, timezone_follows_mac=follows)))
+    return link_localtime(zone, localtime, zoneinfo)
+
+
+def locked(action):
+    """Run ACTION under the settings lock: the service and a menu choice
+    both rewrite the settings file."""
+    os.makedirs(os.path.dirname(LOCK), mode=0o755, exist_ok=True)
+    with open(LOCK, "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return action()
+
+
+def refresh_desktops():
+    """Omarchy's clock caches the zone; refresh it in each running desktop
+    session, as Omarchy's time zone menu does after a change."""
+    for user in pwd.getpwall():
+        runtime = f"/run/user/{user.pw_uid}"
+        if not (1000 <= user.pw_uid < 65534 and os.path.isdir(runtime)):
+            continue
+        try:
+            subprocess.run(
+                ["/run/current-system/profile/bin/omarchy-shell", "-q",
+                 "omarchy.clock", "refresh"],
+                user=user.pw_uid, group=user.pw_gid,
+                extra_groups=os.getgrouplist(user.pw_name, user.pw_gid),
+                env={"HOME": user.pw_dir, "XDG_RUNTIME_DIR": runtime,
+                     "PATH": "/run/current-system/profile/bin"},
+                cwd="/", check=False, stdin=subprocess.DEVNULL)
+        except OSError as error:
+            print(f"Could not refresh {user.pw_name}'s clock: {error}",
+                  file=sys.stderr, flush=True)
+
+
+def message_zone(line):
+    """The zone of one host line, {"type": "timezone", "zone": ZONE}."""
+    if len(line) > 4096 or not line.endswith(b"\n"):
+        raise ValueError("oversized time zone message")
+    message = json.loads(line)
+    if not isinstance(message, dict) or set(message) != {"type", "zone"} \
+            or message["type"] != "timezone":
+        raise ValueError("unexpected time zone message")
+    zone_path(message["zone"])
+    return message["zone"]
+
+
+def receive(handle):
+    """Call HANDLE with each line the host sends on PORT, for good.
+
+    Reading the port returns end of file while no host bridge is connected
+    (before it starts, or while the launcher restarts it). The kernel's
+    virtio console sends SIGIO when the host side connects; SIGIO is
+    blocked, so one sent after the read is kept pending for sigwait.
+    """
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGIO})
+    descriptor = os.open(PORT, os.O_RDONLY | os.O_CLOEXEC)
+    fcntl.fcntl(descriptor, fcntl.F_SETOWN, os.getpid())
+    fcntl.fcntl(descriptor, fcntl.F_SETFL,
+                fcntl.fcntl(descriptor, fcntl.F_GETFL) | os.O_ASYNC)
+    buffer = b""
+    while True:
+        chunk = os.read(descriptor, 4096)
+        if not chunk:
+            buffer = b""
+            signal.sigwait({signal.SIGIO})
+            continue
+        buffer += chunk
+        while b"\n" in buffer:
+            line, buffer = buffer.split(b"\n", 1)
+            handle(line + b"\n")
+        if len(buffer) > 4096:
+            print("Rejected an oversized time zone message", file=sys.stderr, flush=True)
+            buffer = b""
+
+
+def handle_line(line):
+    try:
+        zone = message_zone(line)
+    except ValueError as error:
+        print(f"Rejected time zone message: {error}", file=sys.stderr, flush=True)
+        return
+    record_host_zone(zone)
+    if locked(lambda: follow(zone)):
+        print(f"Following the Mac's time zone: {zone}", flush=True)
+        refresh_desktops()
+
+
+def main(arguments):
+    if arguments == ["--mirror-label"]:
+        if host_zone() is None:
+            return 1
+        print(FOLLOW_MAC_LABEL)
+        return 0
+    if arguments == ["--list"]:
+        print("\n".join(zones()))
+        return 0
+    if os.geteuid() != 0:
+        print("roguix-timezone: run as root", file=sys.stderr)
+        return 1
+    if len(arguments) == 2 and arguments[0] == "--select":
+        try:
+            locked(lambda: select(arguments[1]))
+        except ValueError as error:
+            print(f"roguix-timezone: {error}", file=sys.stderr)
+            return 1
+        return 0
+    if arguments:
+        print("Usage: roguix-timezone [--select ZONE | --mirror-label | --list]",
+              file=sys.stderr)
+        return 64
+    # Until the first message, follow the zone the Mac had at launch.
+    zone = host_zone()
+    if zone is not None:
+        locked(lambda: follow(zone))
+    receive(handle_line)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
