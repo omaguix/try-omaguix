@@ -2,49 +2,6 @@
 
 ## Next, in order
 
-### Super+Space sometimes needs a second press to open the menu [t-w2soppgg]
-
-Approved 2026-10-09 (chosen with the models, see "Background: choosing the next proposals").
-
-Found 2026-10-09 (both the old and the new image, about 1 in 20): after an
-action closed the Omarchy menu, Super+Space sometimes does not open it on the
-first press. Likely Omarchy's own open/close state; reproduce and check
-upstream first.
-
-Diagnosed 2026-10-09 (worker, no guest change yet): not the menu's state and
-not our `Menu.qml` substitution, but Omarchy 4.0.4's IPC path. Super+Space
-runs `omarchy-menu toggle`, which runs `omarchy-shell`, which runs a `qs ipc`
-client under `timeout --kill-after=1s 2s`. On a throwaway VM (windowed app
-from this tree, keys through QMP, Hyprland's layer events and a traced bind)
-that chain took 0.3-4 s per press (`qs --version` alone 150-650 ms; the host
-was heavily loaded by builds). When the client is killed, `omarchy-shell`
-exits 1 ("not responding") and the toggle is lost (3 of 10 such presses) or
-reaches the shell 0.6-3.5 s later. After an action closed the menu, 3 of 80
-and 10 of 81 presses timed out; with the bind run under
-`OMARCHY_SHELL_IPC_TIMEOUT=30s` (a test value), 0 of 84 failed and the longest
-call took 3.7 s. Upstream has no issue for it; `quattro` replaced the path
-after 4.0.4 (no release since): #13418 binds menus and panels as Hyprland
-global shortcuts that the shell handles without starting a process (about
-110 lines), #13435 sends `omarchy-shell` calls over the shell's own socket.
-The defect is the kill itself: a killed client leaves a non-idempotent
-toggle in an unknown state (lost or late), whatever the timeout value, so a
-longer timeout is no fix. Consulted sol and MiMo (round
-20261009-190242-e59a): both back removing the per-press process chain; sol
-recommends the #13418 backport. MiMo's smaller alternative (a persistent socket
-with request IDs and acknowledgements) is new machinery: #13435 alone is
-+356 lines and still starts `socat` per press with a timeout. The #13418
-handler is `onPressed` only, so a release cannot toggle twice. A press before
-the shell has registered its shortcuts, or during a shell restart, reaches
-no one; that is no worse than today, where `omarchy-shell` fails then too.
-Fix, a guest change that needs a builder build: backport #13418 as a patch on
-the pinned Omarchy (shell.qml, helpers.lua, the shortcuts list, the
-bindings) and drop it when the pin includes it. Verify on a VM under host
-load: hundreds of presses after menu actions, rapid double presses, presses
-while the shell is busy, right after login and across a shell restart;
-count the menu's open/close transitions per press (no lost and no double
-toggles) and measure press-to-map latency.
-Decided 2026-10-09: backport #13418 now (a patch on the pinned Omarchy, dropped when the pin includes it). The guest build waits until the image-size item is merged, so both land in one build.
-
 ### Rebase onto upstream Try Omarchy [t-qxwxwcet]
 
 Requested 2026-10-10 ("our TODO, and then a rebase onto upstream Try
