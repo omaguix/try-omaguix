@@ -78,7 +78,7 @@ private func writeRecordedPersistentDisk(
     identity: String,
     schemaVersion: Int = 2
 ) throws -> URL {
-    let disks = container.appendingPathComponent("disks", isDirectory: true)
+    let disks = container.appendingPathComponent("guix/disks", isDirectory: true)
     try FileManager.default.createDirectory(at: disks, withIntermediateDirectories: true)
     try FileManager.default.setAttributes(
         [.posixPermissions: 0o700],
@@ -94,14 +94,14 @@ private func writeRecordedPersistentDisk(
     let sourceSHA = String(repeating: "d", count: 64)
     let metadata = directory.appendingPathComponent("metadata.json", isDirectory: false)
     try Data(
-        "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omarchy-qemu-persistent-disk\",\"schemaVersion\":\(schemaVersion),\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n".utf8
+        "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"roguix-qemu-persistent-disk\",\"schemaVersion\":\(schemaVersion),\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n".utf8
     ).write(to: metadata)
     try FileManager.default.setAttributes(
         [.posixPermissions: 0o600],
         ofItemAtPath: metadata.path
     )
 
-    let disk = directory.appendingPathComponent("rootfs.ext4", isDirectory: false)
+    let disk = directory.appendingPathComponent("disk.raw", isDirectory: false)
     try Data([0x5a]).write(to: disk)
     try FileManager.default.setAttributes(
         [.posixPermissions: 0o600],
@@ -555,9 +555,9 @@ struct StorageLocationPolicyTests {
 
         // Old versions may have left a cache, but new disks no longer use it.
         try writeValidRootMarker(in: container)
-        let images = container.appendingPathComponent("images", isDirectory: true)
+        let images = container.appendingPathComponent("guix/images", isDirectory: true)
         try FileManager.default.createDirectory(at: images, withIntermediateDirectories: true)
-        try Data().write(to: images.appendingPathComponent("\(metrics.identity).ext4"))
+        try Data().write(to: images.appendingPathComponent("\(metrics.identity).raw"))
 
         #expect(throws: StorageLocationPolicyError.self) {
             try StorageLocationPolicy.validate(
@@ -675,7 +675,7 @@ struct StorageLocationLaunchConfigurationTests {
             probe: FakeVolumeProbe(result: volume())
         )
         #expect(configuration.stateRoot == "/tmp/override-root")
-        #expect(configuration.resolvedStateRoot?.path == "/tmp/override-root")
+        #expect(configuration.resolvedStateRoot?.path == "/tmp/override-root/\(GuestStateLayout.subdirectory)")
         #expect(configuration.environment[StorageLocationPolicy.environmentKey] == "/tmp/override-root")
     }
 
@@ -691,7 +691,7 @@ struct StorageLocationLaunchConfigurationTests {
             probe: FakeVolumeProbe(result: volume())
         )
         #expect(configuration.stateRoot == container.path)
-        #expect(configuration.resolvedStateRoot?.path == container.path)
+        #expect(configuration.resolvedStateRoot?.path == "\(container.path)/\(GuestStateLayout.subdirectory)")
         #expect(configuration.environment[StorageLocationPolicy.environmentKey] == container.path)
     }
 
@@ -922,80 +922,5 @@ struct StorageLocationMenuStateTests {
         )
         #expect(state.stateRoot == nil)
         #expect(state.problem != nil)
-    }
-}
-
-@Suite("Saved guest language support")
-struct SavedGuestLanguageSupportTests {
-    private var supportedMetrics: BundledGuestMetrics {
-        var result = metrics
-        result.supportsLanguageSelection = true
-        result.supportsKorean = true
-        return result
-    }
-
-    @Test("a fresh workspace uses the bundled factory capability")
-    func freshWorkspace() throws {
-        let root = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: root) }
-        let environment = [StorageLocationPolicy.environmentKey: root.path]
-        #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics))
-        #expect(!QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: metrics))
-        #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics, requiresKorean: true))
-        var olderMetrics = supportedMetrics
-        olderMetrics.supportsKorean = false
-        #expect(!QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: olderMetrics, requiresKorean: true))
-    }
-
-    @Test("older saved disks use their own capability across app updates", arguments: ["current", String(repeating: "b", count: 64)])
-    func savedGuestCapability(directoryName: String) throws {
-        let root = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: root) }
-        try writeValidRootMarker(in: root)
-        let identity = String(repeating: "b", count: 64)
-        try writeRecordedPersistentDisk(in: root, directoryName: directoryName, identity: identity)
-        let environment = [StorageLocationPolicy.environmentKey: root.path]
-        #expect(!QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics))
-
-        let boot = root.appendingPathComponent("boot")
-        let kit = boot.appendingPathComponent(identity)
-        try FileManager.default.createDirectory(at: kit, withIntermediateDirectories: true)
-        for directory in [boot, kit] {
-            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
-        }
-        let commandLine = kit.appendingPathComponent("command-line")
-        for (line, expected, korean) in [
-            ("root=/dev/vda rw", false, false),
-            ("root=/dev/vda rw tryomarchy.locale_support=1", false, false),
-            ("root=/dev/vda rw tryomarchy.locale_support=20", false, false),
-            ("root=/dev/vda rw tryomarchy.locale_support=30", false, false),
-            ("root=/dev/vda rw tryomarchy.locale_support=2\n", true, false),
-            ("root=/dev/vda rw tryomarchy.locale_support=3\n", true, true),
-        ] {
-            try Data(line.utf8).write(to: commandLine)
-            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: commandLine.path)
-            #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics) == expected)
-            #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics, requiresKorean: true) == korean)
-        }
-        // A custom storage preference must select the same VM, too.
-        let preference = StorageLocationPreference(containerPath: root.path)
-        #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: [:], metrics: supportedMetrics, preference: preference))
-        #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: [:], metrics: supportedMetrics, preference: preference, requiresKorean: true))
-        try FileManager.default.removeItem(at: commandLine)
-        let target = root.appendingPathComponent("untrusted-command-line")
-        try Data("tryomarchy.locale_support=3\n".utf8).write(to: target)
-        try FileManager.default.createSymbolicLink(at: commandLine, withDestinationURL: target)
-        #expect(!QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics))
-        #expect(!QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(environment: environment, metrics: supportedMetrics, requiresKorean: true))
-    }
-
-    @Test("a VM created from this factory keeps language support before boot-kit staging")
-    func currentFactory() throws {
-        let root = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: root) }
-        try writeRecordedPersistentDisk(in: root, directoryName: "current", identity: metrics.identity)
-        #expect(QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(
-            environment: [StorageLocationPolicy.environmentKey: root.path], metrics: supportedMetrics
-        ))
     }
 }

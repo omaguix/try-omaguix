@@ -104,13 +104,14 @@ struct StartupPreferenceStoreTests {
     func resolvesWorkspace() {
         let preference = StorageLocationPreference(containerPath: "/private/tmp/selected-vm")
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(environment: [:], preference: preference)?.path
-                == preference.containerPath)
+                == preference.containerPath.map { "\($0)/\(GuestStateLayout.subdirectory)" })
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(
             environment: [StorageLocationPolicy.environmentKey: "/private/tmp/override-vm"],
-            preference: preference)?.path == "/private/tmp/override-vm")
+            preference: preference)?.path == "/private/tmp/override-vm/\(GuestStateLayout.subdirectory)")
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(environment: [:])?.path
                 == FileManager.default.homeDirectoryForCurrentUser
-                    .appendingPathComponent("Library/Application Support/Try Omarchy/VM/v1").path)
+                    .appendingPathComponent("Library/Application Support/Try Roguix/VM/v1")
+                    .appendingPathComponent(GuestStateLayout.subdirectory).path)
     }
 
     @Test("Only an existing VM with an enabled preference and no Option override skips the menu",
@@ -130,28 +131,32 @@ struct StartupPreferenceStoreTests {
     func deletedDiskShowsLauncher() throws {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
-        try initializeWorkspace(root)
-        let diskDirectory = root.appendingPathComponent("disks/current")
+        // The launcher keeps the VM, and the app its settings, in guix/.
+        let workspace = GuestStateLayout.directory(inStateRoot: root)
+        try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false,
+                                                attributes: [.posixPermissions: 0o700])
+        try initializeWorkspace(workspace)
+        let diskDirectory = workspace.appendingPathComponent("disks/current")
         try FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
         let identity = String(repeating: "a", count: 64)
         let metadata = diskDirectory.appendingPathComponent("metadata.json")
-        try Data("{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omarchy-qemu-persistent-disk\",\"schemaVersion\":2,\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(identity)\"}}\n".utf8).write(to: metadata)
+        try Data("{\"bundleIdentity\":\"\(identity)\",\"kind\":\"\(GuestStateLayout.persistentDiskKind)\",\"schemaVersion\":2,\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(identity)\"}}\n".utf8).write(to: metadata)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: metadata.path)
-        let disk = diskDirectory.appendingPathComponent("rootfs.ext4")
+        let disk = diskDirectory.appendingPathComponent(GuestStateLayout.diskName)
         try Data([0]).write(to: disk)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: disk.path)
         let store = StartupPreferenceStore()
-        try store.save(true, storageRoot: root)
+        try store.save(true, storageRoot: workspace)
         func shouldSkip() -> Bool {
             StartupPolicy.shouldStartAutomatically(
-                isEnabled: store.load(storageRoot: root),
+                isEnabled: store.load(storageRoot: workspace),
                 hasExistingVM: QEMUGPUStorageSpaceEstimate.hasRecordedPersistentDisk(stateRoot: root.path),
                 optionKeyHeld: false, initialArguments: [])
         }
         #expect(shouldSkip())
         try FileManager.default.removeItem(at: disk)
-        #expect(store.load(storageRoot: root))
+        #expect(store.load(storageRoot: workspace))
         #expect(!shouldSkip())
     }
 

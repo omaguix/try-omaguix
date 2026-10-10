@@ -243,7 +243,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
         ) == standardizedConfiguredRoot)
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(
             environment: configuredEnvironment
-        ) == standardizedConfiguredRoot)
+        ) == standardizedConfiguredRoot.appendingPathComponent("guix", isDirectory: true))
 
         let defaultDirectory = try #require(QEMUGPUStorageSpaceEstimate.dataDirectoryDisplayPath(
             environment: [:]
@@ -257,7 +257,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             environment: [:]
         ))
         #expect(defaultStorageRoot == defaultDirectoryURL
-            .appendingPathComponent("VM/v1", isDirectory: true)
+            .appendingPathComponent("VM/v1/guix", isDirectory: true)
             .standardizedFileURL)
 
         for invalidRoot in ["relative/path", "/private/tmp/..", "/tmp", "/bad\npath"] {
@@ -281,7 +281,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
 
         // A chosen workspace is the state root itself, exactly as the launcher
         // script treats OMARCHY_QEMU_GPU_STATE_ROOT — the picked folder is
-        // used directly, with no folder nested inside it.
+        // used directly, and the VM lives in its `guix` subdirectory.
         let expected = URL(fileURLWithPath: container.path, isDirectory: true)
             .standardizedFileURL
         #expect(QEMUGPUStorageSpaceEstimate.dataDirectoryURL(
@@ -291,13 +291,14 @@ struct QEMUGPUStorageSpaceEstimateTests {
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(
             environment: [:],
             preference: preference
-        ) == expected)
+        ) == expected.appendingPathComponent("guix", isDirectory: true))
     }
 
     @Test("the development override still wins over a stored preference")
     func overrideBeatsPreference() {
         let configured = "/private/tmp/try-omarchy-override"
         let expected = URL(fileURLWithPath: configured, isDirectory: true).standardizedFileURL
+            .appendingPathComponent("guix", isDirectory: true)
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(
             environment: ["OMARCHY_QEMU_GPU_STATE_ROOT": configured],
             preference: StorageLocationPreference(containerPath: "/Volumes/Ignored")
@@ -344,7 +345,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             isDirectory: true
         )
         defer { try? fileManager.removeItem(at: root) }
-        let disks = root.appendingPathComponent("state/disks", isDirectory: true)
+        let disks = root.appendingPathComponent("state/guix/disks", isDirectory: true)
         try fileManager.createDirectory(at: disks, withIntermediateDirectories: true)
 
         let identityA = String(repeating: "a", count: 64)
@@ -404,7 +405,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             isDirectory: true
         )
         defer { try? fileManager.removeItem(at: root) }
-        let disks = root.appendingPathComponent("state/disks", isDirectory: true)
+        let disks = root.appendingPathComponent("state/guix/disks", isDirectory: true)
         try fileManager.createDirectory(at: disks, withIntermediateDirectories: true)
 
         let identity = String(repeating: "a", count: 64)
@@ -415,7 +416,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             identity: identity,
             payloadBytes: 8_192,
             metadataContents: """
-            { "kind": "omarchy-qemu-persistent-disk", "bundleIdentity": "\(identity)", "sourceRootfs": { "sha256": "\(sourceSHA)", "bytes": 1 }, "schemaVersion": 2 }
+            { "kind": "roguix-qemu-persistent-disk", "bundleIdentity": "\(identity)", "sourceRootfs": { "sha256": "\(sourceSHA)", "bytes": 1 }, "schemaVersion": 2 }
             """
         )
 
@@ -435,7 +436,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             isDirectory: true
         )
         defer { try? fileManager.removeItem(at: root) }
-        let disks = root.appendingPathComponent("state/disks", isDirectory: true)
+        let disks = root.appendingPathComponent("state/guix/disks", isDirectory: true)
         try fileManager.createDirectory(at: disks, withIntermediateDirectories: true)
 
         let identity = String(repeating: "b", count: 64)
@@ -445,7 +446,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             name: identity,
             identity: identity,
             payloadBytes: 8_192,
-            metadataContents: "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omarchy-qemu-persistent-disk\",\"schemaVersion\":2.5,\"sourceRootfs\":{\"bytes\":1.5,\"sha256\":\"\(sourceSHA)\"}}\n"
+            metadataContents: "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"roguix-qemu-persistent-disk\",\"schemaVersion\":2.5,\"sourceRootfs\":{\"bytes\":1.5,\"sha256\":\"\(sourceSHA)\"}}\n"
         )
 
         let environment = ["OMARCHY_QEMU_GPU_STATE_ROOT": root.appendingPathComponent("state").path]
@@ -472,11 +473,11 @@ struct QEMUGPUStorageSpaceEstimateTests {
         let metadata = directory.appendingPathComponent("metadata.json")
         let sourceSHA = String(repeating: "d", count: 64)
         try Data(
-            (metadataContents ?? "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omarchy-qemu-persistent-disk\",\"schemaVersion\":2,\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n").utf8
+            (metadataContents ?? "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"roguix-qemu-persistent-disk\",\"schemaVersion\":2,\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n").utf8
         ).write(to: metadata)
         #expect(Darwin.chmod(metadata.path, 0o600) == 0)
 
-        let disk = directory.appendingPathComponent("rootfs.ext4")
+        let disk = directory.appendingPathComponent("disk.raw")
         try Data(repeating: 0x5a, count: payloadBytes).write(to: disk)
         #expect(Darwin.chmod(disk.path, 0o600) == 0)
         if addUnknownFile {

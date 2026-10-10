@@ -48,7 +48,6 @@ enum QEMUGPUStorageSpaceEstimate {
 
     private struct RecordedPersistentDisk {
         let disk: URL
-        let identity: String
         let schemaVersion: Int
     }
 
@@ -78,25 +77,28 @@ enum QEMUGPUStorageSpaceEstimate {
             .standardizedFileURL
     }
 
-    /// A chosen workspace is the state root itself, exactly as the launcher
-    /// script treats `OMARCHY_QEMU_GPU_STATE_ROOT`. Only the default location
-    /// carries the historical `VM/v1` suffix.
+    /// The directory the launcher keeps the VM in: its state root (a chosen
+    /// workspace itself, exactly as the script treats
+    /// `OMARCHY_QEMU_GPU_STATE_ROOT`, or the default location with its
+    /// historical `VM/v1` suffix) plus `GuestStateLayout.subdirectory`.
     static func storageRootURL(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         preference: StorageLocationPreference = .default,
         fileManager: FileManager = .default
     ) -> URL? {
+        let stateRoot: URL?
         if let configuredRoot = environment[stateRootEnvironmentKey], !configuredRoot.isEmpty {
-            return validatedConfiguredRoot(configuredRoot)
-        }
-        if let container = preference.containerPath {
-            return validatedConfiguredRoot(
+            stateRoot = validatedConfiguredRoot(configuredRoot)
+        } else if let container = preference.containerPath {
+            stateRoot = validatedConfiguredRoot(
                 StorageLocationPolicy.stateRoot(forContainer: container)
             )
+        } else {
+            stateRoot = dataDirectoryURL(environment: environment, fileManager: fileManager)?
+                .appendingPathComponent("VM/v1", isDirectory: true)
+                .standardizedFileURL
         }
-        return dataDirectoryURL(environment: environment, fileManager: fileManager)?
-            .appendingPathComponent("VM/v1", isDirectory: true)
-            .standardizedFileURL
+        return stateRoot.map(GuestStateLayout.directory(inStateRoot:))
     }
 
     static func dataDirectoryDisplayPath(
@@ -197,7 +199,7 @@ enum QEMUGPUStorageSpaceEstimate {
         bundleIdentity: String? = nil,
         fileManager: FileManager = .default
     ) -> URL? {
-        let disks = URL(fileURLWithPath: stateRoot, isDirectory: true)
+        let disks = GuestStateLayout.directory(inStateRoot: URL(fileURLWithPath: stateRoot, isDirectory: true))
             .appendingPathComponent("disks", isDirectory: true)
         guard hasAttributes(
             disks,
@@ -218,50 +220,6 @@ enum QEMUGPUStorageSpaceEstimate {
             fileManager: fileManager
         ), selected.schemaVersion == 2 else { return nil }
         return selected.disk
-    }
-
-    /// Capability follows the selected disk's saved boot kit, not the current
-    /// app version. The launcher checks it again after locking the workspace.
-    static func supportsLanguageSelection(
-        environment: [String: String],
-        metrics: BundledGuestMetrics?,
-        preference: StorageLocationPreference = .default,
-        requiresKorean: Bool = false,
-        fileManager: FileManager = .default
-    ) -> Bool {
-        guard let metrics,
-              let root = storageRootURL(environment: environment, preference: preference, fileManager: fileManager)
-        else { return false }
-        let factorySupportsSelection = requiresKorean ? metrics.supportsKorean : metrics.supportsLanguageSelection
-        let disks = root.appendingPathComponent("disks", isDirectory: true)
-        if !fileManager.fileExists(atPath: disks.path) {
-            return factorySupportsSelection
-        }
-        guard hasAttributes(disks, type: .typeDirectory, permissions: 0o700, fileManager: fileManager),
-              let entries = try? fileManager.contentsOfDirectory(at: disks, includingPropertiesForKeys: nil)
-        else { return false }
-        let selected: RecordedPersistentDisk?
-        if environment["OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK"] == "1" {
-            let directory = disks.appendingPathComponent(metrics.identity)
-            if !fileManager.fileExists(atPath: directory.path) { return factorySupportsSelection }
-            selected = recordedPersistentDisk(in: directory, fileManager: fileManager)
-        } else {
-            if entries.isEmpty { return factorySupportsSelection }
-            selected = selectedSinglePersistentDisk(from: entries, bundleIdentity: metrics.identity, fileManager: fileManager)
-        }
-        guard let selected, selected.schemaVersion == 2 else { return false }
-        if selected.identity == metrics.identity { return factorySupportsSelection }
-        let boot = root.appendingPathComponent("boot", isDirectory: true)
-        let kit = boot.appendingPathComponent(selected.identity, isDirectory: true)
-        let commandLine = kit.appendingPathComponent("command-line")
-        guard hasAttributes(boot, type: .typeDirectory, permissions: 0o700, fileManager: fileManager),
-              hasAttributes(kit, type: .typeDirectory, permissions: 0o700, fileManager: fileManager),
-              hasAttributes(commandLine, type: .typeRegular, permissions: 0o600, fileManager: fileManager),
-              let size = try? commandLine.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-              size <= 16385,
-              let contents = try? String(contentsOf: commandLine, encoding: .utf8)
-        else { return false }
-        return GuestLocaleCatalog.supportsSelection(kernelCommandLine: contents, requiresKorean: requiresKorean)
     }
 
     static func format(bytes: Int64) -> String? {
@@ -369,11 +327,11 @@ enum QEMUGPUStorageSpaceEstimate {
                 includingPropertiesForKeys: nil,
                 options: []
               ),
-              Set(entries.map(\.lastPathComponent)) == ["metadata.json", "rootfs.ext4"]
+              Set(entries.map(\.lastPathComponent)) == ["metadata.json", GuestStateLayout.diskName]
         else { return nil }
 
         let metadataURL = directory.appendingPathComponent("metadata.json", isDirectory: false)
-        let diskURL = directory.appendingPathComponent("rootfs.ext4", isDirectory: false)
+        let diskURL = directory.appendingPathComponent(GuestStateLayout.diskName, isDirectory: false)
         guard hasAttributes(
             metadataURL,
             type: .typeRegular,
@@ -392,7 +350,7 @@ enum QEMUGPUStorageSpaceEstimate {
               let rawMetadata = try? JSONSerialization.jsonObject(with: metadataData),
               let metadata = rawMetadata as? [String: Any],
               Set(metadata.keys) == ["bundleIdentity", "kind", "schemaVersion", "sourceRootfs"],
-              metadata["kind"] as? String == "omarchy-qemu-persistent-disk",
+              metadata["kind"] as? String == GuestStateLayout.persistentDiskKind,
               let identity = metadata["bundleIdentity"] as? String,
               isIdentity(identity),
               let schemaNumber = metadata["schemaVersion"] as? NSNumber,
@@ -408,7 +366,7 @@ enum QEMUGPUStorageSpaceEstimate {
         while serializedMetadata.last == "\n" {
             serializedMetadata.removeLast()
         }
-        let canonicalMetadata = "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omarchy-qemu-persistent-disk\",\"schemaVersion\":\(schemaNumber.intValue),\"sourceRootfs\":{\"bytes\":\(sourceBytesNumber.int64Value),\"sha256\":\"\(sourceSHA)\"}}"
+        let canonicalMetadata = "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"\(GuestStateLayout.persistentDiskKind)\",\"schemaVersion\":\(schemaNumber.intValue),\"sourceRootfs\":{\"bytes\":\(sourceBytesNumber.int64Value),\"sha256\":\"\(sourceSHA)\"}}"
         guard serializedMetadata == canonicalMetadata,
               directory.lastPathComponent == "current" || directory.lastPathComponent == identity,
               let diskSize = try? diskURL.resourceValues(forKeys: [.fileSizeKey]).fileSize,
@@ -416,7 +374,6 @@ enum QEMUGPUStorageSpaceEstimate {
         else { return nil }
         return RecordedPersistentDisk(
             disk: diskURL,
-            identity: identity,
             schemaVersion: schemaNumber.intValue
         )
     }

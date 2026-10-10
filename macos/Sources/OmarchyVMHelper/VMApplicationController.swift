@@ -651,10 +651,11 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
     }
 
     private func minimumDiskGiB() -> Int {
-        let root = disposableWorkspace.directory ?? QEMUGPUStorageSpaceEstimate.storageRootURL(
-            environment: baseEnvironment, preference: storageLocationStore.load()
-        )
-        let disk = root?.appendingPathComponent("disks/current/rootfs.ext4")
+        let root = disposableWorkspace.directory.map(GuestStateLayout.directory(inStateRoot:))
+            ?? QEMUGPUStorageSpaceEstimate.storageRootURL(
+                environment: baseEnvironment, preference: storageLocationStore.load()
+            )
+        let disk = root?.appendingPathComponent("disks/current/\(GuestStateLayout.diskName)")
         let attributes = disk.flatMap { try? FileManager.default.attributesOfItem(atPath: $0.path) }
         let bytes = (attributes?[.type] as? FileAttributeType) == .typeRegular
             ? (attributes?[.size] as? NSNumber)?.int64Value : nil
@@ -956,16 +957,10 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// The launcher accepts a language only when the bundled image lists it
+    /// (`guestLocales`), whichever saved disk it boots, so the app asks the same.
     private func supportsLanguageSelection(requiresKorean: Bool = false) -> Bool {
-        if initialArguments.first == QEMUGPUStorageOption.ephemeral.rawValue {
-            return (requiresKorean ? bundledMetrics?.supportsKorean : bundledMetrics?.supportsLanguageSelection) ?? false
-        }
-        return QEMUGPUStorageSpaceEstimate.supportsLanguageSelection(
-            environment: baseEnvironment,
-            metrics: bundledMetrics,
-            preference: storageLocationStore.load(),
-            requiresKorean: requiresKorean
-        )
+        (requiresKorean ? bundledMetrics?.supportsKorean : bundledMetrics?.supportsLanguageSelection) ?? false
     }
 
     private func storageLocationMenuState() -> StorageLocationMenuState {

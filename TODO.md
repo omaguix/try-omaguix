@@ -8,17 +8,6 @@ Decided 2026-10-07: yes, with the maintainer at the Mac to grant and revoke
 access in System Settings when asked. Follow the diagnosis steps and the
 release re-grant notes in "Background: the Accessibility grant".
 
-### Fix the old rootfs.ext4 names in Swift
-
-Requested 2026-10-07: "fix the old rootfs.ext4 names in Swift too". Found by
-the saved-VM chooser worker: `QEMUGPUStorageSpaceEstimate.recordedPersistentDisk`
-(disk-space estimates) looks for `rootfs.ext4` and kind
-`omarchy-qemu-persistent-disk`, while `qemu-persistent-storage.sh` writes
-`disk.raw` and `roguix-qemu-persistent-disk`, and `storageRootURL` does not
-append the `guix` subdirectory. The same `rootfs.ext4` is in
-`VMApplicationController.swift` (~line 502) and `GuestIntegrationStatus.swift`
-(~line 57).
-
 ## Proposed
 
 ### A fresh start gets half the initial window frame

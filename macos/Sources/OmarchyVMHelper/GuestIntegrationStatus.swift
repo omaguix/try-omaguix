@@ -49,7 +49,7 @@ struct GuestIntegrationCache: Codable {
     static func url(storageRoot: URL?) -> URL? {
         guard let storageRoot,
               let attributes = try? FileManager.default.attributesOfItem(
-                atPath: storageRoot.appendingPathComponent("disks/current/rootfs.ext4").path),
+                atPath: storageRoot.appendingPathComponent("disks/current/\(GuestStateLayout.diskName)").path),
               let inode = attributes[.systemFileNumber] as? NSNumber else { return nil }
         return storageRoot.appendingPathComponent("integration-status-\(inode.uint64Value).json")
     }

@@ -147,6 +147,22 @@ struct StorageLocationResolution: Equatable {
     var spaceWarning: String?
 }
 
+/// Where the launcher keeps the VM inside a state root. Kept byte-identical to
+/// `QPS_STATE_SUBDIRECTORY`, `QPS_DISK_NAME` and
+/// `QEMU_PERSISTENT_STORAGE_KIND` in qemu-persistent-storage.sh, which is the
+/// side that writes them; GuestStateLayoutAgreementTests pins them together.
+enum GuestStateLayout {
+    static let subdirectory = "guix"
+    static let diskName = "disk.raw"
+    static let persistentDiskKind = "roguix-qemu-persistent-disk"
+
+    /// The directory holding `disks/` and `locks/` for a state root
+    /// (`OMARCHY_QEMU_GPU_STATE_ROOT`, a chosen folder, or the default).
+    static func directory(inStateRoot stateRoot: URL) -> URL {
+        stateRoot.appendingPathComponent(subdirectory, isDirectory: true)
+    }
+}
+
 /// Mirrors the launcher's own state-root checks so the start menu can explain a
 /// rejected folder before QEMU ever sees it, and adds the two guards the shell
 /// library cannot express cheaply: the filesystem must be APFS, and a new VM

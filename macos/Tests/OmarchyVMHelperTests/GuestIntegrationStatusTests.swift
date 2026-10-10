@@ -74,7 +74,7 @@ struct GuestIntegrationStatusTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         #expect(GuestIntegrationCache.url(storageRoot: root) == nil)
         #expect(GuestIntegrationCache.read(GuestIntegrationCache.url(storageRoot: root)) == nil)
-        let disk = directory.appendingPathComponent("rootfs.ext4")
+        let disk = directory.appendingPathComponent("disk.raw")
         try Data("first disk".utf8).write(to: disk)
         let first = try #require(GuestIntegrationCache.url(storageRoot: root))
         #expect(first.deletingLastPathComponent().path == root.path)
