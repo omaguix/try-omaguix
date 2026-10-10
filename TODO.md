@@ -16,6 +16,24 @@ costs the Mac's CPU and battery). First import its Cargo.lock
 git dependencies; then package it, run the screensaver at a lower frame rate
 in the VM and measure delivered fps and guest CPU. Needs a guest build.
 
+### Omarchy's menus without perl: encode with jq [t-xeioi3lr]
+
+Found 2026-10-10 by the audio/time zone worker: the image has no perl, which
+`omarchy-menu-select` and `omarchy-menu-input` use only to encode their JSON
+payload (Encode + JSON::PP), so the 13 Omarchy menus built on them (the time
+zone menu among them) show nothing. Decided by the user 2026-10-10 after a
+consult round with sol and MiMo: patch both scripts on the pinned Omarchy to
+encode with jq (already used by 169 Omarchy scripts), e.g.
+`jq -cn '$ARGS.positional' --args -- "${options[@]}"`, and propose the same
+change to omacom/omarchy as a PR. Keep the contract: option order, empty
+options and an empty list, tabs (glyph/label/subtext), quotes, backslashes,
+newlines, numeric `width`/`maxHeight` (`--argjson` after validation), no
+failure in the middle of a menu on malformed UTF-8 (jq and perl replace it
+differently: say so in the PR). Read the commit that introduced perl there
+first. The polling wait for the done file stays as upstream has it (out of
+scope; never fix it with a timeout). Shares one guest build with the ttfx
+item.
+
 ### Low-battery warning while the Mac is charged [t-nfcadqmf]
 
 Requested 2026-10-10: "in Try Roguix it shows: battery is down to 10%,
@@ -63,6 +81,20 @@ maintainer is told it must stay open) and that the window's title should
 tell it apart from the maintainer's own app if the launcher allows it.
 Added straight to "Next, in order" by the coordinator (follows from an
 approved item, docs only, one revert undoes it).
+
+### Describe Roguix's differences from Try Omarchy [t-snp6yeux]
+
+Requested 2026-10-10 ("describe these differences"), after the time zone
+port: Try Omarchy stops following the Mac's zone when /etc/localtime is
+replaced by hand; Roguix stops only through its setup or the time zone menu
+(in Guix /etc/localtime comes from the system configuration). Decided with
+sol and MiMo: one canonical "Differences from Try Omarchy" section in
+guest/guix/README.md, a table (feature | Try Omarchy | Roguix | why | patch
+or upstream status), the time zone row first, then the others already known
+(language set once, no Language row, screensaver until ttfx, perl/jq menus,
+Arch-only documents); a one-line pointer comment at each divergent code
+site; and a step in AGENTS.md's rebase notes to review the table on every
+rebase (update, or delete rows where upstream converged). Docs only.
 
 ## Proposed
 
