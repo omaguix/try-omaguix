@@ -2,22 +2,6 @@
 
 ## Next, in order
 
-### Warn before a test VM window opens [t-wwhpe6cq]
-
-Found 2026-10-10: a worker's throwaway VM opens a window named "Try Roguix"
-that takes the keyboard focus; the maintainer, switching the installed app
-at the time, closed it twice and broke the worker's checks. AGENTS.md (the
-VM testing notes in "Building and Running in a Worktree") should say that a
-worker announces a test VM window before starting it (the coordinator or the
-maintainer is told it must stay open) and that the window's title should
-tell it apart from the maintainer's own app if the launcher allows it.
-Added straight to "Next, in order" by the coordinator (follows from an
-approved item, docs only, one revert undoes it).
-Also from the perl/battery worker (2026-10-10): under host load, QMP
-`send-key` delivered key releases late and the guest repeated characters
-("hhhh"); scripts that type text into a test VM through QMP must check what
-actually reached the field.
-
 ### Describe Roguix's differences from Try Omarchy [t-snp6yeux]
 
 Requested 2026-10-10 ("describe these differences"), after the time zone
@@ -68,6 +52,15 @@ charges; docs/host-battery.md describes that line. A worker drafts an issue
 VM reproduction; the coordinator files it.
 
 ## Proposed
+
+### Give a test VM window its own title
+
+Found 2026-10-11 while announcing test VM windows (AGENTS.md, "Building and
+Running in a Worktree"): the window title is hard-coded
+(`qemu_window_name='Try Roguix'` in `macos/run-qemu-gpu.sh`), so a worker's
+throwaway VM looks like the maintainer's own app. Let `make run-isolated`
+(or the isolated state root) set a distinct title, e.g. "Try Roguix (test)".
+Code change in the launcher script and its tests; no guest build.
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
 
