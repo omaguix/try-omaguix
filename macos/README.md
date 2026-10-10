@@ -11,7 +11,7 @@ Use the root Makefile for normal development:
 ```sh
 make runtime   # macos/.build/qemu-gpu-runtime
 make app       # build/dev.noindex/Try Roguix.app
-make install   # copy it to ~/Applications/Try Roguix.app
+make install   # copy it to ~/Applications/Try Roguix Dev.app
 make run       # install, then open the installed copy
 make package   # signed and notarized build/release.noindex/TryRoguix-vX.Y.Z.dmg
 make release   # signed and notarized build/release.noindex/TryRoguix-vX.Y.Z.dmg
@@ -69,7 +69,10 @@ Local app builds appear as **Try Roguix Dev**, with bundle ID
 `dev.tryroguix.native.development`. Production keeps `dev.tryroguix.native`
 and its own privacy decisions. `make build`, `make app`, and `make run` all use
 the development identity; opening the generated `.app` directly works the
-same way. Development signing is local, with secure timestamping disabled, and
+same way. `make install` copies the build to `~/Applications/Try Roguix Dev.app`,
+so it never replaces an installed release; both still keep the VM in the
+default `~/Library/Application Support/Try Roguix` unless one is given another
+storage location. Development signing is local, with secure timestamping disabled, and
 does not notarize the app. Production keeps secure timestamping and the
 release notarization workflow.
 

@@ -485,13 +485,15 @@ struct QEMUGPULaunchRequest: Equatable {
 }
 
 enum QEMUGPULauncherPath {
-    static let appName = "Try Roguix.app"
+    /// Releases ship as "Try Roguix.app"; `make install` copies the
+    /// development build to "Try Roguix Dev.app".
+    static let appNames: Set<String> = ["Try Roguix.app", "Try Roguix Dev.app"]
     static let launcherName = "run-qemu-gpu.sh"
 
     static func resolve(bundleURL: URL) throws -> URL {
         let standardizedBundle = bundleURL.standardizedFileURL
         var bundleInformation = stat()
-        guard standardizedBundle.lastPathComponent == appName,
+        guard appNames.contains(standardizedBundle.lastPathComponent),
               Darwin.lstat(standardizedBundle.path, &bundleInformation) == 0,
               bundleInformation.st_mode & S_IFMT == S_IFDIR else {
             throw HelperError.io("QEMU launch is available only from the built Roguix app")

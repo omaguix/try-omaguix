@@ -499,9 +499,12 @@ struct QEMUGPUStorageSpaceEstimateTests {
 
 @Suite("Bundled QEMU GPU launcher path")
 struct QEMUGPULauncherPathTests {
-    @Test("resolves only the executable inside the app resources")
-    func resolvesExpectedLayout() throws {
-        let fixture = try makeFixture()
+    @Test(
+        "resolves only the executable inside the app resources",
+        arguments: ["Try Roguix.app", "Try Roguix Dev.app"]
+    )
+    func resolvesExpectedLayout(appName: String) throws {
+        let fixture = try makeFixture(appName: appName)
         defer { try? FileManager.default.removeItem(at: fixture.root) }
 
         #expect(try QEMUGPULauncherPath.resolve(bundleURL: fixture.app) == fixture.launcher)
@@ -538,7 +541,7 @@ struct QEMUGPULauncherPathTests {
     }
 
     private func makeFixture(
-        appName: String = QEMUGPULauncherPath.appName,
+        appName: String = "Try Roguix.app",
         createLauncher: Bool = true
     ) throws -> PathFixture {
         let root = FileManager.default.temporaryDirectory

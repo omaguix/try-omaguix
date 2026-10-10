@@ -7,7 +7,7 @@ override DIST := $(ROOT)/dist
 override GUEST_DIST := $(BUILD)/guix
 override APP := $(BUILD)/dev.noindex/Try Roguix.app
 # Runs use an installed copy, so rebuilding never rewrites a running app.
-INSTALLED_APP ?= $(HOME)/Applications/Try Roguix.app
+INSTALLED_APP ?= $(HOME)/Applications/Try Roguix Dev.app
 override BUILD_CACHE := $(ROOT)/scripts/build-cache.py
 override BUILD_STATE := $(ROOT)/.build/state
 RELEASE_SIGN_IDENTITY ?= Developer ID Application: Eduardo Martinez (RZC79MPD34)
@@ -151,7 +151,7 @@ build: doctor app
 	@printf 'Build output: %s\n' "$(APP)"
 
 install: app
-	@if pgrep -f -- "$(INSTALLED_APP)/Contents/" >/dev/null; then echo 'error: the installed Try Roguix is running; quit it, then run make install again' >&2; exit 1; fi
+	@if pgrep -f -- "$(INSTALLED_APP)/Contents/" >/dev/null; then echo 'error: the installed Try Roguix Dev is running; quit it, then run make install again' >&2; exit 1; fi
 	@mkdir -p "$(dir $(INSTALLED_APP))"
 	@rm -rf -- "$(INSTALLED_APP)"
 	@ditto "$(APP)" "$(INSTALLED_APP)"

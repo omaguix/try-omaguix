@@ -61,7 +61,7 @@ before use. How releases are made: [docs/releasing.md](docs/releasing.md).
    the Mac, and package it: `make guix-package GUIX_IMAGE=/path/to/image.raw`.
 3. Build and open the app: `make run`. It is built as
    `build/dev.noindex/Try Roguix.app`, installed to
-   `~/Applications/Try Roguix.app`, and opened from there.
+   `~/Applications/Try Roguix Dev.app`, and opened from there.
 
 On the first start the VM console asks, as Omarchy's installer does, for the
 keyboard layout, the password of the account `guest` (for `sudo`), an
