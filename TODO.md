@@ -54,6 +54,21 @@ Roguix section of AGENTS.md and `docs/releasing.md` describe; resolve
 conflicts keeping Roguix's guest and our macOS patches, rerun `make test`,
 and review what upstream changed that Roguix should follow.
 
+### Remote commands end when the remote work ends [t-gwjmq54j]
+
+Requested 2026-10-10 (the maintainer passed on the herdr coordinator's
+answer to a worker stuck mid-turn on a silent ssh call): herdr adds no
+silence timer, and a "no output for N" threshold or a Bash timeout used as
+a trigger are rejected workarounds. Add to AGENTS.md ("Delegated Work and
+Added Delays" or the VM testing notes): a command a worker runs into the
+guest or another remote must be ended by the remote work's completion, by a
+wrapper that captures the exit status, prints a completion line and exits,
+e.g. `ssh guest 'test; rc=$?; echo DONE:$rc; exit $rc'`. A process meant to
+keep running remotely gets its own stdin, stdout and stderr, e.g.
+`setsid cmd </dev/null >/tmp/x.log 2>&1 &`, so it does not hold the ssh
+session's stderr; `ssh -n` alone fixes only stdin. The coordinator puts the
+same rule in its worker task texts from now on.
+
 ## Proposed
 
 ### Register checks for herdr todo run [t-atkjktc5]
