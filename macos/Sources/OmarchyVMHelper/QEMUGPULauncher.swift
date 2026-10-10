@@ -13,13 +13,11 @@ enum QEMUGPUStorageOption: String, Equatable {
 enum QEMUGPURuntimeEnvironment {
     static let inspectOnlyKey = "OMARCHY_QEMU_GPU_INSPECT_ONLY"
     static let dryRunKey = "OMARCHY_QEMU_GPU_DRY_RUN"
-    static let guestFixesConsentKey = "OMARCHY_QEMU_GPU_GUEST_FIXES_CONSENT"
 
     static func sanitizedForLaunch(_ base: [String: String]) -> [String: String] {
         var environment = base
         environment.removeValue(forKey: inspectOnlyKey)
         environment.removeValue(forKey: dryRunKey)
-        environment.removeValue(forKey: guestFixesConsentKey)
         return environment
     }
 

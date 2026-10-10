@@ -454,30 +454,6 @@ struct StorageLocationPolicyTests {
         #expect(resolution.spaceWarning == nil)
     }
 
-    @Test("Legacy disks can review fixes before their first boot and keep consent after migration")
-    func legacyDiskFixConsent() throws {
-        let container = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: container) }
-        try writeValidRootMarker(in: container)
-        let previousIdentity = String(repeating: "b", count: 64)
-        let disk = try writeRecordedPersistentDisk(in: container, directoryName: previousIdentity, identity: previousIdentity)
-        let selected = try #require(QEMUGPUStorageSpaceEstimate.recordedPersistentDiskURL(
-            stateRoot: container.path, bundleIdentity: metrics.identity
-        ))
-        #expect(selected.resolvingSymlinksInPath() == disk.resolvingSymlinksInPath())
-        let cache = try #require(GuestBootFixCache.url(storageRoot: container, diskURL: selected))
-        #expect(GuestBootFixCache.needsReview(cacheURL: cache, expectedIdentity: metrics.identity))
-        let consent = try #require(GuestBootFixCache.consent(cacheURL: cache, identity: metrics.identity))
-        try GuestBootFixCache.recordReview(cacheURL: cache, identity: metrics.identity)
-        try FileManager.default.moveItem(at: disk.deletingLastPathComponent(),
-                                        to: container.appendingPathComponent("disks/current"))
-        let migratedCache = try #require(GuestBootFixCache.url(storageRoot: container))
-        #expect(cache == migratedCache)
-        #expect(GuestBootFixCache.consent(cacheURL: migratedCache, identity: metrics.identity) == consent)
-        #expect(!GuestBootFixCache.needsReview(cacheURL: migratedCache, expectedIdentity: metrics.identity))
-        #expect(GuestBootFixCache.needsReview(cacheURL: migratedCache, expectedIdentity: metrics.identity, manuallyRequested: true))
-    }
-
     @Test("a workspace marker without a recorded disk still needs factory-image space")
     func markerAloneDoesNotSkipFactorySpaceRequirement() throws {
         let container = try temporaryDirectory()
@@ -725,34 +701,6 @@ struct StorageLocationLaunchConfigurationTests {
         )
         #expect(configuration.stateRoot == nil)
         #expect(configuration.environment[StorageLocationPolicy.environmentKey] == nil)
-    }
-
-    @Test("default launches resolve a workspace for retaining VM fix results")
-    func defaultWorkspaceRetainsResults() throws {
-        let configuration = StorageLocationLaunchConfiguration.make(
-            baseEnvironment: [:], preference: .default, metrics: metrics
-        )
-        let root = try #require(configuration.resolvedStateRoot)
-        let support = try #require(FileManager.default.urls(
-            for: .applicationSupportDirectory, in: .userDomainMask
-        ).first)
-        #expect(root == support.appendingPathComponent("Try Omarchy/VM/v1", isDirectory: true).standardizedFileURL)
-        // Keep the regression independent of a real user disk or result cache.
-        let workspace = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: workspace) }
-        try FileManager.default.createDirectory(at: workspace.appendingPathComponent("disks/current"), withIntermediateDirectories: true)
-        try Data().write(to: workspace.appendingPathComponent("disks/current/rootfs.ext4"))
-        let selected = StorageLocationLaunchConfiguration.make(
-            baseEnvironment: [StorageLocationPolicy.environmentKey: workspace.path],
-            preference: .default, metrics: metrics
-        )
-        let cacheURL = try #require(GuestBootFixCache.url(storageRoot: selected.resolvedStateRoot))
-        let identity = String(repeating: "a", count: 64)
-        try GuestBootFixCache.retain(GuestBootFixReport(
-            schema: 1, type: "boot-fixes", identity: identity, state: "skipped",
-            components: GuestBootFixReport.pendingComponents
-        ), cacheURL: cacheURL)
-        #expect(GuestBootFixCache.needsReview(cacheURL: cacheURL, expectedIdentity: identity))
     }
 
     @Test("a rejected preference does not reach the launcher")

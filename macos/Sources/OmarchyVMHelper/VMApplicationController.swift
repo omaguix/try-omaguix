@@ -92,10 +92,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
     private var childRunning = false
     private var applicationTerminationPending = false
     private var virtualMachineReachedStart = false
-    private var activeBootFixConsent: String?
-    private var activeBootFixCacheURL: URL?
-    private var bootFixResultReceived = false
-    private var bootFixResultTimer: Timer?
     private var pendingHostSleepControlFailure: String?
 
     /// True while a modal alert this controller opened itself (rather than
@@ -167,10 +163,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                 )
             } ?? false,
             optionKeyHeld: NSEvent.modifierFlags.contains(.option),
-            initialArguments: initialArguments,
-            requiresVMFixReview: GuestBootFixCache.needsReview(
-                cacheURL: bootFixCacheURL(), expectedIdentity: GuestBootFixCache.bundledIdentity
-            )
+            initialArguments: initialArguments
         )
         prepareStartMenu(startAutomatically: startAutomatically)
         appReleaseChecker.checkAutomaticallyIfDue()
@@ -366,10 +359,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                 self?.appReleaseChecker.menuTitle ?? "Check for Updates…"
             },
             checkForAppUpdates: { [weak self] in self?.checkForAppUpdates(nil) },
-            bootFixCacheURL: { [weak self] in self?.bootFixCacheURL() },
-            retryBootFixes: { [weak self] in
-                self?.startVirtualMachine(reviewBootFixes: true)
-            },
             keepSavedVM: { [weak self] name in
                 self?.keepSavedVirtualMachine(name)
             },
@@ -379,8 +368,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         )
         startMenuWindow = startMenu
         startMenu.onAppReleasePromptOpportunity = { [weak self] in self?.scheduleAppReleasePrompt() }
-        // Automatic startup uses the same launch path as the button, including
-        // any required VM fix or boot recovery consent before QEMU starts.
+        // Automatic startup uses the same launch path as the button.
         if startAutomatically {
             startMenu.launchOmarchy()
         } else {
@@ -398,16 +386,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func bootFixCacheURL() -> URL? {
-        guard !isDisposable else { return nil }
-        guard let root = QEMUGPUStorageSpaceEstimate.storageRootURL(
-            environment: baseEnvironment, preference: storageLocationStore.load()),
-              let disk = QEMUGPUStorageSpaceEstimate.recordedPersistentDiskURL(
-                stateRoot: root.path, bundleIdentity: bundledMetrics?.identity) else { return nil }
-        return GuestBootFixCache.url(storageRoot: root, diskURL: disk)
-    }
-
-    private func startVirtualMachine(reviewBootFixes: Bool = false) {
+    private func startVirtualMachine() {
         cancelHostWakeRetry()
         virtualMachineReachedStart = false
         pendingHostSleepControlFailure = nil
@@ -440,21 +419,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                 startMenuWindow?.launchDidAbort()
                 return
             }
-            let fixesURL = bootFixCacheURL()
-            var fixesConsent: String?
-            if GuestBootFixCache.needsReview(cacheURL: fixesURL, expectedIdentity: GuestBootFixCache.bundledIdentity,
-                                             manuallyRequested: reviewBootFixes) {
-                do { try GuestBootFixCache.recordReview(cacheURL: fixesURL, identity: GuestBootFixCache.bundledIdentity) }
-                catch { fputs("[boot-fixes] Could not retain review: \(error.localizedDescription)\n", stderr) }
-                switch startMenuWindow?.confirmBootFixes() ?? .cancel {
-                case .cancel:
-                    startMenuWindow?.launchDidAbort()
-                    return
-                case .skip: break
-                case .update:
-                    fixesConsent = GuestBootFixCache.consent(cacheURL: fixesURL, identity: GuestBootFixCache.bundledIdentity)
-                }
-            }
             let cameraDecision = CameraPreflight.decision()
             if let warning = cameraDecision.warning {
                 fputs("[camera] \(warning)\n", stderr)
@@ -462,10 +426,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             guard cameraDecision.allowsLaunch else {
                 throw HelperError.io("camera policy unexpectedly prevented launch")
             }
-            try launch(
-                arguments: launchArguments(),
-                bootFixConsent: fixesConsent
-            )
+            try launch(arguments: launchArguments())
         } catch {
             failLaunch(error)
         }
@@ -748,7 +709,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func launch(arguments: [String], bootFixConsent: String? = nil) throws {
+    private func launch(arguments: [String]) throws {
         let context = childLaunchContext()
         // The UI gate above normally resolves this first; failing closed here
         // too keeps a silent fallback impossible for any future caller.
@@ -761,15 +722,10 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         }
         try PortForwardAvailability.validate(context.portForwardMappings)
         activeStateRoot = context.stateRoot
-        var environment = context.environment
-        if let bootFixConsent { environment[QEMUGPURuntimeEnvironment.guestFixesConsentKey] = bootFixConsent }
-        activeBootFixConsent = bootFixConsent
-        activeBootFixCacheURL = bootFixCacheURL()
-        bootFixResultReceived = false
         try supervisor.start(
             executableURL: launcherURL,
             arguments: arguments,
-            environment: environment,
+            environment: context.environment,
             launchEvent: { [weak self] event in
                 switch event {
                 case .virtualMachineReady(let qmpSocketPath):
@@ -806,20 +762,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             catch { fputs("[startup] Could not retain Skip launcher: \(error.localizedDescription)\n", stderr) }
         }
         virtualMachineReachedStart = true
-        if !isDisposable {
-            activeBootFixCacheURL = GuestBootFixCache.url(storageRoot: activeStateRoot.map { URL(fileURLWithPath: $0) })
-        }
-        if activeBootFixConsent != nil, let identity = GuestBootFixCache.bundledIdentity {
-            let checking = GuestBootFixReport(schema: 1, type: "boot-fixes", identity: identity, state: "checking",
-                components: GuestBootFixReport.pendingComponents)
-            retainBootFixReport(checking)
-            bootFixResultTimer = Timer.scheduledTimer(withTimeInterval: 360, repeats: false) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    self?.receivedBootFixReport(GuestBootFixReport(schema: 1, type: "boot-fixes", identity: identity,
-                        state: "unconfirmed", components: checking.components))
-                }
-            }
-        }
         startMenuWindow?.dismiss()
         activationController.setDesiredPolicy(ApplicationPresentation.runningActivationPolicy)
         controlSocketPath = qmpSocketPath
@@ -830,40 +772,13 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         let settingsSocket = URL(fileURLWithPath: qmpSocketPath)
             .deletingLastPathComponent().appendingPathComponent("settings.sock").path
         do {
-            settingsBridge = try NativeSettingsBridge(socketPath: settingsSocket, migrationReport: { [weak self] report in
-                self?.receivedBootFixReport(report)
-            }) { [weak self] in
+            settingsBridge = try NativeSettingsBridge(socketPath: settingsSocket) { [weak self] in
                 self?.showRunningSettings() ?? false
             }
         } catch {
             // Settings access is optional; losing it must not stop a running VM.
             fputs("[settings] \(error.localizedDescription)\n", stderr)
         }
-    }
-
-    private func retainBootFixReport(_ report: GuestBootFixReport) {
-        do { try GuestBootFixCache.retain(report, cacheURL: activeBootFixCacheURL) }
-        catch { fputs("[boot-fixes] Could not retain result: \(error.localizedDescription)\n", stderr) }
-        if startMenuWindow?.window.isVisible == true { startMenuWindow?.refreshBootFixStatus() }
-    }
-
-    private func receivedBootFixReport(_ report: GuestBootFixReport) {
-        guard report.identity == GuestBootFixCache.bundledIdentity,
-              let catalog = GuestBootFixCatalog.bundled, report.matchesComponents(in: catalog) else { return }
-        // Reports are advisory results, never installation authorization.
-        retainBootFixReport(report)
-        guard activeBootFixConsent != nil, !bootFixResultReceived,
-              let result = GuestBootFixResult(report: report, catalog: catalog) else { return }
-        bootFixResultTimer?.invalidate()
-        bootFixResultTimer = nil
-        bootFixResultReceived = true
-        activationController.reconcile()
-        defer { activationController.reconcile() }
-        let alert = GuestBootFixPrompt.result(result)
-        isPresentingBlockingAlert = true
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
-        isPresentingBlockingAlert = false
     }
 
     private func showRunningSettings() -> Bool {
@@ -1253,19 +1168,6 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             startMenuWindow?.dismiss()
             startMenuWindow = nil
         }
-        bootFixResultTimer?.invalidate()
-        bootFixResultTimer = nil
-        if activeBootFixConsent != nil, !bootFixResultReceived, let identity = GuestBootFixCache.bundledIdentity {
-            let report = GuestBootFixReport(schema: 1, type: "boot-fixes", identity: identity, state: "unconfirmed",
-                components: GuestBootFixReport.pendingComponents)
-            if virtualMachineReachedStart, !applicationTerminationPending {
-                receivedBootFixReport(report)
-            } else {
-                retainBootFixReport(report)
-            }
-        }
-        activeBootFixConsent = nil
-        activeBootFixCacheURL = nil
         cancelHostWakeRetry()
         hostSleepCoordinator.disconnect()
         let recentStandardError = supervisor.recentStandardError

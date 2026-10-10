@@ -181,9 +181,6 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     private let setStartAutomatically: (Bool) -> String?
     private let presentStartupSaveError: (NSAlert, NSWindow) -> Void
     private let confirmAutomaticStartup: (NSAlert) -> NSApplication.ModalResponse
-    private let bootFixCacheURL: () -> URL?
-    private let bootFixIdentity: () -> String?
-    private let retryBootFixes: () -> Void
     private let keepSavedVM: (String) -> Void
     private let launch: () -> Void
     private let appVersionLabel: String
@@ -287,9 +284,6 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         appVersionLabel: String = InstalledAppRelease.current.label,
         appReleaseActionTitle: @escaping () -> String = { "Check for Updates…" },
         checkForAppUpdates: @escaping () -> Void = {},
-        bootFixCacheURL: @escaping () -> URL? = { nil },
-        bootFixIdentity: @escaping () -> String? = { GuestBootFixCache.bundledIdentity },
-        retryBootFixes: @escaping () -> Void = {},
         keepSavedVM: @escaping (String) -> Void = { _ in },
         launch: @escaping () -> Void
     ) {
@@ -332,9 +326,6 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         self.setStartAutomatically = setStartAutomatically
         self.presentStartupSaveError = presentStartupSaveError
         self.confirmAutomaticStartup = confirmAutomaticStartup
-        self.bootFixCacheURL = bootFixCacheURL
-        self.bootFixIdentity = bootFixIdentity
-        self.retryBootFixes = retryBootFixes
         self.launch = launch
         self.appVersionLabel = appVersionLabel
         self.appReleaseActionTitle = appReleaseActionTitle
@@ -428,29 +419,6 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
 
     func refreshAppReleaseStatus() {
         appReleaseButton?.title = appReleaseActionTitle()
-    }
-
-    func refreshBootFixStatus() { render() }
-
-    func confirmBootFixes() -> GuestBootFixChoice {
-        show()
-        guard let catalog = GuestBootFixCatalog.bundled else {
-            let alert = NSAlert()
-            alert.messageText = "VM update details are unavailable"
-            alert.informativeText = "The update catalog is missing or damaged. Reinstall Try Omarchy before updating this VM."
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-            return .cancel
-        }
-        return GuestBootFixLaunchGate.decide(review: {
-            switch GuestBootFixPrompt.review(catalog: catalog).runModal() {
-            case .alertFirstButtonReturn: return .update
-            case .alertSecondButtonReturn: return .skip
-            default: return .cancel
-            }
-        }, confirmSkip: {
-            GuestBootFixPrompt.skip().runModal() == .alertSecondButtonReturn
-        })
     }
 
     @objc private func showAppUpdates() { checkForAppUpdates() }
@@ -1041,15 +1009,14 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         manage.isEnabled = !controlsBusy
         let resetAction = virtualMachineRunning && canResetStorage ? manage : reset
 
-        let fixesPending = GuestBootFixCache.needsUpdate(cacheURL: bootFixCacheURL(), expectedIdentity: bootFixIdentity())
         let launchButtonTitle = virtualMachineRunning ? "Done"
-            : !launchInProgress ? (fixesPending ? "Update and Launch" : "Launch Roguix")
+            : !launchInProgress ? "Launch Roguix"
             : diskDownloadPercent.map { "Downloading Roguix… \($0)%" } ?? launchPhase.buttonTitle
         let launchButton = OmarchyActionButton(
             title: launchButtonTitle,
             style: .primary,
             target: self,
-            action: virtualMachineRunning ? #selector(closeSettings) : (fixesPending ? #selector(reviewVMFixes) : #selector(launchOmarchy))
+            action: virtualMachineRunning ? #selector(closeSettings) : #selector(launchOmarchy)
         )
         launchActionButton = launchButton
         launchButton.keyEquivalent = launchInProgress ? "" : "\r"
@@ -1995,14 +1962,10 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     }
 
     @objc func launchOmarchy() {
-        beginLaunch(action: launch)
+        beginLaunch()
     }
 
-    @objc private func reviewVMFixes() {
-        beginLaunch(action: retryBootFixes)
-    }
-
-    private func beginLaunch(action: () -> Void) {
+    private func beginLaunch() {
         guard !prelaunchControlsLocked,
               !resetInProgress,
               !microphoneRequestInFlight,
@@ -2011,7 +1974,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         launchInProgress = true
         diskDownloadPercent = nil
         render()
-        action()
+        launch()
     }
 }
 
