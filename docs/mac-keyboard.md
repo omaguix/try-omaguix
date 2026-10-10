@@ -73,6 +73,20 @@ becomes the Cocoa display's `send-command-tab=on|off` from
 
 ## Host tools that take a chord first
 
+Roguix needs no key remapper such as Karabiner-Elements or Hammerspoon. With
+the Accessibility grant, QEMU's own event tap captures Command chords,
+Command-Space included, before Spotlight; Command-Tab follows the **Send
+Command-Tab to Roguix** setting. This section only matters if you already run
+such a tool.
+
+Without the grant the VM still starts, only without the Command-to-Super
+mapping. The start menu's Accessibility row (titled Device Control and Data
+Access on macOS 27) then shows the grant as missing, with an **Open Settings**
+button. It brings up the macOS permission prompt, or opens System Settings >
+Privacy & Security > Accessibility when the prompt cannot appear. The row
+updates when you return to the start menu, and the mapping takes effect on a
+later launch.
+
 Command acts as Super through QEMU's event tap, which sees a key only after
 host tools that sit earlier in the input path. Karabiner-Elements remaps keys
 in its virtual keyboard driver, and Hammerspoon hotkeys and AltTab's shortcut
