@@ -1,0 +1,36 @@
+diff --git a/src/managers/screenshare/ScreenshareFrame.cpp b/src/managers/screenshare/ScreenshareFrame.cpp
+index 69f6178..ce679a8 100644
+--- a/src/managers/screenshare/ScreenshareFrame.cpp
++++ b/src/managers/screenshare/ScreenshareFrame.cpp
+@@ -80,4 +80,11 @@ eScreenshareError CScreenshareFrame::share(SP<IHLBuffer> buffer, const CRegion&
+     }
+ 
++    // a blanked output commits no frames, so the copy would wait until DPMS is on again
++    if UNLIKELY (!m_session->monitor()->m_dpmsStatus) {
++        LOGM(Log::ERR, "Client requested sharing of a monitor whose DPMS is off");
++        m_failed = true;
++        return ERROR_UNKNOWN;
++    }
++
+     if UNLIKELY (m_session->m_type == SHARE_WINDOW && !validMapped(m_session->m_window)) {
+         LOGM(Log::ERR, "Client requested sharing of window that is gone or not shareable!");
+diff --git a/src/managers/screenshare/ScreenshareManager.cpp b/src/managers/screenshare/ScreenshareManager.cpp
+index 8d114b6..2676f62 100644
+--- a/src/managers/screenshare/ScreenshareManager.cpp
++++ b/src/managers/screenshare/ScreenshareManager.cpp
+@@ -42,4 +42,15 @@ void CScreenshareManager::onOutputCommit(PHLMONITOR monitor) {
+     });
+ 
++    // with DPMS off the output stops committing once it is blanked: fail what this commit did not copy instead of leaving it pending
++    if (!monitor->m_dpmsStatus) {
++        std::ranges::for_each(m_pendingFrames, [&](WP<CScreenshareFrame>& frame) {
++            if (frame.expired() || !frame->m_shared || frame->done() || frame->m_copyInFlight || frame->m_session->monitor() != monitor)
++                return;
++
++            frame->m_failed = true;
++            frame->m_callback(RESULT_NOT_COPIED);
++        });
++    }
++
+     std::erase_if(m_pendingFrames, [&](const WP<CScreenshareFrame>& frame) { return frame.expired() || frame->done(); });
+ }

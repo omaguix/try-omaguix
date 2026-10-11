@@ -147,10 +147,14 @@
                (sha256
                 (base32
                  "0j85l7rvjsddzm1d99fnaqza6160zm1xx89r3385h0rnfyrnxcn5"))
-               ;; Byte-identical to guest/patches/hyprland (test_build.py).
+               ;; Pinned by SHA-256 in test_build.py. The second ends a
+               ;; screen capture of an output whose DPMS is off with
+               ;; `failed', as such an output commits no frame to copy.
                (patches
                 (list (local-file
-                       "hyprland-rounded-border-coverage.patch")))
+                       "hyprland-rounded-border-coverage.patch")
+                      (local-file
+                       "hyprland-capture-blanked-output.patch")))
                ;; truthy() tests a lowercased transform_view against string_view
                ;; prefixes; comparing its first prefix.size() elements is the
                ;; C++20 equivalent (a shorter input yields a shorter range).

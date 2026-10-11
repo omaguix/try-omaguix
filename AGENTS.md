@@ -554,10 +554,11 @@ guest repeats characters. It never adds a sleep between keys.
 
 To capture what a test VM shows, use QMP `screendump` (PPM only: the runtime
 has no libpng); it works with `cocoa,gl=on` and does not depend on the
-guest's DPMS or lock. In-guest `grim` waits forever while the output is
-blanked (Omarchy blanks it 5 s after locking): run it only after enabling
-DPMS and seeing `dpmsStatus: 1` in `hyprctl monitors`, and expect the lock
-screen while the session is locked. Never wrap it in a timeout or retry.
+guest's DPMS or lock. In-guest `grim` fails at once ("failed to
+copy output") while the output is blanked (Omarchy blanks it 5 s after
+locking): enable DPMS, wait for `dpmsStatus: 1` in `hyprctl monitors`, and
+expect a black frame until the wake-up fade ends and the lock screen while
+the session is locked. Never wrap it in a timeout or retry.
 
 ## Delegated Work and Added Delays
 

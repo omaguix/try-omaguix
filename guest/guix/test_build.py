@@ -244,9 +244,13 @@ class ProjectModuleTests(unittest.TestCase):
                        "5dcf0b17f7dd51539fd7e79d68484f04240b3b63cf9f5f21d5b6dea0088168f9"):
             self.assertIn(f"SHA-256 {digest}", module)
         import hashlib
-        patch = (self.MODULES / "hyprland-rounded-border-coverage.patch").read_bytes()
-        self.assertEqual(hashlib.sha256(patch).hexdigest(),
-                         "5da431cbca37bdd9a66edeb77c3d677b7033d5f91449158e3ffa58a4eb515828")
+        for name, digest in (
+                ("hyprland-rounded-border-coverage.patch",
+                 "5da431cbca37bdd9a66edeb77c3d677b7033d5f91449158e3ffa58a4eb515828"),
+                ("hyprland-capture-blanked-output.patch",
+                 "c2965c83e7aacfa009d5b250a08d19507d849a3ccdf962d8dcbce4f822832fc9")):
+            patch = (self.MODULES / name).read_bytes()
+            self.assertEqual(hashlib.sha256(patch).hexdigest(), digest, name)
 
     def test_guest_source_selection_covers_every_module_file(self):
         system = (self.MODULES / "system.scm").read_text()
