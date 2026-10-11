@@ -303,6 +303,25 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 
 ## Needs a decision
 
+### Background: drgn for agents (2026-10-11)
+
+Asked 2026-10-11 to analyze drgn 0.3.0 (https://github.com/osandov/drgn/releases/tag/v0.3.0)
+with the models, after the remark that a programmable debugger suits LLMs.
+drgn inspects Linux kernels (live /proc/kcore, vmcores) and C programs,
+supports AArch64, debugs a QEMU guest over QMP (`--qemu`, needs `-device
+vmcoreinfo`, works on a hung VM), and since 0.3.0 reads guest memory from
+the QEMU process through Linux ptrace. Round 20261011-231321-1582 (sol,
+MiMo, DeepSeek), all three: do not adopt it now. It runs on Linux, not on
+the macOS host, so the QMP mode would need a Linux VM and loses the fast
+ptrace path; in the guest it needs kernel debug info Guix's linux-libre
+likely does not ship (DWARF or BTF, unverified) and a package. It fits
+none of the recent bugs well: QEMU's black screendump is host-side (lldb,
+QEMU tracing), grim's hang was a Wayland stall (WAYLAND_DEBUG, gdb), and
+the all-vCPU soft lockups stop any in-guest tool and point at host
+scheduling (host sampling, guest ftrace). Revisit when a guest-kernel
+memory bug resists ftrace and printk; the smallest step then is a test-only
+image with kernel BTF or DWARF plus `-device vmcoreinfo`.
+
 ### Report grim's pending capture on a blanked output to Hyprland
 
 Decided by the user 2026-10-11: "I will report it myself" (the maintainer
