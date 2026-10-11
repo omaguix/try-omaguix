@@ -2,25 +2,6 @@
 
 ## Next, in order
 
-### Agents capture a VM's screen with grim by default
-
-Asked 2026-10-11: "Grim" (prefer grim, since it can include the cursor),
-after the comparison in consult round 20261011-195457-c8f5. Change the
-capture paragraph in AGENTS.md: with a logged-in session and the screen
-on, capture with `grim -c` over SSH (cursor included, PNG, one output or
-a region); fall back to QMP `screendump` before login, in the console,
-while locked or blanked, or when the compositor does not answer. Both give
-the guest's pixels before the Mac window's scaling; the window itself
-needs a macOS capture. Text only; after the grim-on-a-blanked-output item,
-which may change the same paragraph. That item is done (commit "guest:
-Hyprland ends a capture of a blanked output", 2026-10-11): grim on a
-blanked output now fails at once ("failed to copy output") instead of
-hanging, and AGENTS.md says so; keep that when rewriting the paragraph.
-Verified in test VMs: 3-5 ms failures with DPMS off; a forced pending
-frame gets exactly one `failed` at the blanking commit; 70 races all end;
-Hyprland answered within 0.8 s in 50 traced runs, and the long runs were
-client-side (PNG encoding, guest stalls under host load).
-
 ### Browsers lack GPU acceleration on ANGLE/Metal: fix it
 
 Asked 2026-10-11: "Na ANGLE/Metal przeglądarki nie miały akceleracji -
