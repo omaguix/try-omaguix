@@ -76,6 +76,7 @@ strchrnul_patch="$native_dir/patches/qemu-darwin-strchrnul-compat.patch"
 usb_exact_bus_patch="$native_dir/patches/qemu-usb-host-exact-bus.patch"
 minimum_guest_size_patch="$native_dir/patches/qemu-cocoa-minimum-guest-size.patch"
 full_grab_diagnostics_patch="$native_dir/patches/qemu-cocoa-full-grab-diagnostics.patch"
+gl_screendump_patch="$native_dir/patches/qemu-cocoa-gl-screendump.patch"
 slirp_patch="$native_dir/patches/libslirp-darwin-icmp-matching.patch"
 udp_patch="$native_dir/patches/libslirp-ipv4-udp-translation.patch"
 fence_poll_patch="$native_dir/patches/qemu-darwin-gpu-fence-poll.patch"
@@ -113,6 +114,7 @@ strchrnul_patch_sha256=ec1048dd0e8ebe53bf7e8a3bca9bf2f5f4336cd607d4cd077437470e9
 usb_exact_bus_patch_sha256=5e39159171295c566d014a1ef2744130f80fa02b742c349fa47373b00ae697ec
 minimum_guest_size_patch_sha256=17514983c64a7724429c3dfd45f8839f8f362e0d984cc850e6a5d3aa8cca7189
 full_grab_diagnostics_patch_sha256=4d37001df4694d5ec7f5baaa1b04920ae9b6dddb0a675f8cb1819c71fc5620ea
+gl_screendump_patch_sha256=0cfe8b3d58ab9661a34201a397ee790039f45c5f49f6cd61364da8e496a29424
 udp_patch_sha256=95e8ee890be78cdce70b3ee54a8adac27be02421be08b986ae987c74ef8cec8c
 slirp_patch_sha256=20f3d424c79929fb82d240d0ee06b99e9f93ecfb9460579dc414303820d59f90
 slirp_source_root=libslirp-v4.9.4
@@ -246,6 +248,8 @@ macos_major=$(sw_vers -productVersion | awk -F. '{ print $1 }')
   die "missing Cocoa minimum guest size patch: $minimum_guest_size_patch"
 [[ -f $full_grab_diagnostics_patch && ! -L $full_grab_diagnostics_patch ]] || \
   die "missing Cocoa full-grab diagnostics patch: $full_grab_diagnostics_patch"
+[[ -f $gl_screendump_patch && ! -L $gl_screendump_patch ]] || \
+  die "missing Cocoa GL screendump patch: $gl_screendump_patch"
 [[ -f $strchrnul_patch && ! -L $strchrnul_patch ]] || \
   die "missing Darwin strchrnul compatibility patch: $strchrnul_patch"
 [[ -f $usb_exact_bus_patch && ! -L $usb_exact_bus_patch ]] || \
@@ -475,6 +479,8 @@ verify_file_sha "Try Roguix Cocoa minimum guest size patch" \
   "$minimum_guest_size_patch" "$minimum_guest_size_patch_sha256"
 verify_file_sha "Try Roguix Cocoa full-grab diagnostics patch" \
   "$full_grab_diagnostics_patch" "$full_grab_diagnostics_patch_sha256"
+verify_file_sha "Try Roguix Cocoa GL screendump patch" \
+  "$gl_screendump_patch" "$gl_screendump_patch_sha256"
 verify_file_sha "Try Roguix Darwin GPU fence polling patch" \
   "$fence_poll_patch" "$fence_poll_patch_sha256"
 verify_file_sha "Try Roguix Darwin strchrnul compatibility patch" \
@@ -508,6 +514,7 @@ patch -d "$source_dir" -p1 -f -i "$injected_text_patch"
 patch -d "$source_dir" -p1 -f -i "$usb_exact_bus_patch"
 patch -d "$source_dir" -p1 -f -i "$minimum_guest_size_patch"
 patch -d "$source_dir" -p1 -f -i "$full_grab_diagnostics_patch"
+patch -d "$source_dir" -p1 -f -i "$gl_screendump_patch"
 
 virgl_root="$dependency_root/virglrenderer/$virgl_version"
 angle_root="$dependency_root/angle/$angle_version"

@@ -1,0 +1,173 @@
+From: Try Roguix contributors
+Subject: [PATCH] cocoa: read the GL scanout back for screendump
+
+Applies after the texture-borrowing and the other Try Roguix Cocoa patches.
+
+A GL scanout (dpy_gl_scanout_texture) is drawn from the guest's texture and
+never fills the console's DisplaySurface, so QMP screendump saved a black
+image while the guest showed its desktop through VirGL. Add an optional
+listener operation, dpy_gl_scanout_read, that screendump calls when the
+console shows a GL scanout. Cocoa implements it in its GL view context: it
+draws the borrowed texture with the same shader as the window (so virgl's
+swizzles apply), mirrored for glReadPixels and offset to the scanout's crop,
+into an FBO, and reads it into the console surface with egl_fb_read_rect,
+as egl-headless does on every frame. Here it runs only on a screendump,
+under the BQL, so it reads the frame the guest last flushed.
+
+--- a/include/ui/console.h
++++ b/include/ui/console.h
+@@ -230,6 +230,9 @@ typedef struct DisplayChangeListenerOps {
+     /* required if GL */
+     void (*dpy_gl_update)(DisplayChangeListener *dcl,
+                           uint32_t x, uint32_t y, uint32_t w, uint32_t h);
++    /* optional: copy the shown GL scanout into dst, a surface of its size */
++    bool (*dpy_gl_scanout_read)(DisplayChangeListener *dcl,
++                                DisplaySurface *dst);
+ 
+ } DisplayChangeListenerOps;
+ 
+@@ -293,6 +296,7 @@ bool qemu_console_check_format(QemuConsole *con,
+                                pixman_format_code_t format);
+ 
+ void qemu_console_gl_scanout_disable(QemuConsole *con);
++bool qemu_console_gl_scanout_read(QemuConsole *con, Error **errp);
+ void qemu_console_gl_scanout_texture(QemuConsole *con, uint32_t backing_id,
+                                      DisplayGLTextureBorrower backing_borrow,
+                                      uint32_t x, uint32_t y,
+--- a/ui/cocoa.m
++++ b/ui/cocoa.m
+@@ -137,6 +137,7 @@ @interface QemuCGLLayer : CAOpenGLLayer
+ static bool gl_dirty;
+ static uint32_t gl_scanout_id;
+ static DisplayGLTextureBorrower gl_scanout_borrow;
++static uint32_t gl_scanout_x, gl_scanout_y, gl_scanout_w, gl_scanout_h;
+ static QEMUGLContext gl_view_ctx;
+ static NSOpenGLContext *gl_view_nsctx;
+ 
+@@ -3014,6 +3015,10 @@ static void cocoa_gl_scanout_texture(DisplayChangeListener *dcl,
+ {
+     gl_scanout_id = backing_id;
+     gl_scanout_borrow = backing_borrow;
++    gl_scanout_x = x;
++    gl_scanout_y = y;
++    gl_scanout_w = w;
++    gl_scanout_h = h;
+     gl_dirty = true;
+ 
+     cocoa_gl_log("scanout texture id=%u region=%ux%u+%u+%u",
+@@ -3029,6 +3034,59 @@ static void cocoa_gl_scanout_flush(DisplayChangeListener *dcl,
+     cocoa_gl_log("scanout flush region=%ux%u+%u+%u", w, h, x, y);
+ }
+ 
++#ifdef CONFIG_EGL
++/*
++ * Called with the BQL held, which also serializes the guest's rendering and
++ * the layer's draws, so this reads the frame the guest last flushed. Draw the
++ * texture as cocoa_gl_render does (the shader honors virgl's swizzles) into
++ * an FBO, mirrored so that glReadPixels returns the top row first, and offset
++ * so that the FBO holds only the scanout's crop.
++ */
++static bool cocoa_gl_scanout_read(DisplayChangeListener *dcl,
++                                  DisplaySurface *dst)
++{
++    __block bool ok = false;
++
++    if (!gl_scanout_borrow ||
++        surface_width(dst) != gl_scanout_w ||
++        surface_height(dst) != gl_scanout_h ||
++        surface_format(dst) != PIXMAN_x8r8g8b8) {
++        return false;
++    }
++
++    with_gl_view_ctx(^{
++        DisplayGLTexture texture = gl_scanout_borrow(gl_scanout_id);
++        egl_fb fb = EGL_FB_INIT;
++
++        if (!texture.id ||
++            gl_scanout_x + gl_scanout_w > texture.width ||
++            gl_scanout_y + gl_scanout_h > texture.height) {
++            return;
++        }
++
++        /* Clear earlier errors so the check below covers only this read. */
++        while (glGetError() != GL_NO_ERROR) {
++        }
++        egl_fb_setup_new_tex(&fb, gl_scanout_w, gl_scanout_h);
++        glBindFramebuffer(GL_FRAMEBUFFER, fb.framebuffer);
++        glViewport(-(GLint)gl_scanout_x, -(GLint)gl_scanout_y,
++                   texture.width, texture.height);
++        glBindTexture(GL_TEXTURE_2D, texture.id);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++        qemu_gl_run_texture_blit(dgc.gls, !texture.y_0_top);
++        egl_fb_read_rect(dst, &fb, 0, 0, gl_scanout_w, gl_scanout_h);
++        egl_fb_destroy(&fb);
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++        ok = glGetError() == GL_NO_ERROR;
++    });
++
++    cocoa_gl_log("scanout read %ux%u+%u+%u ok=%d",
++                 gl_scanout_w, gl_scanout_h, gl_scanout_x, gl_scanout_y, ok);
++    return ok;
++}
++#endif
++
+ static const DisplayChangeListenerOps dcl_gl_ops = {
+     .dpy_name               = "cocoa-gl",
+     .dpy_gfx_update         = cocoa_gl_update,
+@@ -3041,6 +3099,9 @@ static void cocoa_gl_scanout_flush(DisplayChangeListener *dcl,
+     .dpy_gl_scanout_disable = cocoa_gl_scanout_disable,
+     .dpy_gl_scanout_texture = cocoa_gl_scanout_texture,
+     .dpy_gl_update          = cocoa_gl_scanout_flush,
++#ifdef CONFIG_EGL
++    .dpy_gl_scanout_read    = cocoa_gl_scanout_read,
++#endif
+ };
+ 
+ static bool cocoa_gl_is_compatible_dcl(DisplayGLCtx *dgc,
+--- a/ui/console.c
++++ b/ui/console.c
+@@ -932,6 +932,30 @@ int qemu_console_gl_ctx_make_current(QemuConsole *con, QEMUGLContext ctx)
+     return con->gl->ops->dpy_gl_ctx_make_current(con->gl, ctx);
+ }
+ 
++/*
++ * A GL scanout never fills the console surface. Let the first listener that
++ * can read it back copy it there, so screendump saves what the guest shows.
++ */
++bool qemu_console_gl_scanout_read(QemuConsole *con, Error **errp)
++{
++    DisplayChangeListener *dcl;
++
++    if (con->scanout.kind != SCANOUT_TEXTURE || !con->surface) {
++        return true;
++    }
++    QLIST_FOREACH(dcl, &con->ds->listeners, next) {
++        if (con != dcl->con || !dcl->ops->dpy_gl_scanout_read) {
++            continue;
++        }
++        if (!dcl->ops->dpy_gl_scanout_read(dcl, con->surface)) {
++            error_setg(errp, "could not read back the GL scanout");
++            return false;
++        }
++        return true;
++    }
++    return true;
++}
++
+ void qemu_console_gl_scanout_disable(QemuConsole *con)
+ {
+     DisplayState *s = con->ds;
+--- a/ui/ui-qmp-cmds.c
++++ b/ui/ui-qmp-cmds.c
+@@ -356,6 +356,10 @@ qmp_screendump(const char *filename, const char *device,
+      * further graphic update are possible until it is released.  Take
+      * an image ref before that.
+      */
++    if (!qemu_console_gl_scanout_read(con, errp)) {
++        object_unref(con);
++        return;
++    }
+     surface = qemu_console_surface(con);
+     if (!surface) {
+         error_setg(errp, "no surface");

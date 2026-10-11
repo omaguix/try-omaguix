@@ -39,6 +39,10 @@ The build runs the actual format-probe regression with controlled GL entry
 points, alongside the upstream shader and blend tests.
 VirGL uses `debugoptimized` (`-O2`) with assertions enabled, retaining diagnostics
 without shipping an unoptimized graphics command path.
+QMP `screendump` (PPM; this build has no libpng) captures what the guest shows
+through VirGL: while the console shows a GL scanout, the Cocoa display reads
+the scanout texture back into the console surface in its GL context, on a
+screendump only (`patches/qemu-cocoa-gl-screendump.patch`).
 
 To leave capacity for other host applications during a runtime rebuild, use
 `OMARCHY_RUNTIME_BUILD_JOBS=2 make runtime`. The override bounds Ninja compilation
