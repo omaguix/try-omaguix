@@ -2,6 +2,23 @@
 
 ## Next, in order
 
+### grim hangs on a blanked output: fix it
+
+Asked 2026-10-11: "grim w gościu zawiesza się tylko na wygaszonym ekranie -
+poprawić" (grim in the guest hangs only on a blanked screen; fix it).
+Diagnosis in git history (commit "docs: TODO: grim hangs only on a blanked
+output"): Hyprland 0.56.1 leaves an ext-image-copy-capture frame pending,
+with neither `ready` nor `failed`, while the output's DPMS is off; Omarchy
+blanks 5 s after locking. Fix it in the guest's Hyprland (the package
+variant `hyprland-0.56` in guest/guix/modules/roguix/packages.scm already
+carries a patch) so a capture of a blanked output ends: send `failed`, or
+deliver a frame if Hyprland can render one without waking the screen;
+the worker chooses from Hyprland's source. No timeout in grim or
+elsewhere (Rule 10). Needs a guest build; verify in a test VM that grim
+on a blanked output ends at once (with an error or an image) and that
+captures with the screen on still work. The upstream report stays with
+the maintainer.
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
