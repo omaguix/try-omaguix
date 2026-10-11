@@ -31,14 +31,24 @@ it does was wrong). Plan, decided by the coordinator with the models:
 Asked 2026-10-11 whether a patch already exists (round
 20261011-175259-aa16 and a web search): none found for screendump with a
 GL scanout, upstream, on qemu-devel or downstream (UTM shows screenshots
-from its own renderer). Upstream v11.1.1 has no GL in ui/cocoa.m at all;
-Roguix's Cocoa GL comes from macos/patches/qemu-texture-borrowing-11.1.patch
-and renders through EGL (ANGLE, `qemu_egl_display`). The mechanism to reuse
-is upstream's egl-headless: `egl_scanout_flush` blits the guest's texture
-with `egl_fb_blit` and copies it into the console surface with
-`egl_fb_read` (ui/egl-headless.c, ui/egl-helpers.c), which is what makes
-screendump and VNC work there. Step 1 uses those helpers from the Cocoa GL
-path, on a screendump only rather than on every frame.
+from its own renderer). The mechanism reused is upstream's egl-headless,
+which copies the guest's texture into the console surface with
+`egl_fb_read` (ui/egl-headless.c, ui/egl-helpers.c). Correction: the app's
+`cocoa,gl=on` renders with native macOS OpenGL (CGL, `NSOpenGLContext`);
+EGL on ANGLE is only `gl=es` (macos/README.md, the texture-borrowing
+patch). The coordinator first wrote EGL here and dismissed DeepSeek's CGL
+claim, wrongly; the egl_fb helpers are plain GL and work in either.
+
+Step 1 done 2026-10-11 (commit "macos: QMP screendump reads back the Cocoa
+GL scanout"): screendump asks the display to read the GL scanout back
+(a new optional `dpy_gl_scanout_read`), on a screendump only, and fails
+with an error rather than saving a black image. Verified in a test VM:
+GRUB at 1024x768 and the first-start screen at 2560x1440 come out the
+right way up, at the right size and in the right colours; `make test`
+passes. Only PPM works (the runtime has no libpng). Not checked: a dump
+before the guest switches to GL, the Hyprland desktop, `gl=es`.
+
+Remaining: step 2 (why `grim` hangs in the guest).
 
 ## Proposed
 
