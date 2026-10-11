@@ -2,36 +2,6 @@
 
 ## Next, in order
 
-### grim hangs on a blanked output: fix it
-
-Asked 2026-10-11: "grim w gościu zawiesza się tylko na wygaszonym ekranie -
-poprawić" (grim in the guest hangs only on a blanked screen; fix it).
-Diagnosis in git history (commit "docs: TODO: grim hangs only on a blanked
-output"): Hyprland 0.56.1 leaves an ext-image-copy-capture frame pending,
-with neither `ready` nor `failed`, while the output's DPMS is off; Omarchy
-blanks 5 s after locking. Fix it in the guest's Hyprland (the package
-variant `hyprland-0.56` in guest/guix/modules/roguix/packages.scm already
-carries a patch) so a capture of a blanked output ends: send `failed`, or
-deliver a frame if Hyprland can render one without waking the screen;
-the worker chooses from Hyprland's source. No timeout in grim or
-elsewhere (Rule 10). Needs a guest build; verify in a test VM that grim
-on a blanked output ends at once (with an error or an image) and that
-captures with the screen on still work. The upstream report stays with
-the maintainer.
-
-First round 2026-10-11 (worker commit b73aa943, not merged): a Hyprland
-patch in src/managers/screenshare/ fails a capture of a DPMS-off monitor
-in share() and fails pending frames in onOutputCommit; in a test VM grim
-on a blanked output failed in 11-17 ms (3/3), and 30 races of grim against
-DPMS off all ended (29 in 0.3-2.7 s, one in 13.4 s); make test passes.
-Consult round 20261011-211147-9515 (sol, MiMo, DeepSeek): investigate
-before merging, since the onOutputCommit branch never ran in tests (it
-may never run if the blanking commit precedes the flag), done() must
-include m_failed, the callback may mutate m_pendingFrames during the loop,
-window sessions may have no monitor, and the 13.4 s run is unexplained.
-Sent back for a second round with those points; dismissed: a timeout
-fallback (Rule 10).
-
 ### Agents capture a VM's screen with grim by default
 
 Asked 2026-10-11: "Grim" (prefer grim, since it can include the cursor),
@@ -42,7 +12,14 @@ a region); fall back to QMP `screendump` before login, in the console,
 while locked or blanked, or when the compositor does not answer. Both give
 the guest's pixels before the Mac window's scaling; the window itself
 needs a macOS capture. Text only; after the grim-on-a-blanked-output item,
-which may change the same paragraph.
+which may change the same paragraph. That item is done (commit "guest:
+Hyprland ends a capture of a blanked output", 2026-10-11): grim on a
+blanked output now fails at once ("failed to copy output") instead of
+hanging, and AGENTS.md says so; keep that when rewriting the paragraph.
+Verified in test VMs: 3-5 ms failures with DPMS off; a forced pending
+frame gets exactly one `failed` at the blanking commit; 70 races all end;
+Hyprland answered within 0.8 s in 50 traced runs, and the long runs were
+client-side (PNG encoding, guest stalls under host load).
 
 ### Browsers lack GPU acceleration on ANGLE/Metal: fix it
 
