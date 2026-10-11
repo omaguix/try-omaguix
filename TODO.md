@@ -59,6 +59,22 @@ coordinator with the models:
    desktop, unreleased host code); a newer ANGLE alone (does not change
    virgl's caps by itself, but step 1 may show it is needed).
 
+### Export a reference Roguix system for roguixos/roguix's CI
+
+Requested 2026-10-12 by the guix-x86_64-iso-omguix coordinator, passed on
+by the user, decided by the user (herdr decision d-r4fbcirh): roguixos/
+roguix's CI must build substitutes for every Roguix user, not for one
+MacBook. Export from the Roguix modules a reference operating-system
+(e.g. built with `roguix-operating-system` in
+guest/guix/modules/roguix/system.scm, default packages, placeholder host
+settings, ignoring any first-start settings file) that `guix system build
+-e` can evaluate at the pin in guest/guix/modules/roguix/guix-commit, for
+aarch64-linux and, if the same definition fits, x86_64-linux; no nonguix,
+nothing machine-specific. Then reply to that coordinator with the module
+and variable name, and whether x86_64 needs a separate variant, once it is
+on public main. roguixos/roguix will build that closure minus what
+bordeaux serves, replacing manifests/x86_64-desktop.scm's hand list.
+
 ## Proposed
 
 ### Let agents click in a VM and see the result: evaluate hypruse first
