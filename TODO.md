@@ -56,6 +56,57 @@ and variable name, and whether x86_64 needs a separate variant, once it is
 on public main. roguixos/roguix will build that closure minus what
 bordeaux serves, replacing manifests/x86_64-desktop.scm's hand list.
 
+### One trust record for Roguix's substitutes and channel (R10)
+
+Requested 2026-10-12 by the roguix-vps coordinator, approved by the
+owner (review of the Roguix repositories, consult round
+20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
+d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
+upgrade path.
+Put the substitute URL (stays roguix.frolow.dev) and its public keys, and
+the channel URL, introduction and signer, in one exported record instead
+of the constants in guest/guix/modules/roguix/system.scm:84 and
+omarchy.scm:322. The channel moves to the roguixos GitHub org together
+with try-roguix (the transfer is the owner's step), so its URL changes in
+that record. Add a second, offline recovery key to roguix-channel's
+.guix-authorizations (the owner creates and keeps the key; the worker
+prepares the change and the steps). Plan keeping the publish signing key
+off the serving host (a written plan, no host change here).
+
+### Docs: who builds, and a checked-in aarch64 builder (R5, R8)
+
+Requested 2026-10-12 by the roguix-vps coordinator, approved by the
+owner (review of the Roguix repositories, consult round
+20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
+d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
+upgrade path.
+Decision 0002 (docs/decisions/0002-roguix-substitute-server.md) is stale
+on who builds the substitutes: update or supersede it. Check in the
+aarch64 builder VM's definition so it can be recreated.
+
+### One release step: signed commit, CI builds, manifest (R7, R3)
+
+Requested 2026-10-12 by the roguix-vps coordinator, approved by the
+owner (review of the Roguix repositories, consult round
+20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
+d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
+upgrade path.
+Publish together the signed channel commit, the CI builds made from that
+commit and a release manifest, as one step; share one closure-split script
+with roguixos/roguix instead of two copies.
+
+### Upgrade existing VMs across Guix pin bumps
+
+Requested 2026-10-12 by the roguix-vps coordinator, approved by the
+owner (review of the Roguix repositories, consult round
+20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
+d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
+upgrade path.
+roguix-update (guest/guix/modules/roguix/omarchy.scm:483) tells users to
+reset the VM when a release needs a newer Guix. Existing VMs should move to
+the new pin keeping their settings and data, with a rollback. New users
+are Try Roguix Mac app users for now; bare metal is not pursued.
+
 ## Proposed
 
 ### Let agents click in a VM and see the result: evaluate hypruse first
