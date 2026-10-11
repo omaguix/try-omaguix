@@ -542,9 +542,11 @@ Roguix**, so an unattended check must not leave it waiting: start the VM in
 a way that needs no click, or say that the in-app step stayed unchecked.
 
 A test VM that opens a window is announced before it starts, in the agent's
-pane and in its report to whoever coordinates it: a window titled "Try
-Roguix" will open and take the keyboard focus, and it must stay open until
-the check ends, since closing it breaks the check.
+pane and in its report to whoever coordinates it: a window will open and
+take the keyboard focus, and it must stay open until the check ends, since
+closing it breaks the check. The VM window of a test run (`make
+run-isolated`, `--ephemeral`) is titled "Try Roguix (test)", the user's own
+VM "Try Roguix"; the start menu before it is titled "Try Roguix" in both.
 
 A script that types text into a test VM through QMP `send-key` checks what
 actually reached the field: under host load key releases arrive late and the

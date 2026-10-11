@@ -136,7 +136,9 @@ can opt into identity-keyed parallel disks by setting
 `OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1` (`make run-isolated`). Each
 persistent disk keeps the identity of the factory that created it and boots
 through the runtime's UEFI firmware from its own GRUB and Guix System
-generations. App updates reuse the disk; the current bundled factory is
+generations. The VM window of an ephemeral or identity-keyed run is titled
+"Try Roguix (test)", so a test VM is not mistaken for the user's own. App
+updates reuse the disk; the current bundled factory is
 selected only for a new, reset, or ephemeral VM, so an existing VM launches
 without first preparing the new factory disk.
 

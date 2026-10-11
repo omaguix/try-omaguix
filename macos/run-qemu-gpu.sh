@@ -65,7 +65,12 @@ guest_dir=$(cd "$guest_input" && pwd -P)
 # The Roguix guest (guest/guix/package.py) is a UEFI/GPT disk booted by the
 # runtime's EDK2 firmware.
 uefi_boot_abi=uefi-gpt-v1
+# A disposable VM (--ephemeral) or a development build's own VM
+# (make run-isolated) is a test run: its window must not pass for the user's.
 qemu_window_name='Try Roguix'
+if [[ $storage_mode == ephemeral || ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 1 ]]; then
+  qemu_window_name='Try Roguix (test)'
+fi
 uefi_firmware="$resources_dir/runtime/share/qemu/edk2-aarch64-code.fd"
 
 for command in codesign file getconf id mktemp plutil ps sysctl; do

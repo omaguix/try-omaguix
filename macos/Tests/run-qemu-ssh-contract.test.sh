@@ -476,6 +476,7 @@ run_scenario() {
   : >"$scenario_dir/storage.log"
   if env \
     -u OMARCHY_QEMU_GPU_CPUS -u OMARCHY_QEMU_GPU_MEMORY_MIB \
+    -u OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK \
     PATH="$shim_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
     FAKE_STORAGE_LOG="$scenario_dir/storage.log" \
     FAKE_PERSISTENT_ROOT="$persistent_root" \
@@ -830,6 +831,10 @@ assert_contains "$(<"$test_root/ephemeral/qemu.log")" tryomarchy.ssh_access=1
 assert_keyboard_lockstep "$test_root/ephemeral/qemu.log" iso
 assert_contains "$(<"$test_root/ephemeral/storage.log")" 'select ephemeral'
 assert_line_pair "$test_root/ephemeral/qemu.log" -bios "$firmware"
+# A test run's window is told apart from the user's VM by its title.
+assert_line_pair "$test_root/ephemeral/qemu.log" -name 'Try Roguix (test)'
+run_scenario isolated 0 '' OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1
+assert_line_pair "$test_root/isolated/qemu.log" -name 'Try Roguix (test)'
 
 run_scenario malformed 1 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:02222:22
 [[ ! -s $test_root/malformed/storage.log ]] || fail 'malformed mapping touched storage'
