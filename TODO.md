@@ -20,6 +20,10 @@ theme template use options it supports; the suspect is the account's
 visible VM window. Lesson for AGENTS.md: a check of the maintainer's VM
 needs a capture that works with gl=on before any key is sent.
 
+The maintainer's error 2026-10-11: `... current/theme/foot.ini - no such
+file or directory` (~/.local/state/omarchy/current/theme/foot.ini is
+missing). Handed to the foot worker to find the step that should create it.
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
