@@ -29,6 +29,15 @@ store theme read-only, so the next theme change nested the new theme inside
 the old one; make test passes. Unbuilt: verify in the VM with the next guest
 build (choosing a theme once repairs an affected account).
 
+### Screenshots of a VM with VirGL come out empty
+
+Asked 2026-10-11: "Zrzutów ekranu nie ma (przy VirGL wychodzą puste) - do
+todo naprawić. pytaj modeli" (no screenshots: with VirGL they come out
+empty; fix it). Agents checking a VM (test VMs and, where an item allows,
+the maintainer's) need a capture of what the guest shows: QMP `screendump`
+is black with the `cocoa,gl=on` display, `grim` in the guest hangs, and
+macOS `screencapture` of the full-screen VM window in another Space fails.
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
