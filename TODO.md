@@ -71,14 +71,11 @@ the QMP screendump (step 1) bypasses the guest's DPMS and lock entirely;
 grim needs DPMS enabled and `dpmsStatus: 1` in `hyprctl monitors` first,
 and shows the lock screen while locked.
 
-Remaining (follow-ups of this item, decided by the coordinator with the
-models):
-- A short note in AGENTS.md (Roguix section, "Visual verification"): to
-  capture a test VM use QMP `screendump` (PPM); in-guest grim only after
-  enabling DPMS and seeing `dpmsStatus: 1`.
-- Report the pending capture to Hyprland as a Discussion (versions, the
-  protocol trace, the two-command reproduction), worded as a liveness
-  problem, not a protocol violation.
+Done 2026-10-11: AGENTS.md says how to capture a test VM's screen (commit
+"AGENTS.md: how to capture a test VM's screen"). The Hyprland report moved
+to "Needs a decision": Hyprland's discussion form requires the reporter to
+confirm they wrote it with their own hands and words, not with AI, so an
+agent cannot post it.
 
 ## Proposed
 
@@ -265,6 +262,19 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### Report grim's pending capture on a blanked output to Hyprland
+
+Will you post the report to Hyprland yourself?
+Options: Post it yourself in your own words (the coordinator keeps the facts ready) | Do not report it
+Checked 2026-10-11: Hyprland takes bugs only as GitHub Discussions
+("Bugs - Other"), whose form requires confirming the report was written by
+hand, in the reporter's own words, without AI; no existing discussion or
+issue found. Facts for it: Hyprland 0.56.1 (5c9377c), grim 1.5, ARM64 VM
+with virtio-gpu/VirGL; after `hyprctl dispatch 'hl.dsp.dpms({ action =
+"disable" })'` the first grim succeeds and the next waits after
+`capture()`, `damage`, `transform` with no `ready` or `failed` until DPMS
+is enabled; the spec sets no deadline, so it is a liveness question.
 
 ### Background: rebase onto Try Omarchy 0.5 (2026-10-10)
 
