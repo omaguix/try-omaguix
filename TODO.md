@@ -89,7 +89,38 @@ throwaway test VM from the host through ssh: screenshot, click a known
 target, type into foot, wait for a window. Report whether to package it in
 the guest or write our own with the tools above; no guest change yet.
 
+Researched 2026-10-11 at the user's request ("Primeagen was hired by
+Omarchy for QA; research it with the models"), round 20261011-203239-c145:
+ThePrimeagen joined Omarchy Core on 2026-09-26 to lead "Agentic QA" with
+Oligarchy, his harness that boots Omarchy in QEMU from a fresh disk per
+test, where agents send keys, move and click the mouse and take
+screenshots, exposed per job as HTTP tool calls ("qemu-http-tools"); its
+repository now returns 404, so its code cannot be read. Upstream's own
+acceptance harness (omacom/omarchy-iso bin/omarchy-iso-test,
+omacom/omarchy test/acceptance.d/base-test.sh) uses plain virtio-vga, QMP
+screendump with tesseract OCR and QMP send-key before login, then over SSH
+grim, tesseract and `hyprctl -j` window and layer checks, with polling
+waits and per-step success/failure PNGs. Decided by the coordinator with
+the models: keep hypruse first as a bounded evaluation (sol, MiMo;
+DeepSeek ranked it last); copy upstream's evidence discipline (a PNG per
+step, `hyprctl -j` state checks, a capture failure reported apart from
+missing text) and QMP keys for global keybindings, which in-guest wtype
+does not prove; do not copy fixed polling or a non-GL display (it would
+test another graphics path). Dismissed: MiMo's and DeepSeek's claim that
+screendump is black under VirGL (the brief omitted our readback patch).
+Running upstream's acceptance suite on Roguix is a separate proposal.
+
 ## Proposed
+
+### Run Omarchy's acceptance suite on Roguix
+
+Proposed 2026-10-11 (from the hypruse item's research): run upstream's
+test/acceptance suite (omacom/omarchy, test/acceptance.d) in a Roguix test
+VM over SSH, with an adapter where Roguix differs (Guix paths, packages,
+services) and waits on positive conditions instead of its 1 s polling,
+as a regression oracle for what Roguix promises to share with Omarchy.
+Cost: a worker day or two; needs tesseract in the test VM (a guest
+package or a test-only image); no product change.
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
 
