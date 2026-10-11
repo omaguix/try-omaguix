@@ -327,6 +327,19 @@ fence poll (it would not: the desktop stays on VirGL). Dismissed: MiMo's
 starts Venus with the render server, so it runs in a worker; OmacVM's
 note reflects its setup).
 
+Asked again 2026-10-11 ("why don't we use KosmicKrisp? ask the models"),
+round 20261011-190341-d959 (sol, MiMo, DeepSeek): all three keep "not
+now". For this product (Hyprland on GLES, terminal, browsers) Venus with
+KosmicKrisp gives no visible gain: it adds Vulkan for guest apps only, the
+desktop through Zink measured slower than VirGL (558 against 592), there
+is no Vulkan Video, and macOS 15 still needs MoltenVK or VirGL. It does not
+touch the black screendump either: that is QEMU's Cocoa GL scanout never
+filling the console surface, whichever guest driver renders. sol and MiMo:
+reconsider on working integration (KosmicKrisp allocations through
+virglrenderer, the guest alignment fix, which may be one backported
+commit), not on a release date alone; the recheck item already checks
+those.
+
 ### Background: gliff
 
 Decided 2026-10-10: adopt nothing before upstream ships a macOS client; record only.
