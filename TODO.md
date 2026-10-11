@@ -69,7 +69,12 @@ coordinator with the models:
    desktop, unreleased host code); a newer ANGLE alone (does not change
    virgl's caps by itself, but step 1 may show it is needed).
 
+## Proposed
+
 ### Let agents click in a VM and see the result: evaluate hypruse first
+
+Deferred by the user 2026-10-11: "the rest later" (the coordinator
+and the supervisor come first).
 
 Asked 2026-10-11: "how can an agent click and watch what shows? ask the
 models"; decided by the user 2026-10-11: "evaluate hypruse first". Consult
@@ -112,6 +117,9 @@ Running upstream's acceptance suite on Roguix is a separate proposal.
 
 ### Run Omarchy's acceptance suite on Roguix
 
+Deferred by the user 2026-10-11: "the rest later" (the coordinator
+and the supervisor come first).
+
 Decided by the user 2026-10-11: "yes, after hypruse". Proposed
 2026-10-11 (from the hypruse item's research): run upstream's
 test/acceptance suite (omacom/omarchy, test/acceptance.d) in a Roguix test
@@ -120,8 +128,6 @@ services) and waits on positive conditions instead of its 1 s polling,
 as a regression oracle for what Roguix promises to share with Omarchy.
 Cost: a worker day or two; needs tesseract in the test VM (a guest
 package or a test-only image); no product change.
-
-## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
 
