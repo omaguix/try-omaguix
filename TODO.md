@@ -73,6 +73,14 @@ that record. Add a second, offline recovery key to roguix-channel's
 prepares the change and the steps). Plan keeping the publish signing key
 off the serving host (a written plan, no host change here).
 
+Addendum 2026-10-12 from the roguix-vps coordinator (consult round
+20261012-014618-192f): once the repositories are in the roguixos org, put
+github.com/roguixos/... URLs in the exported record the same week, not
+relying on GitHub's redirects; the channel's signed introduction stays
+unchanged. Transfer status 2026-10-12: started for roguix-channel in
+GitHub's web UI, waiting on the owner's passkey confirmation; try-roguix
+follows.
+
 ### Docs: who builds, and a checked-in aarch64 builder (R5, R8)
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
