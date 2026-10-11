@@ -30,6 +30,33 @@ GLES 3 context (`EGL_BAD_ATTRIBUTE`) and fell back to software; Try
 Omarchy switched the launcher to native Apple OpenGL (`cocoa,gl=on`,
 commit 67e06cd5, v0.5.0), which Apple has deprecated.
 
+The user added 2026-10-11: "Najlepiej Apple Metal" (best on Apple
+Metal): the target is the Metal path, not deprecated Apple OpenGL.
+
+Consult round 20261011-195233-5143 (sol, MiMo, DeepSeek): the guest's GL
+version comes from virglrenderer's capset and Mesa's virgl driver, not the
+host's GLES version; GLES 3.0 on the host is enough for GLES 3.0 in the
+guest (what WebGL 2 and Chromium's default need) only if virglrenderer's
+GLES-host path reports the right caps. Desktop GL 2.1 alone does not show
+the guest's GLES ceiling, and `EGL_BAD_ATTRIBUTE` may come from the
+attributes Chromium asks for rather than the version. Plan, decided by the
+coordinator with the models:
+1. Evidence first, same guest image on `gl=on` and `gl=es`: guest
+   `glxinfo -B`, `eglinfo`, GLES version and extensions; the decoded virgl
+   capset (glsl level, capset version) from the patched QEMU; ANGLE's
+   GLES version and extension list on the host; `chrome://gpu` and the
+   failing `eglCreateContext` attributes. Also run stock virglrenderer
+   1.3.0 on ANGLE (MiMo: the startergo patches may break cap translation).
+2. Fix the first missing capability behind guest GLES 3.0 on the ANGLE
+   path in virglrenderer (a patch under macos/patches/), or in ANGLE if
+   its Metal backend lacks it; no per-browser flags and no faked caps.
+   Accept when an unflagged Chromium and Firefox report GPU compositing,
+   raster and WebGL 2 on `gl=es`; then the launcher default moves to
+   Metal, with `gl=on` kept only until that passes.
+3. Not chosen: browser flags; Venus with Zink (KosmicKrisp round: slower
+   desktop, unreleased host code); a newer ANGLE alone (does not change
+   virgl's caps by itself, but step 1 may show it is needed).
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
