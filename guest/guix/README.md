@@ -512,6 +512,16 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   `test_omarchy_theme_bg.py` compares it with upstream. Remove the patch
   once the pinned Omarchy includes it (proposed in omacom/omarchy#14865).
 
+- **Theme changes:** `omarchy-theme-set` copies the official theme with
+  `cp -r`, which keeps the read-only modes of Guix's store, so the next
+  theme change could not remove `~/.local/state/omarchy/current/theme` and
+  moved the new theme inside it: the theme's generated configs were
+  missing, and foot reported that `current/theme/foot.ini` does not exist.
+  `omarchy-theme-set-store-modes.patch` makes the staged copy the owner's
+  and the current theme removable, so choosing a theme once repairs an
+  account that hit this (`test_omarchy_theme_set.py`). Remove it once
+  Omarchy stages the theme without the source's modes.
+
 - **Power profiles:** the VM has no Linux power profile driver
   (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try
   Omarchy's, makes the power menu and panel show one profile, managed by

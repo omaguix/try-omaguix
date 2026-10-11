@@ -81,13 +81,17 @@
               ;; pactl, which a Chinese or Korean session translates, so
               ;; they read it in the C locale until Omarchy does. The
               ;; background's name is title-cased as UTF-8, not as bytes.
-              ;; All but the power profile patch differ from Try Omarchy:
-              ;; guest/guix/README.md, "Differences from Try Omarchy".
+              ;; A theme change stages the store's theme as the owner's, so
+              ;; it can replace the current theme (a Guix-only problem).
+              ;; All but the power profile and theme staging patches differ
+              ;; from Try Omarchy: guest/guix/README.md, "Differences from
+              ;; Try Omarchy".
               (patches
                (list (local-file "omarchy-global-shortcuts.patch")
                      (local-file "omarchy-macos-power-profile.patch")
                      (local-file "omarchy-audio-c-locale.patch")
-                     (local-file "omarchy-theme-bg-utf8.patch")))))
+                     (local-file "omarchy-theme-bg-utf8.patch")
+                     (local-file "omarchy-theme-set-store-modes.patch")))))
     (build-system copy-build-system)
     (arguments
      (list

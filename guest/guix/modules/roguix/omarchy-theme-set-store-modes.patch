@@ -1,0 +1,30 @@
+omarchy-theme-set copies the official theme with `cp -r`, which keeps the
+source's modes. On Arch those files are writable; on Guix they come from
+the read-only store, so the staged theme's backgrounds/ directory was
+read-only. The next theme change then could not remove the current theme:
+`rm -rf` failed inside backgrounds/, and `mv` moved the new theme into the
+old directory instead of replacing it. current/theme was left without
+foot.ini and the other generated configs, and foot reported
+"current/theme/foot.ini: no such file or directory". Make the staged copy
+the owner's, and make a current theme staged before this fix removable,
+so the next theme change repairs it (test_omarchy_theme_set.py). Roguix
+only: remove once Omarchy stages the theme without the source's modes.
+
+--- a/bin/omarchy-theme-set
++++ b/bin/omarchy-theme-set
+@@ -267,6 +267,7 @@
+ 
+ # Copy official theme first, then overlay the user's theme on top
+ cp -r "$OMARCHY_THEMES_PATH/$THEME_NAME/"* "$NEXT_THEME_PATH/" 2>/dev/null
++chmod -R u+w "$NEXT_THEME_PATH"
+ 
+ if theme_came_from_a_repo "$USER_THEMES_PATH/$THEME_NAME"; then
+   stage_installed_theme "$USER_THEMES_PATH/$THEME_NAME"
+@@ -289,6 +290,7 @@
+ fi
+ 
+ # Swap next theme in as current
++chmod -R u+w "$CURRENT_THEME_PATH" 2>/dev/null
+ rm -rf "$CURRENT_THEME_PATH"
+ mv "$NEXT_THEME_PATH" "$CURRENT_THEME_PATH"
+ 
