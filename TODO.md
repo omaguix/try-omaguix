@@ -10,6 +10,16 @@ keys and screenshots through its QMP socket, no restart), find the cause in
 the guest configuration, and fix it in guest/guix/; a fix needs a guest
 build.
 
+2026-10-11 worker attempt: blocked without seeing the error. QMP
+`screendump` is black with the VM's `gl=on` display, and `screencapture`
+of the full-screen VM window in another Space fails, so keys went in blind
+(Super+Return, Print, Return, Escape and one shell line piped to wl-copy).
+Statically: Guix 7e74121a has foot 1.28.0; Omarchy c668141e's foot.ini and
+theme template use options it supports; the suspect is the account's
+~/.local/state/omarchy/current/theme/foot.ini. Needs the error text or a
+visible VM window. Lesson for AGENTS.md: a check of the maintainer's VM
+needs a capture that works with gl=on before any key is sent.
+
 ## Proposed
 
 ### Offer Try Omarchy the battery disconnect fix as a PR
