@@ -190,8 +190,8 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 
 ### Report grim's pending capture on a blanked output to Hyprland
 
-Will you post the report to Hyprland yourself?
-Options: Post it yourself in your own words (the coordinator keeps the facts ready) | Do not report it
+Decided by the user 2026-10-11: "I will report it myself" (the maintainer
+posts it in his own words; nothing for agents to do).
 Checked 2026-10-11: Hyprland takes bugs only as GitHub Discussions
 ("Bugs - Other"), whose form requires confirming the report was written by
 hand, in the reporter's own words, without AI; no existing discussion or
