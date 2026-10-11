@@ -48,7 +48,37 @@ right way up, at the right size and in the right colours; `make test`
 passes. Only PPM works (the runtime has no libpng). Not checked: a dump
 before the guest switches to GL, the Hyprland desktop, `gl=es`.
 
-Remaining: step 2 (why `grim` hangs in the guest).
+Step 2 diagnosed 2026-10-11 (worker in a test VM, Hyprland 0.56.1, grim
+1.5): grim hangs only while the output is blanked. grim uses
+ext-image-copy-capture with an shm buffer; with DPMS on it gets `ready` in
+10-160 ms, also with the VM window hidden or the session locked. After
+`hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })'` the first grim
+still gets a frame and every later one gets `damage` and `transform` but
+neither `ready` nor `failed`, blocking in ppoll until DPMS is enabled
+again, when it exits 0. Omarchy blanks the screen 5 s after locking
+(`idleBlankTimer` in shell/plugins/lock/Service.qml), which is how the
+earlier hang happened. grim and the QMP screendump of the same frame match
+(1920x1080). Nothing to fix in guest/guix/; not caused by VirGL.
+
+Consult round 20261011-194111-3dce (sol, MiMo, DeepSeek): the protocol
+sets no deadline for `ready`/`failed`, so this is not a proven protocol
+violation; sol and MiMo would report it to Hyprland as a capture liveness
+problem (the first capture succeeds, so Hyprland captures only in its
+render pass), DeepSeek expects maintainers may call it expected. Hyprland
+takes reports only as GitHub Discussions; a search found no existing one.
+Dismissed: wrapping grim in a timeout or retry loop (Rule 10). For agents,
+the QMP screendump (step 1) bypasses the guest's DPMS and lock entirely;
+grim needs DPMS enabled and `dpmsStatus: 1` in `hyprctl monitors` first,
+and shows the lock screen while locked.
+
+Remaining (follow-ups of this item, decided by the coordinator with the
+models):
+- A short note in AGENTS.md (Roguix section, "Visual verification"): to
+  capture a test VM use QMP `screendump` (PPM); in-guest grim only after
+  enabling DPMS and seeing `dpmsStatus: 1`.
+- Report the pending capture to Hyprland as a Discussion (versions, the
+  protocol trace, the two-command reproduction), worded as a liveness
+  problem, not a protocol violation.
 
 ## Proposed
 
