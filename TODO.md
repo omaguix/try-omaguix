@@ -2,6 +2,14 @@
 
 ## Next, in order
 
+### foot reports an error about foot.ini in the VM
+
+Asked 2026-10-11: "open foot in the VM and look at the error about
+foot.ini". Reproduce in the maintainer's running VM (allowed for this item:
+keys and screenshots through its QMP socket, no restart), find the cause in
+the guest configuration, and fix it in guest/guix/; a fix needs a guest
+build.
+
 ## Proposed
 
 ### Offer Try Omarchy the battery disconnect fix as a PR
