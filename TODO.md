@@ -110,17 +110,18 @@ test another graphics path). Dismissed: MiMo's and DeepSeek's claim that
 screendump is black under VirGL (the brief omitted our readback patch).
 Running upstream's acceptance suite on Roguix is a separate proposal.
 
-## Proposed
-
 ### Run Omarchy's acceptance suite on Roguix
 
-Proposed 2026-10-11 (from the hypruse item's research): run upstream's
+Decided by the user 2026-10-11: "yes, after hypruse". Proposed
+2026-10-11 (from the hypruse item's research): run upstream's
 test/acceptance suite (omacom/omarchy, test/acceptance.d) in a Roguix test
 VM over SSH, with an adapter where Roguix differs (Guix paths, packages,
 services) and waits on positive conditions instead of its 1 s polling,
 as a regression oracle for what Roguix promises to share with Omarchy.
 Cost: a worker day or two; needs tesseract in the test VM (a guest
 package or a test-only image); no product change.
+
+## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
 
