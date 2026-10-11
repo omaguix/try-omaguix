@@ -19,6 +19,17 @@ on a blanked output ends at once (with an error or an image) and that
 captures with the screen on still work. The upstream report stays with
 the maintainer.
 
+### Browsers lack GPU acceleration on ANGLE/Metal: fix it
+
+Asked 2026-10-11: "Na ANGLE/Metal przeglądarki nie miały akceleracji -
+napraw. Pytaj modeli" (on ANGLE/Metal browsers had no acceleration; fix
+it; ask the models). Background in docs/performance.md ("Default browser
+acceleration fix"): with `cocoa,gl=es` (ANGLE on Metal) VirGL gave the
+guest only desktop OpenGL 2.1, so Chromium could not create its ANGLE
+GLES 3 context (`EGL_BAD_ATTRIBUTE`) and fell back to software; Try
+Omarchy switched the launcher to native Apple OpenGL (`cocoa,gl=on`,
+commit 67e06cd5, v0.5.0), which Apple has deprecated.
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
