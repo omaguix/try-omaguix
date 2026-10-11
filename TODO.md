@@ -55,6 +55,18 @@ it does was wrong). Plan, decided by the coordinator with the models:
    Screen Recording grant, fragile across full-screen Spaces) and switching
    test VMs to a non-GL GPU (would test a different graphics path).
 
+Asked 2026-10-11 whether a patch already exists (round
+20261011-175259-aa16 and a web search): none found for screendump with a
+GL scanout, upstream, on qemu-devel or downstream (UTM shows screenshots
+from its own renderer). Upstream v11.1.1 has no GL in ui/cocoa.m at all;
+Roguix's Cocoa GL comes from macos/patches/qemu-texture-borrowing-11.1.patch
+and renders through EGL (ANGLE, `qemu_egl_display`). The mechanism to reuse
+is upstream's egl-headless: `egl_scanout_flush` blits the guest's texture
+with `egl_fb_blit` and copies it into the console surface with
+`egl_fb_read` (ui/egl-headless.c, ui/egl-helpers.c), which is what makes
+screendump and VNC work there. Step 1 uses those helpers from the Cocoa GL
+path, on a screendump only rather than on every frame.
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
