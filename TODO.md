@@ -31,26 +31,6 @@ the guest's pixels before the Mac window's scaling; the window itself
 needs a macOS capture. Text only; after the grim-on-a-blanked-output item,
 which may change the same paragraph.
 
-### Let agents click in a VM and see the result: evaluate hypruse first
-
-Asked 2026-10-11: "how can an agent click and watch what shows? ask the
-models"; decided by the user 2026-10-11: "evaluate hypruse first". Consult
-round 20261011-202749-4e02 (sol, MiMo, DeepSeek): give agents a small MCP
-server with screenshot (`grim -c`, PNG), click(x, y), type, key and a wait
-on a positive signal (Hyprland's socket2 events, e.g. `openwindow`,
-`activewindow`), reached as an stdio MCP over `ssh` into the guest; type
-long text through the clipboard (`wl-copy`, Ctrl+V); name the coordinate
-space in every call and calibrate it (screenshot pixels, Hyprland logical
-coordinates with scale, the tablet's 0..32767); QMP `input-send-event`
-with explicit key down/up as the host-side fallback (fixes `send-key`'s
-repeats); browser pages through DevTools rather than pixels.
-Step 1: a worker reads hypruse's source (https://pypi.org/project/hypruse/)
-for what it runs, its dependencies (ydotool needs uinput and a daemon,
-wlrctl the virtual-pointer protocol) and its license, and tries it in a
-throwaway test VM from the host through ssh: screenshot, click a known
-target, type into foot, wait for a window. Report whether to package it in
-the guest or write our own with the tools above; no guest change yet.
-
 ### Browsers lack GPU acceleration on ANGLE/Metal: fix it
 
 Asked 2026-10-11: "Na ANGLE/Metal przeglądarki nie miały akceleracji -
@@ -88,6 +68,26 @@ coordinator with the models:
 3. Not chosen: browser flags; Venus with Zink (KosmicKrisp round: slower
    desktop, unreleased host code); a newer ANGLE alone (does not change
    virgl's caps by itself, but step 1 may show it is needed).
+
+### Let agents click in a VM and see the result: evaluate hypruse first
+
+Asked 2026-10-11: "how can an agent click and watch what shows? ask the
+models"; decided by the user 2026-10-11: "evaluate hypruse first". Consult
+round 20261011-202749-4e02 (sol, MiMo, DeepSeek): give agents a small MCP
+server with screenshot (`grim -c`, PNG), click(x, y), type, key and a wait
+on a positive signal (Hyprland's socket2 events, e.g. `openwindow`,
+`activewindow`), reached as an stdio MCP over `ssh` into the guest; type
+long text through the clipboard (`wl-copy`, Ctrl+V); name the coordinate
+space in every call and calibrate it (screenshot pixels, Hyprland logical
+coordinates with scale, the tablet's 0..32767); QMP `input-send-event`
+with explicit key down/up as the host-side fallback (fixes `send-key`'s
+repeats); browser pages through DevTools rather than pixels.
+Step 1: a worker reads hypruse's source (https://pypi.org/project/hypruse/)
+for what it runs, its dependencies (ydotool needs uinput and a daemon,
+wlrctl the virtual-pointer protocol) and its license, and tries it in a
+throwaway test VM from the host through ssh: screenshot, click a known
+target, type into foot, wait for a window. Report whether to package it in
+the guest or write our own with the tools above; no guest change yet.
 
 ## Proposed
 
