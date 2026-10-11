@@ -552,13 +552,19 @@ A script that types text into a test VM through QMP `send-key` checks what
 actually reached the field: under host load key releases arrive late and the
 guest repeats characters. It never adds a sleep between keys.
 
-To capture what a test VM shows, use QMP `screendump` (PPM only: the runtime
-has no libpng); it works with `cocoa,gl=on` and does not depend on the
-guest's DPMS or lock. In-guest `grim` fails at once ("failed to
-copy output") while the output is blanked (Omarchy blanks it 5 s after
-locking): enable DPMS, wait for `dpmsStatus: 1` in `hyprctl monitors`, and
-expect a black frame until the wake-up fade ends and the lock screen while
-the session is locked. Never wrap it in a timeout or retry.
+To capture what a test VM shows with a logged-in session and the screen on,
+run `grim -c` over SSH in the session's environment (`WAYLAND_DISPLAY`,
+`XDG_RUNTIME_DIR`): a PNG with the cursor, `-o` for one output, `-g` for a
+region. Before login, in the console, while the session is locked or the
+output blanked, or when the compositor does not answer, use QMP `screendump`
+(PPM only: the runtime has no libpng; no cursor); it works with `cocoa,gl=on`
+and does not depend on the guest's DPMS or lock. `grim` fails at once
+("failed to copy output") while the output is blanked (Omarchy blanks it 5 s
+after locking): enable DPMS, wait for `dpmsStatus: 1` in `hyprctl monitors`,
+and expect a black frame until the wake-up fade ends and the lock screen while
+the session is locked. Never wrap either in a timeout or retry. Both give the
+guest's pixels before the Mac window's scaling; the window itself needs a
+macOS capture.
 
 ## Delegated Work and Added Delays
 
