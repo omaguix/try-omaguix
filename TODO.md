@@ -2,17 +2,6 @@
 
 ## Next, in order
 
-### Give a test VM window its own title
-
-Found 2026-10-11 while announcing test VM windows (AGENTS.md, "Building and
-Running in a Worktree"): the window title is hard-coded
-(`qemu_window_name='Try Roguix'` in `macos/run-qemu-gpu.sh`), so a worker's
-throwaway VM looks like the maintainer's own app. Let `make run-isolated`
-(or the isolated state root) set a distinct title, e.g. "Try Roguix (test)".
-Code change in the launcher script and its tests; no guest build.
-Decided by the user 2026-10-11: do it.
-
-
 ### foot reports an error about foot.ini in the VM
 
 Asked 2026-10-11: "open foot in the VM and look at the error about
