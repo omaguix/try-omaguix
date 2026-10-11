@@ -10,6 +10,7 @@
 ;;; version changes.
 (define-module (roguix ttfx)
   #:use-module (guix packages)
+  #:use-module (guix gexp)
   #:use-module (guix git-download)
   #:use-module (guix build-system cargo)
   #:use-module ((guix licenses) #:prefix license:)
@@ -30,7 +31,25 @@
                (base32
                 "16ba0c5297ii2y673slqwhyaiqhlw0hdvxn18piymdkkiz593rb5"))))
     (build-system cargo-build-system)
-    (arguments (list #:install-source? #f))
+    (arguments
+     (list
+      #:install-source? #f
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-after 'unpack 'relax-easing-goldens-test
+            ;; The test expects glibc's libm to match the CPython goldens
+            ;; bit for bit, but glibc picks sin, pow and others by CPU
+            ;; (FMA/AVX2 variants or plain SSE2), so a Core 2 Duo differs
+            ;; from the goldens' machine by 1 ulp (sin) and, through the
+            ;; bezier's Newton steps, 17 ulp (2.4e-16); CPython on the same
+            ;; CPU gives the same bits as ttfx. Use the test's own 1e-15
+            ;; absolute bound of other platforms on Linux too: absolute,
+            ;; since an ulp bound breaks down near the zero crossings of
+            ;; the elastic and back easings.
+            (lambda _
+              (substitute* "tests/easing_goldens.rs"
+                (("if cfg!\\(all\\(target_os = \"linux\", target_env = \"gnu\"\\)\\)")
+                 "if false")))))))
     (inputs (cargo-inputs 'ttfx #:module '(roguix ttfx)))
     (home-page "https://github.com/omacom/ttfx")
     (synopsis "Terminal text effects, a Rust port of terminaltexteffects")
