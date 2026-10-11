@@ -238,6 +238,10 @@ builder starts from the command kept next to its disk, then needs a root
 login and the 9p mounts (guest/guix/README.md).
 Decided by the user 2026-10-11: free disk space and build (the worker
 builds from branch todo-lowbat and checks in a VM).
+Space freed 2026-10-11 (tool caches and files the user chose): 58 GiB
+free; the worker builds now and exports only with at least 20 GiB free.
+Clearing the Firefox cache (2.2 GiB) was blocked by the auto-mode
+classifier.
 2026-10-11: still blocked on disk space. Deleting the project's throwaway
 VM state roots and the archlinux Docker image freed ~25 MB (44 GiB free);
 clearing regenerable developer caches (uv, go-build, Homebrew, zig, ccache,
