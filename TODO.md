@@ -19,6 +19,18 @@ on a blanked output ends at once (with an error or an image) and that
 captures with the screen on still work. The upstream report stays with
 the maintainer.
 
+### Agents capture a VM's screen with grim by default
+
+Asked 2026-10-11: "Grim" (prefer grim, since it can include the cursor),
+after the comparison in consult round 20261011-195457-c8f5. Change the
+capture paragraph in AGENTS.md: with a logged-in session and the screen
+on, capture with `grim -c` over SSH (cursor included, PNG, one output or
+a region); fall back to QMP `screendump` before login, in the console,
+while locked or blanked, or when the compositor does not answer. Both give
+the guest's pixels before the Mac window's scaling; the window itself
+needs a macOS capture. Text only; after the grim-on-a-blanked-output item,
+which may change the same paragraph.
+
 ### Browsers lack GPU acceleration on ANGLE/Metal: fix it
 
 Asked 2026-10-11: "Na ANGLE/Metal przeglądarki nie miały akceleracji -
