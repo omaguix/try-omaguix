@@ -23,6 +23,11 @@ needs a capture that works with gl=on before any key is sent.
 The maintainer's error 2026-10-11: `... current/theme/foot.ini - no such
 file or directory` (~/.local/state/omarchy/current/theme/foot.ini is
 missing). Handed to the foot worker to find the step that should create it.
+Fixed 2026-10-11 in the commit after this one ("guest: a theme change
+replaces current/theme with store themes"): omarchy-theme-set staged the
+store theme read-only, so the next theme change nested the new theme inside
+the old one; make test passes. Unbuilt: verify in the VM with the next guest
+build (choosing a theme once repairs an affected account).
 
 ## Proposed
 
