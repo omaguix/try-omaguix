@@ -38,6 +38,23 @@ the maintainer's) need a capture of what the guest shows: QMP `screendump`
 is black with the `cocoa,gl=on` display, `grim` in the guest hangs, and
 macOS `screencapture` of the full-screen VM window in another Space fails.
 
+Consult round 20261011-172702-fbbd (sol, MiMo, DeepSeek), checked against
+QEMU v11.1.1: `qmp_screendump` (ui/ui-qmp-cmds.c) saves only the console's
+2D `DisplaySurface`; a GL scanout (`dpy_gl_scanout_texture`) never fills
+it, and upstream has no GL readback for screendump (DeepSeek's claim that
+it does was wrong). Plan, decided by the coordinator with the models:
+1. QEMU patch in the Cocoa GL path (macos/patches/): when the console shows
+   a GL scanout, screendump reads it back in the display's GL context
+   (scanout texture -> FBO -> glReadPixels, honoring y_0_top, crop and
+   BGRA/stride) into the image it saves. Test with a known pattern; no
+   sleep: read back after the frame the guest flushed.
+2. Separately, diagnose why `grim` hangs in the guest (`WAYLAND_DEBUG=1`,
+   Hyprland's log, dmabuf vs shm buffers) and fix or report it; until then
+   agents do not rely on in-guest capture.
+3. Not chosen: a macOS ScreenCaptureKit capture of the window (needs the
+   Screen Recording grant, fragile across full-screen Spaces) and switching
+   test VMs to a non-GL GPU (would test a different graphics path).
+
 ## Proposed
 
 ### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
