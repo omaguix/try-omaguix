@@ -531,7 +531,9 @@ which writes the image's zeros as data (the whole disk). Check that the clone
 succeeded, and delete the state root when the check ends, also after a
 failed run.
 
-The builder belongs to the main checkout: from a worktree, run
+The builder VM is defined by `guest/guix/builder-vm` (its disk, knobs and
+how to recreate it: "Builder VM" in `guest/guix/README.md`). It belongs to
+the main checkout and is started from there: from a worktree, run
 `env VM_RUN_SOCKET=<main checkout>/.build/guix-validation/serial.sock guest/guix/vm-run '<command>'`,
 since vm-run otherwise looks for the socket in the worktree's own `.build/`
 and exits 125. Put the `env` inside the `herdr-job run` command: a job's tab

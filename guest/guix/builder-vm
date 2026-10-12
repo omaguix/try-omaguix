@@ -1,0 +1,55 @@
+#!/bin/sh
+# Start the aarch64 Guix System builder VM (guest/guix/README.md, "Builder VM").
+#
+# Usage: guest/guix/builder-vm [--dry-run]
+#
+# Runs QEMU with HVF in the foreground until the guest powers off, so start it
+# in its own terminal tab. The serial console and QMP sockets are the ones
+# guest/guix/vm-run expects; the project is shared read-only as `project` and
+# .build/guix-validation/export read-write as `export`.
+#
+# Knobs (environment):
+#   BUILDER_DISK      qcow2 disk (default .build/guix-validation/builder.qcow2)
+#   BUILDER_CPUS      virtual CPUs (default 4)
+#   BUILDER_MEMORY    memory in MiB (default 6144)
+#   BUILDER_FIRMWARE  UEFI code (default edk2-aarch64-code.fd from the QEMU
+#                     on PATH)
+# --dry-run prints the command instead of running it.
+set -eu
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+state=$root/.build/guix-validation
+disk=${BUILDER_DISK:-$state/builder.qcow2}
+cpus=${BUILDER_CPUS:-4}
+memory=${BUILDER_MEMORY:-6144}
+qemu=$(command -v qemu-system-aarch64 || echo qemu-system-aarch64)
+firmware=${BUILDER_FIRMWARE:-$(dirname "$qemu")/../share/qemu/edk2-aarch64-code.fd}
+
+dry_run=
+case ${1-} in
+  --dry-run) dry_run=1 ;;
+  '') ;;
+  *) echo "usage: $0 [--dry-run]" >&2; exit 2 ;;
+esac
+
+set -- "$qemu" \
+  -machine virt,accel=hvf -cpu host -smp "$cpus" -m "$memory" \
+  -bios "$firmware" \
+  -drive "file=$disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap" \
+  -display none -monitor none \
+  -serial "unix:$state/serial.sock,server=on,wait=off" \
+  -qmp "unix:$state/qmp.sock,server=on,wait=off" \
+  -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
+  -device virtio-rng-pci \
+  -virtfs "local,path=$root,mount_tag=project,security_model=none,readonly=on" \
+  -virtfs "local,path=$state/export,mount_tag=export,security_model=none"
+
+if [ -n "$dry_run" ]; then
+  printf '%s\n' "$*"
+  exit 0
+fi
+
+[ -f "$disk" ] || { echo "builder-vm: no disk at $disk (guest/guix/README.md, \"Builder VM\")" >&2; exit 1; }
+[ -f "$firmware" ] || { echo "builder-vm: no UEFI firmware at $firmware; set BUILDER_FIRMWARE" >&2; exit 1; }
+mkdir -p "$state/export"
+exec "$@"

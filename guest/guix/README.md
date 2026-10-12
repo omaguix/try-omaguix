@@ -76,9 +76,35 @@ builder, and expect the final `disk-image` derivation to need several GiB of
 headroom. A build that runs out of space during that last derivation fails with
 a `No space left on device` backtrace while copying the image into the store.
 
+### Builder VM
+
 A Guix System VM can serve as the builder. Do not fetch the vendor checkout
 over a 9p share: copy or clone it onto the builder's own filesystem first, and
 set `safe.directory` if the copy is owned by another user.
+
+The builder is defined by `guest/guix/builder-vm`: QEMU with HVF, 4 CPUs and
+6 GiB by default (`BUILDER_CPUS`, `BUILDER_MEMORY`), the disk
+`.build/guix-validation/builder.qcow2` (`BUILDER_DISK`), the console and QMP
+sockets `vm-run` uses, and the checkout shared as `project` (read-only) and
+`.build/guix-validation/export` as `export`. `--dry-run` prints the command.
+It runs in the foreground until the guest powers off, so start it in its own
+tab, from the main checkout (a worktree's copy would share the worktree and
+look for its own `.build/`). To create its disk from the official Guix VM
+image (Guix 1.5.0, the release `guix-install.sh` also installs):
+
+```sh
+mkdir -p .build/guix-validation && cd .build/guix-validation
+curl -LO https://ftp.gnu.org/gnu/guix/guix-system-vm-image-1.5.0.aarch64-linux.qcow2
+curl -LO https://ftp.gnu.org/gnu/guix/guix-system-vm-image-1.5.0.aarch64-linux.qcow2.sig
+# Import Guix's release signing key as https://guix.gnu.org/en/download/ says, then:
+gpg --verify guix-system-vm-image-1.5.0.aarch64-linux.qcow2.sig
+qemu-img create -f qcow2 -F qcow2 \
+  -b "$PWD/guix-system-vm-image-1.5.0.aarch64-linux.qcow2" builder.qcow2 90G
+```
+
+Keep the official image where the overlay names it (below). Then start
+`guest/guix/builder-vm`, log in as root on the console, grow the root
+partition and file system to the 90 GiB disk, and mount the shares as below.
 
 `guest/guix/vm-run '<command>'` runs a command as root in such a builder VM
 through its serial console (`.build/guix-validation/serial.sock`, or
