@@ -57,7 +57,36 @@ with the package built by CI. Later the same day the user reversed the
 earlier "no": "but I already allowed Chromium from the Flatpak pack":
 check Flathub Chromium on `gl=es` now as the Chromium result, saying it
 runs on the Flatpak runtime's Mesa, not the guest's; Guix's
-ungoogled-chromium stays the separate later item. Roguix ships no Electron
+ungoogled-chromium stays the separate later item.
+
+First round done 2026-10-12 (commit "macos: accelerate guest browsers on
+ANGLE/Metal"): cause found and fixed in virglrenderer. ANGLE on Metal
+gives an ES 3.0 context; the startergo patch clamped MSAA to 1 sample, so
+the guest had GL_MAX_SAMPLES 1 and Chromium's ANGLE (needs 4) fell back to
+ES 2.0 (`EGL_BAD_ATTRIBUTE`). The patch allocates 2D multisample textures
+through GL_ANGLE_texture_multisample, probes 4 samples, and turns off
+implicit MSAA on that path (ANGLE rejected it next to a 4-sample depth
+texture). On `gl=es`: Flathub Chromium 155 (Flatpak runtime's Mesa 26.2.2)
+has hardware canvas, compositing, raster, WebGL and WebGPU, `ANGLE (Mesa,
+virgl, OpenGL ES 3.0)`, and a WebGL 2 4-sample render resolves correctly;
+`make runtime` (15 virgl regressions), `make app`, `make test` pass. The
+default stays `gl=on`. Remaining before Metal becomes the default (the
+coordinator's plan, continuing this approved item):
+1. LibreWolf 155.0.1 has hardware WebRender but reports "WebGL is
+   currently disabled" for WebGL 1 and 2 on both `gl=on` and `gl=es`,
+   with `webgl.disabled` false and RFP/FPP off: a guest-side bug that
+   affects users today. Diagnose first (prefs actually loaded,
+   librewolf.cfg, lockPref, about:support's WebGL failure reason), then
+   fix in the system configuration; a package variant and a report to
+   Guix only if the cause is in the package (models' order, round
+   20261012-031454-9966).
+2. QMP `screendump` does not read back on `gl=es` (the readback patch
+   covers the CGL path only); make it work there too, since agents fall
+   back to it.
+3. Guest soft lockups of 20-40 s seen on `gl=es` under host load: compare
+   with `gl=on` under the same load before switching.
+4. Then switch the launcher default to `gl=es` and update the docs.
+Not run: stock virglrenderer 1.3.0 without the startergo patches on ANGLE. Roguix ships no Electron
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
 
@@ -121,6 +150,13 @@ the new pin keeping their settings and data, with a rollback. New users
 are Try Roguix Mac app users for now; bare metal is not pursued.
 
 ## Proposed
+
+### Offer the ANGLE multisample fix to startergo's virglrenderer tap
+
+Proposed 2026-10-12 by the Metal worker (models: after end-to-end
+acceptance, to startergo/homebrew-virglrenderer first): offer
+macos/patches/virgl-angle-multisample.patch upstream once Metal is the
+default and LibreWolf and Chromium pass. Cost: a short PR; no build.
 
 ### Accept Guix's Ungoogled Chromium on the Metal path
 
