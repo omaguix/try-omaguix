@@ -19,6 +19,7 @@
   #:use-module (roguix packages)
   #:use-module (roguix services)
   #:export (roguix-operating-system
+            %roguix-reference-system
             %pinned-guix-root))
 (use-service-modules desktop docker linux sddm sound ssh xorg)
 (use-package-modules fonts gl linux package-management terminals
@@ -93,15 +94,18 @@
                                                system target)
   (operating-system-derivation (system-closure-os closure)))
 
-(define* (roguix-operating-system #:key (packages '())
-                                  host-name timezone keyboard-layout
-                                  keyboard-variant locale)
-  "Return the Roguix system, adding PACKAGES, a list of package names.
-HOST-NAME, TIMEZONE, KEYBOARD-LAYOUT and KEYBOARD-VARIANT (XKB names) and
-LOCALE (a Guix locale name such as \"zh_TW.utf8\") default to the first-start
-setup's answers (%roguix-machine-settings-file), then to the image's
-defaults."
-  (define settings (read-machine-settings))
+(define (roguix-operating-system . options)
+  "Return the Roguix system, adding #:packages, a list of package names.
+#:host-name, #:timezone, #:keyboard-layout and #:keyboard-variant (XKB names)
+and #:locale (a Guix locale name such as \"zh_TW.utf8\") default to the
+first-start setup's answers (%roguix-machine-settings-file), then to the
+image's defaults."
+  (apply settings-operating-system (read-machine-settings) options))
+
+(define* (settings-operating-system settings #:key (packages '())
+                                    host-name timezone keyboard-layout
+                                    keyboard-variant locale)
+  "Return the Roguix system for SETTINGS, the machine settings alist."
   (define (setting key)
     (let ((value (assq-ref settings key)))
       (and value (not (string-null? value)) value)))
@@ -361,3 +365,10 @@ defaults."
                                       (mingetty-configuration-shepherd-requirement
                                        config))))
                              config)))))))
+
+;; The image's system with no extra packages and the default host settings,
+;; independent of any machine's settings file: what roguixos/roguix's CI
+;; builds substitutes for, the same derivation wherever it is evaluated.
+;; Defined last: it calls the procedures above when the module loads.
+(define %roguix-reference-system
+  (settings-operating-system '()))

@@ -564,6 +564,18 @@ and is part of the system configuration:
   2026-09-24 in a b12 guest: `guix weather --substitute-urls=https://roguix.frolow.dev`
   finds Quickshell, Hyprland and Omarchy (3 of 3).
 
+For CI that builds these substitutes, `(roguix system)` exports
+`%roguix-reference-system`: the image's system with no extra packages and the
+default host settings, which never reads the first-start settings file, so its
+derivation is the same on any machine (`test_build.py`). From `guest/guix`,
+evaluate it with the pinned Guix and an absolute load path, which `local-file`
+needs:
+`guix time-machine --commit=$(cat modules/roguix/guix-commit) -- system build
+-L $PWD/modules -e '(@ (roguix system) %roguix-reference-system)'
+--system=aarch64-linux -d`. It is aarch64-only: the `(roguix apps)` binaries
+it installs (lazygit, lazydocker, gum, dua, cliamp) are upstream aarch64
+releases, and an x86_64 variant would need their x86_64 releases.
+
 Measured 2026-09-24 on a fresh image with the Mac's network: the first
 `roguix-pkg add alacritty` took 20 minutes, mostly downloading about 900 MB
 of other outputs (`debug`, `doc`, `jdk`) of grafted packages that grafting

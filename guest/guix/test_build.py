@@ -6,6 +6,7 @@ import importlib.util
 import io
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -255,6 +256,16 @@ class ProjectModuleTests(unittest.TestCase):
     def test_guest_source_selection_covers_every_module_file(self):
         system = (self.MODULES / "system.scm").read_text()
         self.assertIn('(string-contains file "/modules/roguix/")', system)
+
+    def test_reference_system_ignores_machine_settings(self):
+        # CI builds substitutes from this variable, so it must not depend on
+        # the evaluating machine's first-start settings file.
+        system = (self.MODULES / "system.scm").read_text()
+        exports = re.search(r"#:export \(([^)]*)\)", system).group(1).split()
+        self.assertIn("%roguix-reference-system", exports)
+        self.assertIn("(define %roguix-reference-system\n"
+                      "  (settings-operating-system '()))", system)
+        self.assertEqual(system.count("(read-machine-settings)"), 1)
 
 
 if __name__ == "__main__":
