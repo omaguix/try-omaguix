@@ -41,7 +41,9 @@ check does not need a new multi-hour CI build. No build.
 Note for both: the release step works only after roguixos/roguix adds the
 `channel_commit` workflow input and the `split-*` artifacts (sent to the
 guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
-`VPS_IMPORT` (path asked of the roguix-vps coordinator).
+`VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: `/usr/local/sbin/vps-import`,
+not installed yet; it will say when it is; do not use the stale copy under
+/root/roguix-vps).
 
 ## Proposed
 
