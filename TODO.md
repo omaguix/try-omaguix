@@ -70,22 +70,23 @@ texture). On `gl=es`: Flathub Chromium 155 (Flatpak runtime's Mesa 26.2.2)
 has hardware canvas, compositing, raster, WebGL and WebGPU, `ANGLE (Mesa,
 virgl, OpenGL ES 3.0)`, and a WebGL 2 4-sample render resolves correctly;
 `make runtime` (15 virgl regressions), `make app`, `make test` pass. The
-default stays `gl=on`. Remaining before Metal becomes the default (the
-coordinator's plan, continuing this approved item):
-1. LibreWolf 155.0.1 has hardware WebRender but reports "WebGL is
-   currently disabled" for WebGL 1 and 2 on both `gl=on` and `gl=es`,
-   with `webgl.disabled` false and RFP/FPP off: a guest-side bug that
-   affects users today. Diagnose first (prefs actually loaded,
-   librewolf.cfg, lockPref, about:support's WebGL failure reason), then
-   fix in the system configuration; a package variant and a report to
-   Guix only if the cause is in the package (models' order, round
-   20261012-031454-9966).
-2. QMP `screendump` does not read back on `gl=es` (the readback patch
-   covers the CGL path only); make it work there too, since agents fall
-   back to it.
-3. Guest soft lockups of 20-40 s seen on `gl=es` under host load: compare
-   with `gl=on` under the same load before switching.
-4. Then switch the launcher default to `gl=es` and update the docs.
+default stays `gl=on`.
+
+Second round done 2026-10-12 (commits "macos: report Apple GL's point size
+range to the guest" and "macos: QMP screendump reads back on gl=es"):
+LibreWolf's "WebGL is currently disabled" had two causes. LibreWolf's own
+per-site WebGL consent prompt (`librewolf.webgl.prompt`), by design;
+decided by the user 2026-10-12: "keep the prompt". And on `gl=on` virgl
+reported Apple core GL's aliased point size range 1..1, so Firefox's
+fingerprinting resistance refused WebGL; it now reads GL_POINT_SIZE_RANGE
+(1..64). With consent, WebGL 1 and 2 (4 samples) work on both paths.
+Screendump now reads back on `gl=es` too, matching grim pixel for pixel.
+Soft lockups: none in 8 runs on either path (4 vCPU, 6 GiB, host load up
+to 52); under load the same test took 80-82 s on `gl=es` against 191-268 s
+on `gl=on`. Remaining (coordinator's plan): switch the launcher default to
+`gl=es`, update AGENTS.md's capture paragraph (screendump works on both
+paths) and docs/performance.md (the lockup results), verify the default
+launch in a test VM.
 Not run: stock virglrenderer 1.3.0 without the startergo patches on ANGLE. Roguix ships no Electron
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
