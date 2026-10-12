@@ -53,23 +53,6 @@ so it is reported separately and is not the gate. The user decided
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
 
-### Export a reference Roguix system for roguixos/roguix's CI
-
-Requested 2026-10-12 by the guix-x86_64-iso-omguix coordinator, passed on
-by the user, decided by the user (herdr decision d-r4fbcirh): roguixos/
-roguix's CI must build substitutes for every Roguix user, not for one
-MacBook. Export from the Roguix modules a reference operating-system
-(e.g. built with `roguix-operating-system` in
-guest/guix/modules/roguix/system.scm, default packages, placeholder host
-settings, ignoring any first-start settings file) that `guix system build
--e` can evaluate at the pin in guest/guix/modules/roguix/guix-commit, for
-aarch64-linux and, if the same definition fits, x86_64-linux; no nonguix,
-nothing machine-specific. Then reply to that coordinator with the module
-and variable name, and whether x86_64 needs a separate variant, once it is
-on public main. roguixos/roguix will build that closure minus what
-bordeaux serves, replacing manifests/x86_64-desktop.scm's hand list.
-Decided by the user 2026-10-12: "yes, in parallel" with the Metal item.
-
 ### One trust record for Roguix's substitutes and channel (R10)
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
