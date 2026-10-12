@@ -1,0 +1,192 @@
+diff --git a/src/vrend/vrend_formats.c b/src/vrend/vrend_formats.c
+index 05ff403..78bc381 100644
+--- a/src/vrend/vrend_formats.c
++++ b/src/vrend/vrend_formats.c
+@@ -669,12 +669,14 @@ void vrend_check_texture_storage(struct vrend_format_table *table)
+ }
+ 
+ void vrend_check_texture_multisample(struct vrend_format_table *table,
+-                                     bool enable_storage)
++                                     vrend_tex_storage_2d_multisample_fn storage)
+ {
++   /* Probe the count ES 3.0 and GL 3.0 require, which the guest relies on. */
++   const GLsizei samples = 4;
+    bool is_desktop_gl = epoxy_is_desktop_gl();
+    for (int i = 0; i < VIRGL_FORMAT_MAX_EXTENDED; i++) {
+       /* Ordinary immutable storage does not imply multisample storage. */
+-      const bool use_storage = enable_storage &&
++      const bool use_storage = storage &&
+          (table[i].flags & VIRGL_TEXTURE_CAN_TEXTURE_STORAGE);
+       const bool function_available = use_storage || is_desktop_gl;
+ 
+@@ -685,10 +687,10 @@ void vrend_check_texture_multisample(struct vrend_format_table *table,
+          glGenTextures(1, &tex_id);
+          glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
+          if (use_storage) {
+-            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 2,
+-                                      table[i].internalformat, 32, 32, GL_TRUE);
++            storage(GL_TEXTURE_2D_MULTISAMPLE, samples,
++                    table[i].internalformat, 32, 32, GL_TRUE);
+          } else {
+-            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 2,
++            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples,
+                                     table[i].internalformat, 32, 32, GL_TRUE);
+          }
+          if (glGetError() == GL_NO_ERROR)
+diff --git a/src/vrend/vrend_renderer.c b/src/vrend/vrend_renderer.c
+index 394fb9b..d6e2346 100644
+--- a/src/vrend/vrend_renderer.c
++++ b/src/vrend/vrend_renderer.c
+@@ -409,6 +409,10 @@ struct global_renderer_state {
+ 
+    /* host-side video acceleration availability */
+    bool video_available;
++
++   /* GL_ANGLE_texture_multisample's immutable 2D multisample storage on an
++    * ES 3.0 context, where ES 3.1's core entry point does not exist. */
++   vrend_tex_storage_2d_multisample_fn angle_tex_storage_2d_multisample;
+ };
+ 
+ struct sysval_uniform_block {
+@@ -7862,9 +7866,26 @@ int vrend_renderer_init(const struct vrend_if_cbs *cbs, uint32_t flags)
+ 
+    vrend_check_texture_storage(tex_conv_table);
+ 
++#ifdef HAVE_EPOXY_EGL_H
++   /* ANGLE's Metal backend stops at ES 3.0 but provides multisample textures
++    * through this extension. libepoxy does not know it, so EGL resolves it. */
++   if (vrend_state.use_gles && !has_feature(feat_storage_multisample) &&
++       epoxy_has_gl_extension("GL_ANGLE_texture_multisample"))
++      vrend_state.angle_tex_storage_2d_multisample = (vrend_tex_storage_2d_multisample_fn)
++         eglGetProcAddress("glTexStorage2DMultisampleANGLE");
++#endif
++   /* ANGLE rejects a framebuffer that combines an implicitly multisampled
++    * color texture with a multisample depth texture (incomplete multisample),
++    * a combination a guest may legally make. Its own ANGLE then emulates
++    * implicit multisampling with these real multisample resources. */
++   if (vrend_state.angle_tex_storage_2d_multisample)
++      clear_feature(feat_implicit_msaa);
++
+    if (has_feature(feat_multisample)) {
+       vrend_check_texture_multisample(tex_conv_table,
+-                                      has_feature(feat_storage_multisample));
++                                      has_feature(feat_storage_multisample) ?
++                                      epoxy_glTexStorage2DMultisample :
++                                      vrend_state.angle_tex_storage_2d_multisample);
+    }
+ 
+    /* disable for format testing */
+@@ -8167,6 +8188,8 @@ struct vrend_context *vrend_create_context(int id, uint32_t nlen, const char *de
+ 
+    grctx->shader_cfg.max_shader_patch_varyings = vrend_state.max_shader_patch_varyings;
+    grctx->shader_cfg.use_gles = vrend_state.use_gles;
++   grctx->shader_cfg.has_angle_texture_multisample =
++      vrend_state.angle_tex_storage_2d_multisample != NULL;
+    grctx->shader_cfg.use_core_profile = vrend_state.use_core_profile;
+    grctx->shader_cfg.use_explicit_locations = vrend_state.use_explicit_locations;
+    grctx->shader_cfg.max_draw_buffers = vrend_state.max_draw_buffers;
+@@ -8854,8 +8877,14 @@ static int vrend_resource_alloc_texture(struct vrend_resource *gr,
+    struct vrend_texture *gt = (struct vrend_texture *)gr;
+    struct pipe_resource *pr = &gr->base;
+ 
++   /* The ANGLE extension has no multisample array textures. The caps cannot
++    * say so (Mesa ties all multisample textures to one bit), so a guest
++    * multisample array fails to allocate with EINVAL below. */
++   const bool angle_multisample_storage = vrend_state.angle_tex_storage_2d_multisample &&
++        pr->target == PIPE_TEXTURE_2D;
+    const bool format_can_texture_storage = has_feature(feat_texture_storage) &&
+-        (pr->nr_samples <= 1 || has_feature(feat_storage_multisample)) &&
++        (pr->nr_samples <= 1 || has_feature(feat_storage_multisample) ||
++         angle_multisample_storage) &&
+         (tex_conv_table[format].flags & VIRGL_TEXTURE_CAN_TEXTURE_STORAGE);
+ 
+    if (format_can_texture_storage)
+@@ -8952,6 +8981,16 @@ static int vrend_resource_alloc_texture(struct vrend_resource *gr,
+                                          internalformat, pr->width0, pr->height0, pr->array_size,
+                                          GL_TRUE);
+             }
++         } else if (format_can_texture_storage) {
++            vrend_state.angle_tex_storage_2d_multisample(gr->target, pr->nr_samples,
++                                                         internalformat, pr->width0,
++                                                         pr->height0, GL_TRUE);
++         } else if (vrend_state.use_gles) {
++            /* GLES has no mutable multisample textures. */
++            virgl_error("No multisample storage for format %d target 0x%x\n",
++                        format, gr->target);
++            glBindTexture(gr->target, 0);
++            return EINVAL;
+          } else {
+             if (gr->target == GL_TEXTURE_2D_MULTISAMPLE) {
+                glTexImage2DMultisample(gr->target, pr->nr_samples,
+@@ -13086,13 +13125,17 @@ angle_done:
+    caps->v1.max_samples = vrend_renderer_query_multisample_caps(caps->v1.max_samples, &caps->v2);
+    virgl_debug("[VREND CAPS] After query_multisample_caps: max_samples=%u\n", caps->v1.max_samples);
+    
+-   /* Keep the GLES workaround. Native GL can verify and allocate real
+-    * multisample formats. Clamping it to one prevents guest ANGLE from
+-    * creating ES 3 contexts and disables default browser acceleration. */
++   /* Clamp only a GLES host without multisample texture storage, where the
++    * guest cannot allocate multisample resources. Native GL and ANGLE with
++    * GL_ANGLE_texture_multisample allocate real ones; clamping them to one
++    * stops guest ANGLE from creating ES 3 contexts (ES 3.0 needs four
++    * samples), which disables default browser acceleration. */
+    const char *version = (const char *)glGetString(GL_VERSION);
+    bool is_metal = (version && strstr(version, "Metal"));
+    bool is_angle = (version && strstr(version, "ANGLE"));
+-   if ((is_metal || is_angle) && vrend_state.use_gles && caps->v1.max_samples > 1) {
++   if ((is_metal || is_angle) && vrend_state.use_gles && caps->v1.max_samples > 1 &&
++       !has_feature(feat_storage_multisample) &&
++       !vrend_state.angle_tex_storage_2d_multisample) {
+       virgl_debug("[VREND CAPS] %s backend: Overriding max_samples %u -> 1 for fake_sw_msaa\n", 
+                   is_angle ? "ANGLE" : "Metal",
+                   caps->v1.max_samples);
+diff --git a/src/vrend/vrend_renderer.h b/src/vrend/vrend_renderer.h
+index 6c7c7de..46e1c94 100644
+--- a/src/vrend/vrend_renderer.h
++++ b/src/vrend/vrend_renderer.h
+@@ -506,8 +506,15 @@ void vrend_build_format_list_gl(void);
+ void vrend_build_format_list_gles(void);
+ void vrend_build_emulated_format_list_gles(void);
+ void vrend_check_texture_storage(struct vrend_format_table *table);
++/* glTexStorage2DMultisample, or GL_ANGLE_texture_multisample's
++ * glTexStorage2DMultisampleANGLE, which takes the same arguments. */
++typedef void (GLAPIENTRY *vrend_tex_storage_2d_multisample_fn)(
++   GLenum target, GLsizei samples, GLenum internalformat, GLsizei width,
++   GLsizei height, GLboolean fixedsamplelocations);
++
++/* storage allocates immutable 2D multisample textures, or is NULL. */
+ void vrend_check_texture_multisample(struct vrend_format_table *table,
+-                                     bool enable_storage);
++                                     vrend_tex_storage_2d_multisample_fn storage);
+ 
+ struct vrend_resource *vrend_renderer_ctx_res_lookup(struct vrend_context *ctx,
+                                                      int res_handle);
+diff --git a/src/vrend/vrend_shader.c b/src/vrend/vrend_shader.c
+index 77f5bbb..f2cab12 100644
+--- a/src/vrend/vrend_shader.c
++++ b/src/vrend/vrend_shader.c
+@@ -6224,8 +6224,11 @@ static void emit_header(const struct dump_ctx *ctx, struct vrend_glsl_strbufs *g
+          emit_ext(glsl_strbufs, "EXT_clip_cull_distance", "require");
+       }
+ 
++      /* An ES 3.0 host has multisample samplers only through ANGLE. */
+       if (ctx->shader_req_bits & SHADER_REQ_SAMPLER_MS)
+-         emit_ext(glsl_strbufs, "OES_texture_storage_multisample_2d_array", "require");
++         emit_ext(glsl_strbufs, ctx->cfg->has_angle_texture_multisample ?
++                  "ANGLE_texture_multisample" :
++                  "OES_texture_storage_multisample_2d_array", "require");
+ 
+       if (ctx->shader_req_bits & SHADER_REQ_CONSERVATIVE_DEPTH)
+          emit_ext(glsl_strbufs, "EXT_conservative_depth", "require");
+diff --git a/src/vrend/vrend_shader.h b/src/vrend/vrend_shader.h
+index 825ffe9..ff29144 100644
+--- a/src/vrend/vrend_shader.h
++++ b/src/vrend/vrend_shader.h
+@@ -260,6 +260,7 @@ struct vrend_shader_cfg {
+    uint32_t has_texture_shadow_lod : 1;
+    uint32_t has_vs_layer : 1;
+    uint32_t has_vs_viewport_index : 1;
++   uint32_t has_angle_texture_multisample : 1;
+ };
+ 
+ struct vrend_context;

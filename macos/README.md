@@ -37,6 +37,15 @@ alpha and BGRA channel conversions. Older verified factories that record
 `angle-metal` remain accepted because the guest virtio/VirGL ABI is unchanged.
 The build runs the actual format-probe regression with controlled GL entry
 points, alongside the upstream shader and blend tests.
+On ANGLE/Metal (`cocoa,gl=es`), which stops at OpenGL ES 3.0,
+`patches/virgl-angle-multisample.patch` gives the guest real four-sample
+multisampling through `GL_ANGLE_texture_multisample` instead of the
+one-sample fallback, so guest ANGLE (Chromium) can create ES 3 contexts. It
+disables implicit multisampling (`EXT_multisampled_render_to_texture`) on that
+path, because ANGLE rejects such a color buffer beside a multisample depth
+texture; the guest's ANGLE then emulates it. Multisample array textures do not
+exist there and fail to allocate. The launcher still selects `gl=on`: LibreWolf
+has no WebGL on either path yet ([performance](../docs/performance.md)).
 VirGL uses `debugoptimized` (`-O2`) with assertions enabled, retaining diagnostics
 without shipping an unoptimized graphics command path.
 QMP `screendump` (PPM; this build has no libpng) captures what the guest shows

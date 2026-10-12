@@ -35,7 +35,7 @@ static bool check_case(const char *name, bool is_desktop, bool ms_storage,
    desktop = is_desktop;
    allocation_error = error;
    mutable_calls = storage_calls = 0;
-   vrend_check_texture_multisample(table, ms_storage);
+   vrend_check_texture_multisample(table, ms_storage ? storage_texture : NULL);
    if (mutable_calls != mutable_expected || storage_calls != storage_expected ||
        !!(table[index].flags & VIRGL_TEXTURE_CAN_MULTISAMPLE) != supported) {
       fprintf(stderr, "FAIL: %s (mutable=%u storage=%u flags=%x)\n",
@@ -53,7 +53,6 @@ int main(void)
    epoxy_glDeleteTextures = delete_textures;
    epoxy_glGetError = get_error;
    epoxy_glTexImage2DMultisample = mutable_texture;
-   epoxy_glTexStorage2DMultisample = storage_texture;
    bool passed = true;
    passed &= check_case("desktop GL uses mutable MSAA with ordinary immutable storage",
                         true, false, true, GL_NO_ERROR, 1, 0, true);
@@ -63,6 +62,7 @@ int main(void)
                         true, true, true, GL_NO_ERROR, 0, 1, true);
    passed &= check_case("GLES does not call unavailable mutable MSAA",
                         false, false, true, GL_NO_ERROR, 0, 0, false);
+   /* ANGLE's ES 3.0 passes GL_ANGLE_texture_multisample's entry point here. */
    passed &= check_case("GLES uses available immutable MSAA",
                         false, true, true, GL_NO_ERROR, 0, 1, true);
    passed &= check_case("failed mutable allocation is not advertised",

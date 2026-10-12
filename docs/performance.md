@@ -411,3 +411,47 @@ and successful settings integration. The separate optional integration update
 was skipped. The UI tool could not inspect the restarted QEMU guest window, so
 the browser GPU report and visual checks above are from the disposable guest,
 not a new measurement of the personal full-screen session.
+
+### ANGLE/Metal browser acceleration (Roguix, October 12)
+
+The same Roguix guest image (Guix System, Mesa 26.0.2) ran in throwaway test
+VMs on `cocoa,gl=on` and `cocoa,gl=es` on an M1 Pro.
+
+- Host ANGLE 2.1.27632 (Metal renderer) creates only OpenGL ES 3.0 contexts;
+  3.1 and 3.2 fail. VirGL derives GLSL level 130 from it.
+- Guest on `gl=es`: GLES 3.0, desktop OpenGL 2.1 compatibility only, and
+  `GL_MAX_SAMPLES = 1`, because the macOS VirGL patch set clamped samples to
+  one when it could not allocate multisample textures on ES 3.0. On `gl=on`
+  the guest has GLES 3.0 too, with desktop 4.1 and four samples.
+- Chromium uses ANGLE on the guest's GLES, not desktop GL. ANGLE refuses ES 3
+  when a required renderbuffer format has fewer than four samples, so
+  `eglCreateContext` for ES 3.0 failed with `EGL_BAD_ATTRIBUTE` ("Requested
+  version is not supported") and everything fell back to software. The earlier
+  "desktop OpenGL 2.1" explanation was a symptom, not the cause.
+
+`macos/patches/virgl-angle-multisample.patch` allocates and probes 2D
+multisample textures through `GL_ANGLE_texture_multisample`, keeps the real
+four samples and turns implicit multisampling off on that path (ANGLE reports a
+multisampled-render-to-texture color buffer beside a multisample depth texture
+as incomplete, which killed Chromium's VirGL context in testing).
+
+Results on `gl=es` with the patch:
+
+- Guest `GL_MAX_SAMPLES = 4`; the host log names `ANGLE Metal Renderer`.
+- Chromium 155 from Flathub (it runs on the Flatpak runtime's Mesa 26.2.2, not
+  the guest's): canvas, compositing, rasterization, WebGL and WebGPU hardware
+  accelerated, renderer `ANGLE (Mesa, virgl, OpenGL ES 3.0)`, in three cold
+  starts. A WebGL 2 page drew a triangle into a four-sample renderbuffer and
+  resolved it: 665 partially covered edge pixels, no GL error, and the capture
+  shows the expected image.
+- LibreWolf 155.0.1 (the guest's default browser): hardware WebRender, no
+  fallback. WebGL 1 and 2 report "WebGL is currently disabled" on both host
+  paths, with `webgl.disabled` false and no safe mode, so this is not a host
+  graphics problem; it is tracked separately.
+
+Not changed: the launcher still uses `gl=on`, since LibreWolf's WebGL does not
+pass yet. QMP `screendump` cannot read the GL scanout back on `gl=es`; `grim`
+in the guest works. The `gl=es` test VMs also showed guest soft lockups of 20 to
+40 seconds while the host was loaded by other builds; they were not
+investigated. Stock VirGL 1.3.0 without the macOS patch set was not run on
+ANGLE.
