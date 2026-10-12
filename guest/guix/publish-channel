@@ -1,10 +1,9 @@
 #!/bin/bash
-# Publish guest/guix's Roguix definitions as a signed commit of the roguix
-# channel (docs/decisions/0004-roguix-channel.md), which roguix-update in a
-# VM authenticates and applies.
-#
-# Publish the matching packages on roguix.frolow.dev first
-# (server/README.md): a VM updating before then would build them itself.
+# Make guest/guix's Roguix definitions a signed commit of the roguix channel
+# (docs/decisions/0004-roguix-channel.md) and push it to release/<commit>, not
+# to main: guest/guix/release.py moves main once CI has built that commit
+# and roguix.frolow.dev serves it (docs/decisions/0006-one-roguix-release-step.md).
+# Prints "channel-commit <sha>" last, or nothing when the channel matches.
 #
 #   ROGUIX_CHANNEL_DIR  the channel checkout (default ../roguix-channel)
 #   GNUPGHOME           the channel key (default ~/.config/roguix-channel/gnupg)
@@ -21,17 +20,19 @@ if [[ -n $(git -C "$root" status --porcelain -- guest/guix) ]]; then
 fi
 revision=$(git -C "$root" rev-parse --short HEAD)
 
-git -C "$channel" checkout --quiet main
-git -C "$channel" pull --quiet --ff-only origin main 2>/dev/null || true
+git -C "$channel" fetch --quiet origin main keyring
+git -C "$channel" checkout --quiet --detach origin/main
 cp "$here/system.scm" "$channel/system.scm"
 mkdir -p "$channel/modules/roguix"
 rsync -a --delete --exclude __pycache__ "$here/modules/roguix/" "$channel/modules/roguix/"
 
 git -C "$channel" add -A
 if git -C "$channel" diff --cached --quiet; then
-  echo "publish-channel: the channel already matches try-roguix $revision"
+  echo "publish-channel: the channel already matches try-roguix $revision" >&2
   exit 0
 fi
 git -C "$channel" commit --quiet --gpg-sign -m "Roguix from try-roguix $revision"
-git -C "$channel" push --quiet origin main keyring
-echo "publish-channel: published $(git -C "$channel" rev-parse --short HEAD) (try-roguix $revision)"
+commit=$(git -C "$channel" rev-parse HEAD)
+git -C "$channel" push --quiet origin "$commit:refs/heads/release/$commit"
+echo "publish-channel: pushed release/$commit (try-roguix $revision)" >&2
+echo "channel-commit $commit"

@@ -30,34 +30,23 @@ is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 
 ## Publishing
 
-Only ungrafted items: grafts are built with `#:substitutable? #f`
-(`guix/grafts.scm`), so a guest never asks a server for them and grafts
-locally, which copies without compiling.
+A release is one step from the Mac, `guest/guix/release.py`
+(docs/decisions/0006-one-roguix-release-step.md): `publish-channel` pushes the
+signed channel commit to `release/<commit>`, `roguixos/roguix`'s CI builds that
+commit for aarch64 and x86_64, the VPS imports CI's releases with roguix's
+`scripts/vps-import` over SSH (`VPS_IMPORT` in `.env`), every package item is
+checked on bordeaux or roguix.frolow.dev, and a signed `release.json` on top
+of the commit moves the channel's `main`. `--dry-run` prints the steps.
 
-In the builder VM, with the pinned Guix:
+Only ungrafted items are published: grafts are built with
+`#:substitutable? #f` (`guix/grafts.scm`), so a guest never asks a server for
+them and grafts locally, which copies without compiling.
 
-```sh
-guix system build --no-grafts -L guest/guix/modules \
-  --root=/root/roguix-system-ungrafted guest/guix/system.scm
-guix gc -R /root/roguix-system-ungrafted > closure.txt
-```
-
-Split `closure.txt` by asking both servers for each item's `.narinfo`:
-items neither serves go to `publish.txt`, items only bordeaux serves to
-`vps-fetch.txt`. Then export and publish:
-
-```sh
-guix archive --export $(cat publish.txt) | zstd -T4 -12 > roguix.nar.zst
-server/publish.sh EXPORT_DIR      # on the Mac; SSH settings from .env
-```
-
+When CI cannot build, `publish-system.sh` does CI's aarch64 half in the
+builder VM: it builds the reference system with the pinned Guix, runs roguix's
+licence collector and `scripts/desktop-split` (fetched at the commit it pins)
+on its closure, exports `publish.txt` and has `publish.sh` import it.
 `publish.sh` has the VPS substitute `vps-fetch.txt` from bordeaux (an import
 needs every reference valid), import the archive, and bake the cache with
-`roguix-prebake.sh`, all under `nice` and idle I/O.
-
-Then publish the release's modules to the roguix channel, so VMs can update
-with `roguix-update` (docs/decisions/0004-roguix-channel.md):
-
-```sh
-guest/guix/publish-channel
-```
+`roguix-prebake.sh`, all under `nice` and idle I/O. A release made this way
+still moves the channel with `release.py` once CI builds again.
