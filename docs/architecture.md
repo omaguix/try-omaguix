@@ -213,7 +213,9 @@ In the VM, `/etc/config.scm` calls the same procedure with the owner's package
 list and `roguix-reconfigure` applies it with the Guix that built the image.
 Roguix's own packages have no substitutes on Guix's servers, so
 `https://roguix.frolow.dev` publishes them
-([decision 0002](decisions/0002-roguix-substitute-server.md)).
+([decision 0002](decisions/0002-roguix-substitute-server.md)), built by
+`roguixos/roguix`'s CI and the builder VM
+([decision 0005](decisions/0005-who-builds-roguix-substitutes.md)).
 
 ## What this project changes
 

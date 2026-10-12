@@ -1,8 +1,10 @@
 # roguix.frolow.dev
 
-The Roguix substitute server (docs/decisions/0002-roguix-substitute-server.md):
-`guix publish` on a Debian 13 VPS behind nginx. It only serves; the aarch64
-builder VM builds. The host also serves other sites, so `guix-publish.service`
+The Roguix substitute server (docs/decisions/0002-roguix-substitute-server.md),
+kept here until the VPS runs from its own Guix System configuration
+(docs/decisions/0005-who-builds-roguix-substitutes.md), then deleted:
+`guix publish` on a Debian 13 VPS behind nginx. It only serves; `roguixos/roguix`'s CI
+and the aarch64 builder VM build. The host also serves other sites, so `guix-publish.service`
 is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 
 ## Files

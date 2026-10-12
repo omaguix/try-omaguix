@@ -1,5 +1,8 @@
 # Roguix substitute server at roguix.frolow.dev
 
+Superseded in part by [0005](0005-who-builds-roguix-substitutes.md): who
+builds the substitutes and where the server is defined.
+
 ## Context
 
 Roguix packages Hyprland 0.56, Quickshell, Omarchy and the VM agents itself.

@@ -559,7 +559,7 @@ and is part of the system configuration:
   again from those builds, and without them it would rebuild Hyprland and
   Quickshell, which have no substitutes, for hours.
 - **Substitutes for Roguix's own packages** come from
-  `https://roguix.frolow.dev` (`server/`, decision 0002), after Guix's servers;
+  `https://roguix.frolow.dev` (decisions 0002 and 0005), after Guix's servers;
   the guest authorizes `modules/roguix/roguix.frolow.dev.pub`. This server,
   its key and the signed channel `roguix-update` follows are named in one
   record, `%roguix-trust` in `modules/roguix/trust.scm`. Verified
