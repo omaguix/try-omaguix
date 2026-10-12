@@ -48,7 +48,8 @@ ships LibreWolf and its menu offers Ungoogled Chromium from Guix
 with the models: acceptance needs both LibreWolf and Guix's Ungoogled
 Chromium accelerated on the Metal path (GPU compositing, raster, WebGL 2,
 no software fallback); Flathub Chromium uses the Flatpak runtime's Mesa,
-so it is reported separately and is not the gate. Roguix ships no Electron
+so it is reported separately and is not the gate. The user decided
+2026-10-12: "Chromium from Flathub: no" (not tested or reported). Roguix ships no Electron
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
 
