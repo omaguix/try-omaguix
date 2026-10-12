@@ -13,6 +13,12 @@ roguix-update (guest/guix/modules/roguix/omarchy.scm:483) tells users to
 reset the VM when a release needs a newer Guix. Existing VMs should move to
 the new pin keeping their settings and data, with a rollback. New users
 are Try Roguix Mac app users for now; bare metal is not pursued.
+Decided by the user 2026-10-12, directly to the upgrade worker: the
+signed release.json names the new Guix's store path and the VM only
+substitutes it, without cloning Guix or contacting Codeberg. Nobody
+uses Roguix yet, so no older release format needs compatibility.
+The worker's v2 is in progress; the earlier time-machine implementation
+is not the final version.
 
 ### Rebase and re-test the Omarchy menu-rows PR
 
@@ -46,6 +52,9 @@ signed roguix-channel commit, roguixos/roguix's build-desktop.yml
 dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
 the closure check, then the signed release.json moves the channel's main.
 Report the run ids and the release commit; on any failure, main stays.
+Prerequisite received 2026-10-12 from the omguix coordinator: the fresh
+public key must reach roguix-channel before the first CI run, together
+with %roguix-reference-system; see the approved publication item below.
 
 ### Offer the ANGLE multisample fix to startergo's virglrenderer tap
 
@@ -136,6 +145,24 @@ Omarchy" line in README (nominative use, no endorsement implied). Topics:
 omarchy, guix, guix-system, hyprland on all three; macos and
 virtual-machine on try-roguix. Repository descriptions and topics are
 GitHub settings (gh repo edit); README is a docs commit.
+
+### Publish the fresh substitute key before the first Roguix CI run
+
+Requested 2026-10-12 by the omguix coordinator, relayed by the user:
+publish the fresh public key and %roguix-reference-system through
+publish-channel, then send the channel commit to the coordinator before
+the first CI run. Roguix commit be56772 already verifies
+modules/roguix/substitutes.roguix.org.pub and uses
+https://substitutes.roguix.org; its backfill code is removed. The secret
+is held only in GitHub, pending the user's environment-secret step.
+The received Ed25519 public point is
+AA89E5E3D2B0635D406B526E030248A7838E5206CDDB444D846A1E262F0ED09B;
+the exact public key file's SHA-256 is
+f59f581309d9270a1e8b12b9c73313ca74cb66143c7cf39535c0c251bc309881.
+This is a prerequisite of the first release and part of the approved
+roguix.org clean cutover, not permission to dispatch CI before the new
+endpoint and signing secret are ready. Check those conditions with the
+owning coordinators before choosing the publication order.
 
 ## Proposed
 
