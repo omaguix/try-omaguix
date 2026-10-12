@@ -470,8 +470,11 @@ creates WebGL 1 and 2 contexts on both paths, draws the four-sample triangle
 correctly, and reports four samples; its readback is deliberately randomized
 by fingerprinting resistance, so the pixel counts are not meaningful there.
 
-Not changed: the launcher still uses `gl=on`. QMP `screendump` cannot read the GL scanout back on `gl=es`; `grim`
-in the guest works. The `gl=es` test VMs also showed guest soft lockups of 20 to
+Not changed: the launcher still uses `gl=on`. QMP `screendump` first failed
+on `gl=es` ("could not read back the GL scanout"): its readback texture took
+BGRA data for an RGBA texture, which GLES refuses. It now reads back on both
+paths; on each, a capture matched the guest's own `grim` capture pixel for
+pixel. The `gl=es` test VMs also showed guest soft lockups of 20 to
 40 seconds while the host was loaded by other builds; they were not
 investigated. Stock VirGL 1.3.0 without the macOS patch set was not run on
 ANGLE.

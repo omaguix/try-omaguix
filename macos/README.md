@@ -53,7 +53,9 @@ without shipping an unoptimized graphics command path.
 QMP `screendump` (PPM; this build has no libpng) captures what the guest shows
 through VirGL: while the console shows a GL scanout, the Cocoa display reads
 the scanout texture back into the console surface in its GL context, on a
-screendump only (`patches/qemu-cocoa-gl-screendump.patch`).
+screendump only (`patches/qemu-cocoa-gl-screendump.patch`). This works with
+both `gl=on` and `gl=es`; on the GLES path the readback texture is RGBA and
+pixels are read as BGRA through `GL_EXT_read_format_bgra`.
 
 To leave capacity for other host applications during a runtime rebuild, use
 `OMARCHY_RUNTIME_BUILD_JOBS=2 make runtime`. The override bounds Ninja compilation

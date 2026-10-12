@@ -55,7 +55,7 @@ under the BQL, so it reads the frame the guest last flushed.
      gl_dirty = true;
  
      cocoa_gl_log("scanout texture id=%u region=%ux%u+%u+%u",
-@@ -3029,6 +3034,59 @@ static void cocoa_gl_scanout_flush(DisplayChangeListener *dcl,
+@@ -3029,6 +3034,69 @@ static void cocoa_gl_scanout_flush(DisplayChangeListener *dcl,
      cocoa_gl_log("scanout flush region=%ux%u+%u+%u", w, h, x, y);
  }
  
@@ -82,6 +82,7 @@ under the BQL, so it reads the frame the guest last flushed.
 +    with_gl_view_ctx(^{
 +        DisplayGLTexture texture = gl_scanout_borrow(gl_scanout_id);
 +        egl_fb fb = EGL_FB_INIT;
++        GLuint fb_texture;
 +
 +        if (!texture.id ||
 +            gl_scanout_x + gl_scanout_w > texture.width ||
@@ -92,7 +93,16 @@ under the BQL, so it reads the frame the guest last flushed.
 +        /* Clear earlier errors so the check below covers only this read. */
 +        while (glGetError() != GL_NO_ERROR) {
 +        }
-+        egl_fb_setup_new_tex(&fb, gl_scanout_w, gl_scanout_h);
++        /*
++         * GLES (ANGLE on Metal, gl=es) refuses BGRA data for an RGBA texture,
++         * which egl_fb_setup_new_tex passes; it still reads BGRA back through
++         * GL_EXT_read_format_bgra.
++         */
++        glGenTextures(1, &fb_texture);
++        glBindTexture(GL_TEXTURE_2D, fb_texture);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gl_scanout_w, gl_scanout_h, 0,
++                     egl_surface ? GL_RGBA : GL_BGRA, GL_UNSIGNED_BYTE, NULL);
++        egl_fb_setup_for_tex(&fb, gl_scanout_w, gl_scanout_h, fb_texture, true);
 +        glBindFramebuffer(GL_FRAMEBUFFER, fb.framebuffer);
 +        glViewport(-(GLint)gl_scanout_x, -(GLint)gl_scanout_y,
 +                   texture.width, texture.height);
@@ -115,7 +125,7 @@ under the BQL, so it reads the frame the guest last flushed.
  static const DisplayChangeListenerOps dcl_gl_ops = {
      .dpy_name               = "cocoa-gl",
      .dpy_gfx_update         = cocoa_gl_update,
-@@ -3041,6 +3099,9 @@ static void cocoa_gl_scanout_flush(DisplayChangeListener *dcl,
+@@ -3041,6 +3109,9 @@ static void cocoa_gl_scanout_flush(DisplayChangeListener *dcl,
      .dpy_gl_scanout_disable = cocoa_gl_scanout_disable,
      .dpy_gl_scanout_texture = cocoa_gl_scanout_texture,
      .dpy_gl_update          = cocoa_gl_scanout_flush,
