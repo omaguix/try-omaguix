@@ -41,9 +41,10 @@ check does not need a new multi-hour CI build. No build.
 Note for both: the release step works only after roguixos/roguix adds the
 `channel_commit` workflow input and the `split-*` artifacts (sent to the
 guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
-`VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: `/usr/local/sbin/vps-import`,
-not installed yet; it will say when it is; do not use the stale copy under
-/root/roguix-vps).
+`VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: installed at
+`/usr/local/sbin/vps-import` on root@vps.frolow.dev port 1027, roguix
+e1e2d64, also on root's PATH as vps-import; the release.py-resume worker
+sets it in the local `.env`).
 
 ## Proposed
 
