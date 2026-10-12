@@ -73,6 +73,35 @@ list of every store path it published that is still meant to be served
 put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
 the VPS and say so. Until then nothing is deleted on the VPS.
 
+### Move Roguix to roguix.org
+
+Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
+models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
+the coordinator with the models: the website at roguix.org (GitHub Pages
+or the VPS), substitutes at substitutes.roguix.org (all three; not a path
+under the apex, not "cache"). roguix.frolow.dev keeps serving the same
+bytes as an nginx alias for at least 12 months; no HTTP redirects for
+narinfo/nar (Guix's redirect handling is not relied on). The URL change
+ships in its own release, separate from the publish key change (approved
+earlier: one release with both keys): first the trust record lists the new
+URL next to the old one, a later release drops the old. TLS for both names
+before the release; CAA limited to the issuing CA; no mail on the domain:
+null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
+Needs: DNS records at Porkbun (the owner, or an API key the owner
+provides), the VPS vhost and certificate (the roguix-vps coordinator,
+which owns the host and its static-substitutes move), then try-roguix's
+trust record and docs. App update feeds stay where they are until checked.
+
+### Tagline and topics: "Roguix: Omarchy on Guix System"
+
+Asked 2026-10-12 (round 20261012-191411-5986): put "Roguix: Omarchy on
+Guix System" in README and in the descriptions of roguixos/try-roguix,
+roguix and roguix-channel, with a short "independent, not affiliated with
+Omarchy" line in README (nominative use, no endorsement implied). Topics:
+omarchy, guix, guix-system, hyprland on all three; macos and
+virtual-machine on try-roguix. Repository descriptions and topics are
+GitHub settings (gh repo edit); README is a docs commit.
+
 ## Proposed
 
 ### Accept Guix's Ungoogled Chromium on the Metal path
