@@ -449,8 +449,28 @@ Results on `gl=es` with the patch:
   paths, with `webgl.disabled` false and no safe mode, so this is not a host
   graphics problem; it is tracked separately.
 
-Not changed: the launcher still uses `gl=on`, since LibreWolf's WebGL does not
-pass yet. QMP `screendump` cannot read the GL scanout back on `gl=es`; `grim`
+LibreWolf's WebGL had two causes, found later the same day:
+
+- By design, LibreWolf asks each site for permission to create a WebGL context
+  (`librewolf.webgl.prompt`, default on, from LibreWolf's own patches, not
+  Guix's or Roguix's configuration). Until a site is allowed, WebGL reports
+  "WebGL is currently disabled"; `file://` pages and `about:support` cannot be
+  allowed, so their WebGL fields always say so.
+- On `gl=on`, an allowed site still failed with an empty "WebGL creation
+  failed" reason: with fingerprinting resistance on, Firefox clamps WebGL
+  limits to common values and refuses the context when one is below them.
+  VirGL read `GL_ALIASED_POINT_SIZE_RANGE`, which Apple's core OpenGL 4.1
+  answers with 1..1 (its core range, `GL_POINT_SIZE_RANGE`, is 1..64), so the
+  guest's maximum point size was 1, below Firefox's 63.
+  `macos/patches/virgl-core-point-size.patch` reads the core range on a core
+  desktop host. ANGLE reports 1..511, so `gl=es` was not affected.
+
+With the patch, LibreWolf with fingerprinting resistance on and WebGL allowed
+creates WebGL 1 and 2 contexts on both paths, draws the four-sample triangle
+correctly, and reports four samples; its readback is deliberately randomized
+by fingerprinting resistance, so the pixel counts are not meaningful there.
+
+Not changed: the launcher still uses `gl=on`. QMP `screendump` cannot read the GL scanout back on `gl=es`; `grim`
 in the guest works. The `gl=es` test VMs also showed guest soft lockups of 20 to
 40 seconds while the host was loaded by other builds; they were not
 investigated. Stock VirGL 1.3.0 without the macOS patch set was not run on

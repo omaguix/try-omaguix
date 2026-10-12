@@ -44,8 +44,10 @@ one-sample fallback, so guest ANGLE (Chromium) can create ES 3 contexts. It
 disables implicit multisampling (`EXT_multisampled_render_to_texture`) on that
 path, because ANGLE rejects such a color buffer beside a multisample depth
 texture; the guest's ANGLE then emulates it. Multisample array textures do not
-exist there and fail to allocate. The launcher still selects `gl=on`: LibreWolf
-has no WebGL on either path yet ([performance](../docs/performance.md)).
+exist there and fail to allocate. `patches/virgl-core-point-size.patch` reads
+the point size range of a core profile, since Apple's core GL answers the
+compatibility query with 1..1, which made LibreWolf refuse WebGL on `gl=on`
+([performance](../docs/performance.md)). The launcher still selects `gl=on`.
 VirGL uses `debugoptimized` (`-O2`) with assertions enabled, retaining diagnostics
 without shipping an unoptimized graphics command path.
 QMP `screendump` (PPM; this build has no libpng) captures what the guest shows

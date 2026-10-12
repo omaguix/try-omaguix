@@ -1,0 +1,20 @@
+diff --git a/src/vrend/vrend_renderer.c b/src/vrend/vrend_renderer.c
+index d6e2346..ad9d2cd 100644
+--- a/src/vrend/vrend_renderer.c
++++ b/src/vrend/vrend_renderer.c
+@@ -13006,7 +13006,14 @@ angle_done:
+    if (llvmpipe_string)
+       memcpy(llvmpipe_string, "LLVMPIPE", 8);
+ 
+-   glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, range);
++   /* A core profile has no aliased points: GL_POINT_SIZE_RANGE is the range
++    * gl_PointSize may use. Apple's core GL 4.1 answers the compatibility
++    * query with 1..1, which caps every guest point at one pixel and makes
++    * fingerprinting-resistant WebGL (LibreWolf) refuse to create contexts. */
++   if (vrend_state.use_core_profile && !vrend_state.use_gles)
++      glGetFloatv(GL_POINT_SIZE_RANGE, range);
++   else
++      glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, range);
+    caps->v2.min_aliased_point_size = range[0];
+    caps->v2.max_aliased_point_size = range[1];
+ 
