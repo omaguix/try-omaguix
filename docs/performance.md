@@ -4,7 +4,7 @@
 > Omarchy's Arch guest, which Roguix replaced with a [Guix System guest](../guest/guix/README.md).
 
 CPU instructions execute through HVF on the Apple Silicon CPU. Graphics take a
-longer path: guest Mesa → VirGL → native macOS OpenGL → Cocoa. Accelerated
+longer path: guest Mesa → VirGL → ANGLE → Metal → Cocoa. Accelerated
 graphics therefore still have command translation, synchronization, upload, and
 presentation costs. See [architecture](architecture.md) and QEMU's
 [virtio-gpu documentation](https://www.qemu.org/docs/master/system/devices/virtio/virtio-gpu.html).
@@ -470,11 +470,44 @@ creates WebGL 1 and 2 contexts on both paths, draws the four-sample triangle
 correctly, and reports four samples; its readback is deliberately randomized
 by fingerprinting resistance, so the pixel counts are not meaningful there.
 
-Not changed: the launcher still uses `gl=on`. QMP `screendump` first failed
+QMP `screendump` first failed
 on `gl=es` ("could not read back the GL scanout"): its readback texture took
 BGRA data for an RGBA texture, which GLES refuses. It now reads back on both
 paths; on each, a capture matched the guest's own `grim` capture pixel for
-pixel. The `gl=es` test VMs also showed guest soft lockups of 20 to
-40 seconds while the host was loaded by other builds; they were not
-investigated. Stock VirGL 1.3.0 without the macOS patch set was not run on
-ANGLE.
+pixel. Stock VirGL 1.3.0 without the macOS patch set was not run on ANGLE.
+
+The first `gl=es` test VMs showed guest soft lockups of 20 to 40 seconds after
+hours of running while other builds loaded the host. A controlled comparison
+used the same test on both paths: a 4-vCPU, 6-GiB test VM booted to the login
+prompt, then started LibreWolf five times on a WebGL 2 page that renders with
+four samples; each start ended on the page's result. The last four runs added
+ten busy loops on the host's ten cores; other sessions also loaded the host,
+so the load was not identical.
+
+| Run | Host load (1 min, start → end) | Workload | Soft lockups | RCU stalls |
+|---|---|---|---|---|
+| `gl=on` 1 | ~5–9 | 27 s | 0 | 0 |
+| `gl=es` 1 | ~5–9 | 24 s | 0 | 0 |
+| `gl=on` 2 | ~5–9 | 21 s | 0 | 0 |
+| `gl=es` 2 | ~5–9 | 23 s | 0 | 0 |
+| `gl=on` 3, loaded | 5 → 21 | 268 s | 0 | 0 |
+| `gl=es` 3, loaded | 21 → 42 | 82 s | 0 | 0 |
+| `gl=on` 4, loaded | 39 → 52 | 191 s | 0 | 0 |
+| `gl=es` 4, loaded | 48 → 32 | 80 s | 0 | 0 |
+
+No run reproduced a lockup. Under host load the same workload took 191–268 s
+on `gl=on` and 80–82 s on `gl=es`; the cause of the difference was not
+analyzed.
+
+Before the switch, LibreWolf's default antialiased WebGL canvases stayed empty
+on `gl=es` (non-antialiased ones drew): resolving them went through VirGL's
+blitter, whose multisample shaders declared `#version 310 es`, which ANGLE's
+ES 3.0 rejects ("unsupported shader version"). Chromium resolves with
+`glBlitFramebuffer` and was not affected. The ANGLE multisample patch now
+builds those shaders as `#version 300 es` with `GL_ANGLE_texture_multisample`.
+
+The launcher now selects `gl=es` (ANGLE on Metal) by default. In a test VM
+started by the default launcher, LibreWolf drew get.webgl.org's spinning WebGL 2
+cube after the site was allowed, Flathub Chromium reported hardware canvas,
+compositing, rasterization, WebGL and WebGPU on `ANGLE (Mesa, virgl, OpenGL ES
+3.0)`, and QMP `screendump` matched `grim`.

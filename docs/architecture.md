@@ -45,10 +45,11 @@ EFI system partition; GRUB boots the current Guix System generation, and
 Omarchy runs inside it. The kernel, initrd and every earlier generation live
 on the VM disk, so `guix system reconfigure` and `roll-back` work inside the VM
 and an app update never replaces them. Graphics travel from Linux through virtio-gpu and VirGL to the
-native Cocoa window. The display selects native macOS OpenGL (`gl=on`), with
-VirGL replaying commands in an Apple OpenGL 4.1 core context. Its local
-multisample patch preserves real samples and mutable texture allocation,
-allowing default browser ES 3 contexts without browser-specific overrides.
+native Cocoa window. The display selects ANGLE on Metal (`gl=es`), with
+VirGL replaying commands in an OpenGL ES 3.0 context that ANGLE translates to
+Metal. Its local multisample patches give the guest real samples, through
+`GL_ANGLE_texture_multisample` on ANGLE, allowing default browser ES 3
+contexts without browser-specific overrides.
 Native Apple drivers select integer vertex attributes automatically, and alpha
 and BGRA texture paths avoid duplicate channel conversions.
 Storage, networking, audio, and input use their matching

@@ -28,7 +28,8 @@ silently raise the app's deployment target. VirGL 1.3.0 is built from source
 with the pinned startergo 1.0.42 patch set and its dual-source shader regression
 tests; ANGLE 1.0.16 and libepoxy 1.0.5 retain their Sequoia bottles. This keeps
 the accelerated Alacritty fix without bundling the Tahoe-only VirGL bottle.
-The launcher selects native macOS OpenGL (`cocoa,gl=on`). The local VirGL
+The launcher selects ANGLE on Metal (`cocoa,gl=es`); Apple's deprecated
+OpenGL (`cocoa,gl=on`) is no longer selected. The local VirGL
 OpenGL compatibility patch preserves real sample counts and falls back to mutable
 multisample textures when immutable multisample storage is unavailable. This
 restores default browser acceleration through the shared VM graphics device.
@@ -43,11 +44,13 @@ multisampling through `GL_ANGLE_texture_multisample` instead of the
 one-sample fallback, so guest ANGLE (Chromium) can create ES 3 contexts. It
 disables implicit multisampling (`EXT_multisampled_render_to_texture`) on that
 path, because ANGLE rejects such a color buffer beside a multisample depth
-texture; the guest's ANGLE then emulates it. Multisample array textures do not
-exist there and fail to allocate. `patches/virgl-core-point-size.patch` reads
+texture; the guest's ANGLE then emulates it. Its blitter resolves multisample
+textures with `#version 300 es` and that extension, since ANGLE does not compile
+`#version 310 es`. Multisample array textures do not exist there and fail to
+allocate. `patches/virgl-core-point-size.patch` reads
 the point size range of a core profile, since Apple's core GL answers the
 compatibility query with 1..1, which made LibreWolf refuse WebGL on `gl=on`
-([performance](../docs/performance.md)). The launcher still selects `gl=on`.
+([performance](../docs/performance.md)).
 VirGL uses `debugoptimized` (`-O2`) with assertions enabled, retaining diagnostics
 without shipping an unoptimized graphics command path.
 QMP `screendump` (PPM; this build has no libpng) captures what the guest shows

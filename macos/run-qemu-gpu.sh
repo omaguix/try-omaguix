@@ -926,7 +926,8 @@ qemu_args=(
   # presentation mode, except Command-Tab, which stays with macOS unless
   # send-command-tab is on. Immersive launches Full Screen and hard-hides the
   # Mac menu bar and Dock; otherwise Cocoa opens a centered, resizable window.
-  -display "cocoa,gl=on,show-cursor=on,zoom-to-fit=on,full-screen=$cocoa_full_screen,full-grab=on,immersive=$cocoa_immersive,send-command-tab=$cocoa_send_command_tab,swap-opt-cmd=off"
+  # gl=es renders through ANGLE on Metal; Apple's OpenGL (gl=on) is deprecated.
+  -display "cocoa,gl=es,show-cursor=on,zoom-to-fit=on,full-screen=$cocoa_full_screen,full-grab=on,immersive=$cocoa_immersive,send-command-tab=$cocoa_send_command_tab,swap-opt-cmd=off"
   -device 'virtio-keyboard-pci,romfile='
   -device 'virtio-tablet-pci,romfile='
   -device 'virtio-pinch-pci,romfile='

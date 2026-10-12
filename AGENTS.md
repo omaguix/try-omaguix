@@ -558,7 +558,7 @@ run `grim -c` over SSH in the session's environment (`WAYLAND_DISPLAY`,
 region. Before login, in the console, while the session is locked or the
 output blanked, or when the compositor does not answer, use QMP `screendump`
 (PPM only: the runtime has no libpng; no cursor); it works with `cocoa,gl=on`
-and does not depend on the guest's DPMS or lock. `grim` fails at once
+and `cocoa,gl=es` and does not depend on the guest's DPMS or lock. `grim` fails at once
 ("failed to copy output") while the output is blanked (Omarchy blanks it 5 s
 after locking): enable DPMS, wait for `dpmsStatus: 1` in `hyprctl monitors`,
 and expect a black frame until the wake-up fade ends and the lock screen while
