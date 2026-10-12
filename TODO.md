@@ -14,6 +14,29 @@ reset the VM when a release needs a newer Guix. Existing VMs should move to
 the new pin keeping their settings and data, with a rollback. New users
 are Try Roguix Mac app users for now; bare metal is not pursued.
 
+### Rebase and re-test the Omarchy menu-rows PR
+
+Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
+obsolete now that Omarchy opens menus through Hyprland global shortcuts
+(https://github.com/omacom/omarchy/pull/13418, merged 2026-09-27, before
+our PR). Round 20261012-202605-5528 (sol, MiMo, DeepSeek): not obsolete.
+Global shortcuts only remove the qs IPC launch; on current main
+openExistingMenu() still runs evaluateGuards() on every open and
+guardProc.onExited still calls rebuildDisplay() unconditionally (checked
+in shell/plugins/menu/Menu.qml). A reviewer
+(https://github.com/omacom/omarchy/pull/14740#issuecomment-6130082381)
+asked to rebase on https://github.com/omacom/omarchy/pull/15048 (merged)
+and check the case still reproduces; https://github.com/omacom/omarchy/pull/14993
+(open) rewrites rebuildDisplay's append. Do: rebase the PR branch on
+current main, re-run the press-across-guard-exit test with and without the
+fix opening through the real global shortcut, then reply to the reviewer
+with the commit and numbers. If it no longer reproduces, say so and close
+the PR. Placement, round 20261012-202819-4d50: right after the item in
+progress, before the first release (sol, MiMo; rebase and repro are
+short, the release takes hours); do not wait for #14993 (open, its
+timing and shape unknown; DeepSeek alone would wait). Pushing the PR branch and replying are covered by the approved
+upstream-offer of that item.
+
 ### First Roguix release through release.py
 
 Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
@@ -102,26 +125,6 @@ Omarchy" line in README (nominative use, no endorsement implied). Topics:
 omarchy, guix, guix-system, hyprland on all three; macos and
 virtual-machine on try-roguix. Repository descriptions and topics are
 GitHub settings (gh repo edit); README is a docs commit.
-
-### Rebase and re-test the Omarchy menu-rows PR
-
-Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
-obsolete now that Omarchy opens menus through Hyprland global shortcuts
-(https://github.com/omacom/omarchy/pull/13418, merged 2026-09-27, before
-our PR). Round 20261012-202605-5528 (sol, MiMo, DeepSeek): not obsolete.
-Global shortcuts only remove the qs IPC launch; on current main
-openExistingMenu() still runs evaluateGuards() on every open and
-guardProc.onExited still calls rebuildDisplay() unconditionally (checked
-in shell/plugins/menu/Menu.qml). A reviewer
-(https://github.com/omacom/omarchy/pull/14740#issuecomment-6130082381)
-asked to rebase on https://github.com/omacom/omarchy/pull/15048 (merged)
-and check the case still reproduces; https://github.com/omacom/omarchy/pull/14993
-(open) rewrites rebuildDisplay's append. Do: rebase the PR branch on
-current main, re-run the press-across-guard-exit test with and without the
-fix opening through the real global shortcut, then reply to the reviewer
-with the commit and numbers. If it no longer reproduces, say so and close
-the PR. Pushing the PR branch and replying are covered by the approved
-upstream-offer of that item.
 
 ## Proposed
 
