@@ -79,12 +79,13 @@ Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
 models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
 the coordinator with the models: the website at roguix.org (GitHub Pages
 or the VPS), substitutes at substitutes.roguix.org (all three; not a path
-under the apex, not "cache"). roguix.frolow.dev keeps serving the same
-bytes as an nginx alias for at least 12 months; no HTTP redirects for
-narinfo/nar (Guix's redirect handling is not relied on). The URL change
-ships in its own release, separate from the publish key change (approved
-earlier: one release with both keys): first the trust record lists the new
-URL next to the old one, a later release drops the old. TLS for both names
+under the apex, not "cache"). Decided by the user 2026-10-12, overriding the models' 12-month alias:
+"no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
+turned off once substitutes.roguix.org serves, and the trust record names
+only the new URL (no overlap release). The URL change still ships apart
+from the publish key change. Open for the user: the earlier "one release
+with both keys" decision rests on the same assumption of existing users;
+ask whether the key change is also a clean cutover. TLS for both names
 before the release; CAA limited to the issuing CA; no mail on the domain:
 null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
 Needs: DNS records at Porkbun (the owner, or an API key the owner
