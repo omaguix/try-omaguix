@@ -3,8 +3,8 @@
 Try Roguix changes reach people in two ways, and a change decides which one
 it needs:
 
-- **Channel publish** (`server/publish-system.sh`, then
-  `guest/guix/publish-channel`; see `server/README.md`): anything a running
+- **Channel release** (`guest/guix/release.py`; see `server/README.md` and
+  docs/decisions/0006-one-roguix-release-step.md): anything a running
   VM can pick up with `roguix-update`, such as guest packages, services,
   Omarchy's desktop and Roguix's own guest commands. Existing VMs get it
   without a new app.

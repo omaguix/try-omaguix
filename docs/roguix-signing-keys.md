@@ -93,8 +93,9 @@ releases keep this commit's `.guix-authorizations`.
 The channel introduction (`bcc93851…` signed by `7D1A…`) names who signed
 the first commit, not who signs now, so `%roguix-trust` and every VM keep it
 unchanged. If the key was stolen rather than lost, do the same at once, and
-compare the channel's history with `publish-channel`'s commits ("Roguix from
-try-roguix <revision>") for any commit nobody made.
+compare the channel's history with the release step's commits ("Roguix from
+try-roguix <revision>", each followed by "Release <commit>" with
+`release.json`) for any commit nobody made.
 
 ## Keeping the publish key off the serving host
 

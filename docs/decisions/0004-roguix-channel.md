@@ -1,5 +1,8 @@
 # Roguix updates through a signed Guix channel
 
+Superseded in part by [0006](0006-one-roguix-release-step.md): how a
+release is published.
+
 ## Context
 
 A Roguix VM reconfigures with the Roguix modules its image installed under
@@ -41,6 +44,8 @@ its packages there before its channel commit.
   Rotating it means a new key in `.guix-authorizations`, signed by the old
   one, or by the offline recovery key once the old one is lost
   ([docs/roguix-signing-keys.md](../roguix-signing-keys.md)).
-- A release is: build and publish packages, then `publish-channel`.
+- A release is one step, `guest/guix/release.py`
+  ([0006](0006-one-roguix-release-step.md)): the channel commit, CI's
+  builds of it, then a signed manifest that moves `main`.
 - A new Guix pin still needs a new image until the pinned Guix itself is
   published; `roguix-update` says so rather than building Guix.
