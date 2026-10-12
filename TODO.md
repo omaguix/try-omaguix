@@ -53,7 +53,11 @@ so it is reported separately and is not the gate. The user decided
 ungoogled-chromium has no aarch64 substitute at the pin (a many-hour
 build). Decided by the user 2026-10-12: "LibreWolf first": fix and accept
 on LibreWolf now; Chromium's acceptance becomes a separate item later,
-with the package built by CI. Roguix ships no Electron
+with the package built by CI. Later the same day the user reversed the
+earlier "no": "but I already allowed Chromium from the Flatpak pack":
+check Flathub Chromium on `gl=es` now as the Chromium result, saying it
+runs on the Flatpak runtime's Mesa, not the guest's; Guix's
+ungoogled-chromium stays the separate later item. Roguix ships no Electron
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
 
