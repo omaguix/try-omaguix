@@ -2,17 +2,6 @@
 
 ## Next, in order
 
-### Docs: who builds, and a checked-in aarch64 builder (R5, R8)
-
-Requested 2026-10-12 by the roguix-vps coordinator, approved by the
-owner (review of the Roguix repositories, consult round
-20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
-d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
-upgrade path.
-Decision 0002 (docs/decisions/0002-roguix-substitute-server.md) is stale
-on who builds the substitutes: update or supersede it. Check in the
-aarch64 builder VM's definition so it can be recreated.
-
 ### One release step: signed commit, CI builds, manifest (R7, R3)
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
