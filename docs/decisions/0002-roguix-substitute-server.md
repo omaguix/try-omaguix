@@ -42,7 +42,9 @@ exists only on the VPS.
 
 - Every guest trusts binaries signed by the VPS key; whoever holds
   `/etc/guix/signing-key.sec` there can serve code to all Roguix VMs.
-  Rotating it needs a new image or a reconfigure with the new key.
+  Rotating it needs a new image or a reconfigure with the new key. The plan
+  to move signing off the VPS is in
+  [docs/roguix-signing-keys.md](../roguix-signing-keys.md).
 - A Guix pin moves only after the builder has built and uploaded that pin's
   Roguix packages.
 - The server is a single point of failure for updates, not for running VMs;

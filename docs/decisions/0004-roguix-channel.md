@@ -39,7 +39,8 @@ its packages there before its channel commit.
 - Whoever holds the channel key can ship code to every Roguix VM that
   updates; it has the same weight as the substitute server's key.
   Rotating it means a new key in `.guix-authorizations`, signed by the old
-  one.
+  one, or by the offline recovery key once the old one is lost
+  ([docs/roguix-signing-keys.md](../roguix-signing-keys.md)).
 - A release is: build and publish packages, then `publish-channel`.
 - A new Guix pin still needs a new image until the pinned Guix itself is
   published; `roguix-update` says so rather than building Guix.
