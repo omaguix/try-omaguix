@@ -2,17 +2,6 @@
 
 ## Next, in order
 
-### One release step: signed commit, CI builds, manifest (R7, R3)
-
-Requested 2026-10-12 by the roguix-vps coordinator, approved by the
-owner (review of the Roguix repositories, consult round
-20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
-d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
-upgrade path.
-Publish together the signed channel commit, the CI builds made from that
-commit and a release manifest, as one step; share one closure-split script
-with roguixos/roguix instead of two copies.
-
 ### Upgrade existing VMs across Guix pin bumps
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
@@ -33,6 +22,26 @@ acceptance, to startergo/homebrew-virglrenderer first): offer
 macos/patches/virgl-angle-multisample.patch upstream once Metal is the
 default and LibreWolf and Chromium pass (Metal became the default
 2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
+
+### roguix-update checks the release manifest
+
+Follow-up of the release step (decision 0006, done 2026-10-12), decided by
+the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
+channel's release.json: it names HEAD's parent (the released commit) and
+its commit changes nothing but release.json, so modules can only come
+from a released commit. Needs a guest build.
+
+### release.py resumes from an existing CI run
+
+Follow-up of the release step, decided by the user 2026-10-12
+(d-6ff4fe5q). An option to resume guest/guix/release.py from a finished
+CI run of the same channel commit, so a failed VPS import or closure
+check does not need a new multi-hour CI build. No build.
+
+Note for both: the release step works only after roguixos/roguix adds the
+`channel_commit` workflow input and the `split-*` artifacts (sent to the
+guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
+`VPS_IMPORT` (path asked of the roguix-vps coordinator).
 
 ## Proposed
 
