@@ -2,95 +2,6 @@
 
 ## Next, in order
 
-### Browsers lack GPU acceleration on ANGLE/Metal: fix it
-
-Asked 2026-10-11: "Na ANGLE/Metal przeglądarki nie miały akceleracji -
-napraw. Pytaj modeli" (on ANGLE/Metal browsers had no acceleration; fix
-it; ask the models). Background in docs/performance.md ("Default browser
-acceleration fix"): with `cocoa,gl=es` (ANGLE on Metal) VirGL gave the
-guest only desktop OpenGL 2.1, so Chromium could not create its ANGLE
-GLES 3 context (`EGL_BAD_ATTRIBUTE`) and fell back to software; Try
-Omarchy switched the launcher to native Apple OpenGL (`cocoa,gl=on`,
-commit 67e06cd5, v0.5.0), which Apple has deprecated.
-
-The user added 2026-10-11: "Najlepiej Apple Metal" (best on Apple
-Metal): the target is the Metal path, not deprecated Apple OpenGL.
-
-Consult round 20261011-195233-5143 (sol, MiMo, DeepSeek): the guest's GL
-version comes from virglrenderer's capset and Mesa's virgl driver, not the
-host's GLES version; GLES 3.0 on the host is enough for GLES 3.0 in the
-guest (what WebGL 2 and Chromium's default need) only if virglrenderer's
-GLES-host path reports the right caps. Desktop GL 2.1 alone does not show
-the guest's GLES ceiling, and `EGL_BAD_ATTRIBUTE` may come from the
-attributes Chromium asks for rather than the version. Plan, decided by the
-coordinator with the models:
-1. Evidence first, same guest image on `gl=on` and `gl=es`: guest
-   `glxinfo -B`, `eglinfo`, GLES version and extensions; the decoded virgl
-   capset (glsl level, capset version) from the patched QEMU; ANGLE's
-   GLES version and extension list on the host; `chrome://gpu` and the
-   failing `eglCreateContext` attributes. Also run stock virglrenderer
-   1.3.0 on ANGLE (MiMo: the startergo patches may break cap translation).
-2. Fix the first missing capability behind guest GLES 3.0 on the ANGLE
-   path in virglrenderer (a patch under macos/patches/), or in ANGLE if
-   its Metal backend lacks it; no per-browser flags and no faked caps.
-   Accept when an unflagged Chromium and Firefox report GPU compositing,
-   raster and WebGL 2 on `gl=es`; then the launcher default moves to
-   Metal, with `gl=on` kept only until that passes.
-3. Not chosen: browser flags; Venus with Zink (KosmicKrisp round: slower
-   desktop, unreleased host code); a newer ANGLE alone (does not change
-   virgl's caps by itself, but step 1 may show it is needed).
-
-Asked 2026-10-12 whether Chromium matters too ("is it in Try Omarchy? ask
-the models"): Try Omarchy ships Chromium as the default browser; Roguix
-ships LibreWolf and its menu offers Ungoogled Chromium from Guix
-(omarchy-menu.py, `ungoogled-chromium`, on the guest's own Mesa). Round
-20261012-020439-1ce8 (sol, MiMo, DeepSeek), decided by the coordinator
-with the models: acceptance needs both LibreWolf and Guix's Ungoogled
-Chromium accelerated on the Metal path (GPU compositing, raster, WebGL 2,
-no software fallback); Flathub Chromium uses the Flatpak runtime's Mesa,
-so it is reported separately and is not the gate. The user decided
-2026-10-12: "Chromium from Flathub: no" (not tested or reported).
-ungoogled-chromium has no aarch64 substitute at the pin (a many-hour
-build). Decided by the user 2026-10-12: "LibreWolf first": fix and accept
-on LibreWolf now; Chromium's acceptance becomes a separate item later,
-with the package built by CI. Later the same day the user reversed the
-earlier "no": "but I already allowed Chromium from the Flatpak pack":
-check Flathub Chromium on `gl=es` now as the Chromium result, saying it
-runs on the Flatpak runtime's Mesa, not the guest's; Guix's
-ungoogled-chromium stays the separate later item.
-
-First round done 2026-10-12 (commit "macos: accelerate guest browsers on
-ANGLE/Metal"): cause found and fixed in virglrenderer. ANGLE on Metal
-gives an ES 3.0 context; the startergo patch clamped MSAA to 1 sample, so
-the guest had GL_MAX_SAMPLES 1 and Chromium's ANGLE (needs 4) fell back to
-ES 2.0 (`EGL_BAD_ATTRIBUTE`). The patch allocates 2D multisample textures
-through GL_ANGLE_texture_multisample, probes 4 samples, and turns off
-implicit MSAA on that path (ANGLE rejected it next to a 4-sample depth
-texture). On `gl=es`: Flathub Chromium 155 (Flatpak runtime's Mesa 26.2.2)
-has hardware canvas, compositing, raster, WebGL and WebGPU, `ANGLE (Mesa,
-virgl, OpenGL ES 3.0)`, and a WebGL 2 4-sample render resolves correctly;
-`make runtime` (15 virgl regressions), `make app`, `make test` pass. The
-default stays `gl=on`.
-
-Second round done 2026-10-12 (commits "macos: report Apple GL's point size
-range to the guest" and "macos: QMP screendump reads back on gl=es"):
-LibreWolf's "WebGL is currently disabled" had two causes. LibreWolf's own
-per-site WebGL consent prompt (`librewolf.webgl.prompt`), by design;
-decided by the user 2026-10-12: "keep the prompt". And on `gl=on` virgl
-reported Apple core GL's aliased point size range 1..1, so Firefox's
-fingerprinting resistance refused WebGL; it now reads GL_POINT_SIZE_RANGE
-(1..64). With consent, WebGL 1 and 2 (4 samples) work on both paths.
-Screendump now reads back on `gl=es` too, matching grim pixel for pixel.
-Soft lockups: none in 8 runs on either path (4 vCPU, 6 GiB, host load up
-to 52); under load the same test took 80-82 s on `gl=es` against 191-268 s
-on `gl=on`. Remaining (coordinator's plan): switch the launcher default to
-`gl=es`, update AGENTS.md's capture paragraph (screendump works on both
-paths) and docs/performance.md (the lockup results), verify the default
-launch in a test VM.
-Not run: stock virglrenderer 1.3.0 without the startergo patches on ANGLE. Roguix ships no Electron
-app, so none is tested. Do not switch the default browser to match Omarchy
-(a product decision the user has not asked for).
-
 ### One trust record for Roguix's substitutes and channel (R10)
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
@@ -156,7 +67,8 @@ Decided by the user 2026-10-12: "yes, after acceptance". Proposed
 2026-10-12 by the Metal worker (models: after end-to-end
 acceptance, to startergo/homebrew-virglrenderer first): offer
 macos/patches/virgl-angle-multisample.patch upstream once Metal is the
-default and LibreWolf and Chromium pass. Cost: a short PR; no build.
+default and LibreWolf and Chromium pass (Metal became the default
+2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
 
 ## Proposed
 
