@@ -313,6 +313,22 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 
 ## Needs a decision
 
+### Background: renaming to Omaguix (2026-10-12)
+
+Asked 2026-10-12: "maybe ride Omarchy's popularity and rename to omaguix?
+ask the models". Round 20261012-190551-d1ba (sol, MiMo, DeepSeek), all
+three: keep Roguix. "Omarchy is a pending trademark. All rights reserved."
+(omarchy.org/brand); the "Oma" prefix is the Omarchy family's (Omakub,
+Omarchy), so "Omaguix" reads as an official port, and community "Oma"
+names are tolerated, not permitted. Search does not need the name: say
+"Roguix: Omarchy on Guix System" in the README, the repositories'
+descriptions and topics (omarchy, guix, hyprland). An "Oma" name would
+need written permission from foundation@omarchy.org first. Renaming is
+cheapest before the announcement (modules, commands, channel, domain, app
+identity; the channel introduction can stay). MiMo: the Omarchy logo from
+the brand kit that Try Omarchy ships stays subject to Omarchy's rights
+whatever the name. No change made.
+
 ### Trust two publish keys during the move off the serving host
 
 When the guix publish signing key moves off the serving host
