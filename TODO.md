@@ -61,6 +61,18 @@ uploads the `split-*` artifacts; not run in CI yet. The channel's main
 (d610bc0c) lacks %roguix-reference-system, so the first run must be a
 release.py run with a channel commit from current try-roguix.
 
+### Send roguix-vps the store paths server/publish.sh published
+
+Requested 2026-10-12 by the roguix-vps coordinator, passed on by the user:
+roguix.frolow.dev moves to static, CI-signed substitutes (roguix decision
+0001); before guix publish and its key leave the VPS, roguix-vps
+backfills everything served today into the static tree. server/publish.sh
+imported aarch64 items on the VPS without GC roots. Send roguix-vps the
+list of every store path it published that is still meant to be served
+(the publish.txt of each run, or a command that rebuilds the list), or
+put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
+the VPS and say so. Until then nothing is deleted on the VPS.
+
 ## Proposed
 
 ### Accept Guix's Ungoogled Chromium on the Metal path
