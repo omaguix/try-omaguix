@@ -1,3 +1,76 @@
+diff --git a/src/vrend/vrend_blitter.c b/src/vrend/vrend_blitter.c
+index f829115..87d9e9e 100644
+--- a/src/vrend/vrend_blitter.c
++++ b/src/vrend/vrend_blitter.c
+@@ -26,6 +26,7 @@
+ /* for when we can't use glBlitFramebuffer */
+ 
+ #include <stdio.h>
++#include <string.h>
+ 
+ #include "util/hash_table.h"
+ #include "util/macros.h"
+@@ -62,6 +63,9 @@ struct vrend_blitter_ctx {
+    virgl_gl_context gl_context;
+    bool initialised;
+    bool use_gles;
++   /* ES 3.0 with GL_ANGLE_texture_multisample: multisample samplers need
++    * the extension, since #version 310 es does not compile. */
++   bool angle_multisample;
+ 
+    GLuint vaoid;
+ 
+@@ -272,6 +276,21 @@ static void blit_get_swizzle(enum tgsi_texture_type tgsi_tex_target, unsigned fl
+    }
+ }
+ 
++/* Rewrite a 2D multisample shader's ES 3.1 header for ANGLE's ES 3.0. */
++static void blit_use_angle_multisample(char *shader_buf, size_t size)
++{
++   static const char es31[] = "#version 310 es\n";
++   static const char es30[] = "#version 300 es\n"
++                              "#extension GL_ANGLE_texture_multisample : require\n";
++   const size_t old_len = sizeof(es31) - 1, new_len = sizeof(es30) - 1;
++   const size_t rest = strlen(shader_buf) - old_len + 1;
++
++   if (strncmp(shader_buf, es31, old_len) || new_len + rest > size)
++      return;
++   memmove(shader_buf + new_len, shader_buf + old_len, rest);
++   memcpy(shader_buf, es30, new_len);
++}
++
+ static GLuint blit_build_frag_tex_col(struct vrend_blitter_ctx *blit_ctx,
+                                       enum tgsi_texture_type tgsi_tex_target,
+                                       enum tgsi_return_type tgsi_ret,
+@@ -335,6 +354,9 @@ static GLuint blit_build_frag_tex_col(struct vrend_blitter_ctx *blit_ctx,
+          vrend_shader_samplertypeconv(blit_ctx->use_gles, tgsi_tex_target),
+          swizzle_and_type.swizzle, dest_swizzle_snippet);
+ 
++   if (msaa && blit_ctx->angle_multisample && !swizzle_and_type.is_array)
++      blit_use_angle_multisample(shader_buf, sizeof(shader_buf));
++
+    VREND_DEBUG(dbg_blit, NULL, "-- Blit FS color shader MSAA: %d -----------------\n"
+                "%s\n---------------------------------------\n", msaa, shader_buf);
+ 
+@@ -361,6 +383,9 @@ static GLuint blit_build_frag_depth(struct vrend_blitter_ctx *blit_ctx, enum tgs
+       snprintf(shader_buf, 4096, blit_ctx->use_gles ? FS_TEXFETCH_DS_GLES : FS_TEXFETCH_DS_GL,
+          vrend_shader_samplertypeconv(blit_ctx->use_gles, tgsi_tex_target), swizzle_and_type.swizzle);
+ 
++   if (msaa && blit_ctx->angle_multisample && !swizzle_and_type.is_array)
++      blit_use_angle_multisample(shader_buf, sizeof(shader_buf));
++
+    VREND_DEBUG(dbg_blit, NULL, "-- Blit FS depth shader MSAA: %d -----------------\n"
+                "%s\n---------------------------------------\n", msaa, shader_buf);
+ 
+@@ -482,6 +507,8 @@ static void vrend_renderer_init_blit_ctx(struct vrend_blitter_ctx *blit_ctx)
+    }
+ 
+    vrend_sync_make_current(blit_ctx->gl_context);
++   blit_ctx->angle_multisample = blit_ctx->use_gles && epoxy_gl_version() < 31 &&
++      epoxy_has_gl_extension("GL_ANGLE_texture_multisample");
+    glGenVertexArrays(1, &blit_ctx->vaoid);
+    glGenFramebuffers(1, &blit_ctx->fb_id);
+ 
 diff --git a/src/vrend/vrend_formats.c b/src/vrend/vrend_formats.c
 index 05ff403..78bc381 100644
 --- a/src/vrend/vrend_formats.c
