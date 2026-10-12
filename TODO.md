@@ -149,14 +149,15 @@ reset the VM when a release needs a newer Guix. Existing VMs should move to
 the new pin keeping their settings and data, with a rollback. New users
 are Try Roguix Mac app users for now; bare metal is not pursued.
 
-## Proposed
-
 ### Offer the ANGLE multisample fix to startergo's virglrenderer tap
 
-Proposed 2026-10-12 by the Metal worker (models: after end-to-end
+Decided by the user 2026-10-12: "yes, after acceptance". Proposed
+2026-10-12 by the Metal worker (models: after end-to-end
 acceptance, to startergo/homebrew-virglrenderer first): offer
 macos/patches/virgl-angle-multisample.patch upstream once Metal is the
 default and LibreWolf and Chromium pass. Cost: a short PR; no build.
+
+## Proposed
 
 ### Accept Guix's Ungoogled Chromium on the Metal path
 
