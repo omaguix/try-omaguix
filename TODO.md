@@ -49,7 +49,11 @@ with the models: acceptance needs both LibreWolf and Guix's Ungoogled
 Chromium accelerated on the Metal path (GPU compositing, raster, WebGL 2,
 no software fallback); Flathub Chromium uses the Flatpak runtime's Mesa,
 so it is reported separately and is not the gate. The user decided
-2026-10-12: "Chromium from Flathub: no" (not tested or reported). Roguix ships no Electron
+2026-10-12: "Chromium from Flathub: no" (not tested or reported).
+ungoogled-chromium has no aarch64 substitute at the pin (a many-hour
+build). Decided by the user 2026-10-12: "LibreWolf first": fix and accept
+on LibreWolf now; Chromium's acceptance becomes a separate item later,
+with the package built by CI. Roguix ships no Electron
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
 
@@ -113,6 +117,14 @@ the new pin keeping their settings and data, with a rollback. New users
 are Try Roguix Mac app users for now; bare metal is not pursued.
 
 ## Proposed
+
+### Accept Guix's Ungoogled Chromium on the Metal path
+
+Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
+first"): once roguixos/roguix's CI builds `ungoogled-chromium` for aarch64
+(no substitute at the pin; a many-hour build), check it on `gl=es` like
+LibreWolf (GPU compositing, raster, WebGL 2, no software fallback) and fix
+what differs. Needs CI to build the package first.
 
 ### Let agents click in a VM and see the result: evaluate hypruse first
 
