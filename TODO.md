@@ -105,10 +105,15 @@ or the VPS), substitutes at substitutes.roguix.org (all three; not a path
 under the apex, not "cache"). Decided by the user 2026-10-12, overriding the models' 12-month alias:
 "no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
 turned off once substitutes.roguix.org serves, and the trust record names
-only the new URL (no overlap release). The URL change still ships apart
-from the publish key change. Decided by the user 2026-10-12 (d-2zft4rjx):
-the publish key change is a clean cutover too, see "Trust two publish
-keys during the move off the serving host". TLS for both names
+only the new URL (no overlap release). Decided by the user 2026-10-12
+(d-2zft4rjx): the publish key change is a clean cutover too, see "Trust
+two publish keys during the move off the serving host". Decided by the
+user 2026-10-12 (d-j2ilgfxy, relayed by the roguix-vps coordinator): a
+fresh key, held only in GitHub, signs substitutes.roguix.org in CI; new
+VM images trust only it, and the old key is erased from the VPS and
+GitHub. So the URL and the key change ship together. Roguix's maintainer
+(the omguix coordinator) generates the key and hands try-roguix its
+public key for the trust record. TLS for both names
 before the release; CAA limited to the issuing CA; no mail on the domain:
 null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
 Needs: DNS records at Porkbun (the owner, or an API key the owner
