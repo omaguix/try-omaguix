@@ -2,31 +2,6 @@
 
 ## Next, in order
 
-### One trust record for Roguix's substitutes and channel (R10)
-
-Requested 2026-10-12 by the roguix-vps coordinator, approved by the
-owner (review of the Roguix repositories, consult round
-20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
-d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
-upgrade path.
-Put the substitute URL (stays roguix.frolow.dev) and its public keys, and
-the channel URL, introduction and signer, in one exported record instead
-of the constants in guest/guix/modules/roguix/system.scm:84 and
-omarchy.scm:322. The channel moves to the roguixos GitHub org together
-with try-roguix (the transfer is the owner's step), so its URL changes in
-that record. Add a second, offline recovery key to roguix-channel's
-.guix-authorizations (the owner creates and keeps the key; the worker
-prepares the change and the steps). Plan keeping the publish signing key
-off the serving host (a written plan, no host change here).
-
-Addendum 2026-10-12 from the roguix-vps coordinator (consult round
-20261012-014618-192f): once the repositories are in the roguixos org, put
-github.com/roguixos/... URLs in the exported record the same week, not
-relying on GitHub's redirects; the channel's signed introduction stays
-unchanged. Transfer status 2026-10-12: roguix-channel is now
-roguixos/roguix-channel and try-roguix roguixos/try-roguix (moved in
-GitHub's web UI by the owner's go, 2026-10-12).
-
 ### Docs: who builds, and a checked-in aarch64 builder (R5, R8)
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
@@ -321,6 +296,18 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### Trust two publish keys during the move off the serving host
+
+When the guix publish signing key moves off the serving host
+(docs/roguix-signing-keys.md, the plan from the trust-record item, done
+2026-10-12), guests must trust the old and the new key for one release:
+compatibility under the policy (Rule 7), so it needs the owner's approval
+with a removal date for the old key. Approve the dual-key release when
+the move happens?
+Options: Approve one release with both keys, then drop the old key | Re-key at once and reset guests | Keep the key on the serving host for now
+Checked 2026-10-12: the plan recommends signing on the builder and serving
+static files from the VPS; no host change has been made.
 
 ### Background: drgn for agents (2026-10-11)
 
