@@ -5,7 +5,8 @@
 Omarchy's default applications include lazygit, lazydocker, gum, dua and
 cliamp, which the pinned Guix does not package. Packaging them from source
 means Go and Rust dependency trees of hundreds of modules each, to maintain
-on every update. Each project publishes an aarch64 Linux release binary.
+on every update. Each project publishes aarch64 and x86_64 Linux release
+binaries.
 
 ## Decision
 
@@ -31,5 +32,8 @@ no aarch64 substitutes for (hours to build).
 
 - Guests run code built by the upstream projects' CI, not by Guix, and
   signed by the Roguix server key; the SHA-256 pins make any change visible.
-- Updating one is a version, URL and hash change in `apps.scm`.
-- The packages are `aarch64-linux` only.
+- Updating one is a version change and a URL and hash per system in
+  `apps.scm`.
+- The packages support `aarch64-linux` and `x86_64-linux`, one upstream
+  release each; they have no `source`, since the release depends on the
+  system the package is built for, which only thunked fields see.

@@ -267,6 +267,25 @@ class ProjectModuleTests(unittest.TestCase):
                       "  (settings-operating-system '()))", system)
         self.assertEqual(system.count("(read-machine-settings)"), 1)
 
+    def test_upstream_binaries_cover_both_reference_systems(self):
+        # The reference system is built for aarch64 and x86_64; each binary
+        # package picks its release when lowered for a system, never from a
+        # `source' evaluated once at module load.
+        apps = (self.MODULES / "apps.scm").read_text()
+        packages = ("lazygit-bin", "lazydocker-bin", "gum-bin", "dua-bin", "cliamp-bin")
+        definitions = re.split(r"\n(?=\(define)", apps)
+        for name in packages:
+            with self.subTest(package=name):
+                body = next(d for d in definitions if d.startswith(f"(define {name}\n"))
+                if name == "cliamp-bin":
+                    body = next(d for d in definitions if d.startswith("(define %cliamp-releases"))
+                releases = re.findall(r'"(aarch64-linux|x86_64-linux)"\s+"(https://[^"]+)"\s+"([0-9a-z]{52})"', body)
+                self.assertEqual([system for system, _, _ in releases], ["aarch64-linux", "x86_64-linux"])
+                arm, x86 = (url for _, url, _ in releases)
+                self.assertRegex(arm, r"arm64|aarch64")
+                self.assertRegex(x86, r"x86_64|amd64")
+        self.assertNotIn("(source (origin", apps.split("(define fastfetch-without-zfs")[0])
+
 
 if __name__ == "__main__":
     unittest.main()

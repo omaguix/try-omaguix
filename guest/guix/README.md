@@ -572,9 +572,11 @@ evaluate it with the pinned Guix and an absolute load path, which `local-file`
 needs:
 `guix time-machine --commit=$(cat modules/roguix/guix-commit) -- system build
 -L $PWD/modules -e '(@ (roguix system) %roguix-reference-system)'
---system=aarch64-linux -d`. It is aarch64-only: the `(roguix apps)` binaries
-it installs (lazygit, lazydocker, gum, dua, cliamp) are upstream aarch64
-releases, and an x86_64 variant would need their x86_64 releases.
+--system=aarch64-linux -d`, or `--system=x86_64-linux` for x86_64: the
+`(roguix apps)` binaries it installs (lazygit, lazydocker, gum, dua, cliamp)
+list an upstream release for each of the two systems and pick theirs in the
+thunked `arguments` field, which sees the requested system (`source`, read
+once when the module loads, would not).
 
 Measured 2026-09-24 on a fresh image with the Mac's network: the first
 `roguix-pkg add alacritty` took 20 minutes, mostly downloading about 900 MB
