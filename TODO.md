@@ -106,9 +106,9 @@ under the apex, not "cache"). Decided by the user 2026-10-12, overriding the mod
 "no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
 turned off once substitutes.roguix.org serves, and the trust record names
 only the new URL (no overlap release). The URL change still ships apart
-from the publish key change. Open for the user: the earlier "one release
-with both keys" decision rests on the same assumption of existing users;
-ask whether the key change is also a clean cutover. TLS for both names
+from the publish key change. Decided by the user 2026-10-12 (d-2zft4rjx):
+the publish key change is a clean cutover too, see "Trust two publish
+keys during the move off the serving host". TLS for both names
 before the release; CAA limited to the issuing CA; no mail on the domain:
 null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
 Needs: DNS records at Porkbun (the owner, or an API key the owner
@@ -405,6 +405,9 @@ the move happens?
 Decided by the user 2026-10-12: "yes, one release": guests trust both keys
 for one release, then the old key is dropped; this applies when the move
 happens (no item queued for the move itself).
+Superseded by the user 2026-10-12 (d-2zft4rjx): a clean cutover, since
+nobody uses Roguix yet: guests trust only the new key from the release
+that moves it, with no dual-key release.
 Checked 2026-10-12: the plan recommends signing on the builder and serving
 static files from the VPS; no host change has been made.
 
