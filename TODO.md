@@ -14,6 +14,16 @@ reset the VM when a release needs a newer Guix. Existing VMs should move to
 the new pin keeping their settings and data, with a rollback. New users
 are Try Roguix Mac app users for now; bare metal is not pursued.
 
+### First Roguix release through release.py
+
+Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
+path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
+`.env`, then run guest/guix/release.py for current try-roguix main: a
+signed roguix-channel commit, roguixos/roguix's build-desktop.yml
+dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
+the closure check, then the signed release.json moves the channel's main.
+Report the run ids and the release commit; on any failure, main stays.
+
 ### Offer the ANGLE multisample fix to startergo's virglrenderer tap
 
 Decided by the user 2026-10-12: "yes, after acceptance". Proposed
