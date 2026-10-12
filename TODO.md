@@ -68,6 +68,7 @@ nothing machine-specific. Then reply to that coordinator with the module
 and variable name, and whether x86_64 needs a separate variant, once it is
 on public main. roguixos/roguix will build that closure minus what
 bordeaux serves, replacing manifests/x86_64-desktop.scm's hand list.
+Decided by the user 2026-10-12: "yes, in parallel" with the Metal item.
 
 ### One trust record for Roguix's substitutes and channel (R10)
 
