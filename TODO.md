@@ -113,7 +113,13 @@ fresh key, held only in GitHub, signs substitutes.roguix.org in CI; new
 VM images trust only it, and the old key is erased from the VPS and
 GitHub. So the URL and the key change ship together. Roguix's maintainer
 (the omguix coordinator) generates the key and hands try-roguix its
-public key for the trust record. TLS for both names
+public key for the trust record. Agreed with the omguix coordinator
+2026-10-12: roguix's CI verifies the key at roguix-channel
+modules/roguix/substitutes.roguix.org.pub; since publish-channel
+regenerates the channel's modules, the file is added in try-roguix as
+guest/guix/modules/roguix/substitutes.roguix.org.pub, `(roguix trust)`
+names https://substitutes.roguix.org with it, and roguix.frolow.dev.pub
+is removed. TLS for both names
 before the release; CAA limited to the issuing CA; no mail on the domain:
 null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
 Needs: DNS records at Porkbun (the owner, or an API key the owner
