@@ -40,6 +40,18 @@ coordinator with the models:
    desktop, unreleased host code); a newer ANGLE alone (does not change
    virgl's caps by itself, but step 1 may show it is needed).
 
+Asked 2026-10-12 whether Chromium matters too ("is it in Try Omarchy? ask
+the models"): Try Omarchy ships Chromium as the default browser; Roguix
+ships LibreWolf and its menu offers Ungoogled Chromium from Guix
+(omarchy-menu.py, `ungoogled-chromium`, on the guest's own Mesa). Round
+20261012-020439-1ce8 (sol, MiMo, DeepSeek), decided by the coordinator
+with the models: acceptance needs both LibreWolf and Guix's Ungoogled
+Chromium accelerated on the Metal path (GPU compositing, raster, WebGL 2,
+no software fallback); Flathub Chromium uses the Flatpak runtime's Mesa,
+so it is reported separately and is not the gate. Roguix ships no Electron
+app, so none is tested. Do not switch the default browser to match Omarchy
+(a product decision the user has not asked for).
+
 ### Export a reference Roguix system for roguixos/roguix's CI
 
 Requested 2026-10-12 by the guix-x86_64-iso-omguix coordinator, passed on
