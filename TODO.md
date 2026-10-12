@@ -305,7 +305,9 @@ When the guix publish signing key moves off the serving host
 compatibility under the policy (Rule 7), so it needs the owner's approval
 with a removal date for the old key. Approve the dual-key release when
 the move happens?
-Options: Approve one release with both keys, then drop the old key | Re-key at once and reset guests | Keep the key on the serving host for now
+Decided by the user 2026-10-12: "yes, one release": guests trust both keys
+for one release, then the old key is dropped; this applies when the move
+happens (no item queued for the move itself).
 Checked 2026-10-12: the plan recommends signing on the builder and serving
 static files from the VPS; no host change has been made.
 
