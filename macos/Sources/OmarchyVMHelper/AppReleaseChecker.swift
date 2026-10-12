@@ -85,7 +85,7 @@ final class AppReleaseChecker {
         configuration.urlCredentialStorage = nil
         let client = session ?? URLSession(configuration: configuration)
         defer { if session == nil { client.finishTasksAndInvalidate() } }
-        var request = URLRequest(url: URL(string: "https://api.github.com/repos/rofrol/try-roguix/releases/latest")!)
+        var request = URLRequest(url: URL(string: "https://api.github.com/repos/roguixos/try-roguix/releases/latest")!)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
         request.setValue("Try-Roguix-Release-Check", forHTTPHeaderField: "User-Agent")

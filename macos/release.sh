@@ -18,7 +18,7 @@ tag=$(git describe --exact-match --tags --match 'try-roguix-v[0-9]*' HEAD)
 build=build/release.noindex
 # Releases are signed ad hoc (docs/releasing.md).
 macos/build-app.sh --configuration production --sign-identity - --dmg --output-dir "$build" \
-  --download-disk-from "https://github.com/rofrol/try-roguix/releases/download/$tag/"
+  --download-disk-from "https://github.com/roguixos/try-roguix/releases/download/$tag/"
 app="$build/Try Roguix.app"
 # The version comes from the tag, but the assets are named and checked from
 # the app itself: refuse to publish an app that carries another version.

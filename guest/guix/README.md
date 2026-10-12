@@ -560,7 +560,9 @@ and is part of the system configuration:
   Quickshell, which have no substitutes, for hours.
 - **Substitutes for Roguix's own packages** come from
   `https://roguix.frolow.dev` (`server/`, decision 0002), after Guix's servers;
-  the guest authorizes `modules/roguix/roguix.frolow.dev.pub`. Verified
+  the guest authorizes `modules/roguix/roguix.frolow.dev.pub`. This server,
+  its key and the signed channel `roguix-update` follows are named in one
+  record, `%roguix-trust` in `modules/roguix/trust.scm`. Verified
   2026-09-24 in a b12 guest: `guix weather --substitute-urls=https://roguix.frolow.dev`
   finds Quickshell, Hyprland and Omarchy (3 of 3).
 

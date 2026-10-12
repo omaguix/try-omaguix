@@ -44,7 +44,7 @@ for the verified results and what is still open.
 ## Install
 
 Download `TryRoguix.dmg` from the
-[latest release](https://github.com/rofrol/try-roguix/releases/latest) on an
+[latest release](https://github.com/roguixos/try-roguix/releases/latest) on an
 Apple Silicon Mac with macOS 15 or newer, and drag the app to Applications.
 Releases are not notarized yet: after macOS refuses the first launch, allow
 it in **System Settings > Privacy & Security > Open Anyway**. Compare the

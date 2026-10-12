@@ -50,6 +50,7 @@
   #:use-module (gnu system pam)
   #:use-module (roguix apps)
   #:use-module (roguix packages)
+  #:use-module (roguix trust)
   #:use-module (roguix ttfx)
   #:export (omarchy
             font-jetbrains-mono-nerd
@@ -316,13 +317,6 @@ configuration, Quickshell desktop shell, themes and helper commands.")
 ;;; Compatibility commands for Omarchy's Arch assumptions, plus Try Omarchy's
 ;;; xdg-terminal-exec and the per-user seed.
 
-;;; The roguix channel: Roguix's modules, published from try-roguix
-;;; (guest/guix/publish-channel) and signed with the channel key; Guix's
-;;; channel introduction model authenticates each commit from the first.
-(define %roguix-channel-url "https://github.com/rofrol/roguix-channel")
-(define %roguix-channel-introduction "bcc938512706d19de86dd8c6f50853fa80b063b8")
-(define %roguix-channel-signer "7D1A 8B40 0C26 0998 097F  63E5 28B8 3B16 11FA 815E")
-
 ;; Roguix's commands never compile in the VM unless asked: packages come from
 ;; roguix.frolow.dev and Guix's servers, and --max-jobs=0 still lets Guix
 ;; build its local derivations (configuration, profiles, grafts) but refuses
@@ -473,12 +467,16 @@ set -e
 git=" #$(file-append git "/bin/git") "
 guix=/var/guix/gcroots/roguix-guix/bin/guix
 dir=/var/lib/roguix/channel
-[ -d \"$dir/.git\" ] || $git clone --quiet --no-checkout " #$%roguix-channel-url " \"$dir\"
+url=" #$(roguix-trust-channel-url %roguix-trust) "
+[ -d \"$dir/.git\" ] || $git clone --quiet --no-checkout \"$url\" \"$dir\"
+# A checkout cloned before the channel moved follows its new URL.
+$git -C \"$dir\" remote set-url origin \"$url\"
 $git -C \"$dir\" fetch --quiet origin main keyring
 # --end takes a commit, not a branch name.
 head=$($git -C \"$dir\" rev-parse origin/main)
 ( cd \"$dir\" && $guix git authenticate --keyring=origin/keyring --end=\"$head\" \\
-    " #$%roguix-channel-introduction " '" #$%roguix-channel-signer "' )
+    " #$(roguix-trust-channel-introduction %roguix-trust) " \\
+    '" #$(roguix-trust-channel-signer %roguix-trust) "' )
 $git -C \"$dir\" checkout --quiet --detach \"$head\"
 if ! cmp -s \"$dir/modules/roguix/guix-commit\" /etc/roguix/modules/roguix/guix-commit; then
   echo 'roguix-update: this Roguix release needs a newer Guix than this VM has;' >&2

@@ -68,7 +68,7 @@ struct InstalledAppRelease: Equatable {
 }
 
 struct AppRelease: Equatable {
-    static let releasesURL = URL(string: "https://github.com/rofrol/try-roguix/releases")!
+    static let releasesURL = URL(string: "https://github.com/roguixos/try-roguix/releases")!
     /// Release tags are this prefix and X.Y.Z (docs/releasing.md).
     static let tagPrefix = "try-roguix-v"
     let version: AppReleaseVersion

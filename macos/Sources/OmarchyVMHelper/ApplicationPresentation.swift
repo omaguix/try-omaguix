@@ -73,9 +73,9 @@ enum ApplicationHelpLink: Int, CaseIterable {
 
     var url: URL {
         switch self {
-        case .usage: URL(string: "https://github.com/rofrol/try-roguix/blob/main/README.md")!
-        case .troubleshooting: URL(string: "https://github.com/rofrol/try-roguix/blob/main/README.md#data")!
-        case .reportIssue: URL(string: "https://github.com/rofrol/try-roguix/issues")!
+        case .usage: URL(string: "https://github.com/roguixos/try-roguix/blob/main/README.md")!
+        case .troubleshooting: URL(string: "https://github.com/roguixos/try-roguix/blob/main/README.md#data")!
+        case .reportIssue: URL(string: "https://github.com/roguixos/try-roguix/issues")!
         }
     }
 }

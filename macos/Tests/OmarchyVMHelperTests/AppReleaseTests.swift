@@ -71,7 +71,7 @@ struct AppReleaseTests {
     @Test("only published stable releases with an uploaded Mac app are accepted")
     func releaseValidation() throws {
         let latest = try release()
-        #expect(latest.url.absoluteString == "https://github.com/rofrol/try-roguix/releases/tag/try-roguix-v0.5.0")
+        #expect(latest.url.absoluteString == "https://github.com/roguixos/try-roguix/releases/tag/try-roguix-v0.5.0")
         for data in [
             try payload(draft: true), try payload(prerelease: true),
             try payload(tag: "try-roguix-v0.5.0-beta"), try payload(tag: "0.5.0"),
@@ -91,7 +91,7 @@ struct AppReleaseTests {
     func releaseDownloadNames(assetName: String) throws {
         let latest = try AppRelease.decode(payload(assetName: assetName))
         #expect(latest.version == AppReleaseVersion("0.5.0"))
-        #expect(latest.url.absoluteString == "https://github.com/rofrol/try-roguix/releases/tag/try-roguix-v0.5.0")
+        #expect(latest.url.absoluteString == "https://github.com/roguixos/try-roguix/releases/tag/try-roguix-v0.5.0")
     }
 
     @Test("current and newer installed builds are not offered a downgrade")
