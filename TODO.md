@@ -53,6 +53,19 @@ so it is reported separately and is not the gate. The user decided
 app, so none is tested. Do not switch the default browser to match Omarchy
 (a product decision the user has not asked for).
 
+### x86_64 variant of the reference Roguix system for CI
+
+Requested 2026-10-12 by the guix-x86_64-iso-omguix coordinator, passed on
+by the user: the user also runs Roguix on an x86_64 2010 MacBook (Core 2
+Duo, slow to compile) and wants x86_64 substitutes too. Add an x86_64
+variant of `%roguix-reference-system` ((roguix system), commit 85f1fdc5):
+the five `(roguix apps)` -bin packages (lazygit, lazydocker, gum, dua,
+cliamp) are aarch64-only upstream binaries, so use their x86_64 releases
+and hashes or source builds; same rules (no nonguix, nothing
+machine-specific). Run in parallel with the Metal item, as the user
+decided for the first export. Reply to that coordinator with the variable
+name once it is on public main.
+
 ### One trust record for Roguix's substitutes and channel (R10)
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
