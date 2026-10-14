@@ -17,6 +17,7 @@ import unittest
 
 HERE = Path(__file__).parent
 PATCH = HERE / "modules" / "roguix" / "omarchy-theme-set-store-modes.patch"
+SEED = HERE / "modules" / "roguix" / "omarchy-seed"
 
 
 def staging_lines(side):
@@ -99,6 +100,67 @@ class ThemeSetTests(unittest.TestCase):
         self.theme_set("-")
         self.assertNotIn("foot.ini", self.theme_files())
         self.assertIn("next-theme/foot.ini", self.theme_files())
+
+    def run_seed_up_to_marker(self, home, omarchy_bin):
+        text = SEED.read_text()
+        marker_exit = "[[ -e $marker ]] && exit 0"
+        self.assertIn(marker_exit, text)
+        prefix = text[:text.index(marker_exit) + len(marker_exit)] + "\n"
+        # macOS BSD cp lacks GNU's --no-preserve=mode; strip it in the test.
+        prefix = prefix.replace("cp -rn --no-preserve=mode", "cp -rn")
+        prefix = prefix.replace("cp --no-preserve=mode", "cp")
+        prefix = prefix.replace(
+            "roguix_share=/run/current-system/profile/share/roguix",
+            f'roguix_share="{HERE / "modules" / "roguix"}"',
+        )
+        omarchy = self.root / "omarchy"
+        (omarchy / "install" / "user").mkdir(parents=True, exist_ok=True)
+        (omarchy / "install" / "user" / "default-keyring.sh").write_text("#!/bin/sh\n")
+        (omarchy / "config" / "foot").mkdir(parents=True, exist_ok=True)
+        (omarchy / "config" / "foot" / "foot.ini").write_text(
+            "include=~/.local/state/omarchy/current/theme/foot.ini\n"
+        )
+        (omarchy / "logo.txt").write_text("logo\n")
+        (omarchy / "icon.txt").write_text("icon\n")
+        env = {
+            "PATH": f"{omarchy_bin}:/usr/bin:/bin",
+            "HOME": str(home),
+            "OMARCHY_PATH": str(omarchy),
+        }
+        return subprocess.run(
+            ["bash", "-c", prefix], env=env, capture_output=True, text=True, check=False
+        )
+
+    def test_seed_repairs_missing_foot_ini_on_seeded_account(self):
+        home = self.root / "home"
+        state = home / ".local" / "state" / "omarchy"
+        (state / "done").mkdir(parents=True)
+        (state / "done" / "roguix-seed").write_text("")
+        (state / "current" / "theme").mkdir(parents=True)
+        (state / "current" / "theme.name").write_text("gruvbox\n")
+
+        omarchy_bin = self.root / "omarchy" / "bin"
+        omarchy_bin.mkdir(parents=True)
+        calls = self.root / "calls.txt"
+        setter = omarchy_bin / "omarchy-theme-set"
+        setter.write_text(
+            "#!/bin/bash\n"
+            f'printf "%s:%s\\n" "${{OMARCHY_THEME_HEADLESS:-}}" "$1" >>"{calls}"\n'
+            'mkdir -p "$HOME/.local/state/omarchy/current/theme"\n'
+            'echo "[colors-dark]" >"$HOME/.local/state/omarchy/current/theme/foot.ini"\n'
+        )
+        setter.chmod(0o755)
+
+        res = self.run_seed_up_to_marker(home, omarchy_bin)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(calls.read_text(), "1:gruvbox\n")
+        self.assertTrue((state / "current" / "theme" / "foot.ini").is_file())
+        self.assertTrue((home / ".config" / "foot" / "foot.ini").is_file())
+
+        # Second login with foot.ini intact does not re-run omarchy-theme-set.
+        res2 = self.run_seed_up_to_marker(home, omarchy_bin)
+        self.assertEqual(res2.returncode, 0, res2.stderr)
+        self.assertEqual(calls.read_text(), "1:gruvbox\n")
 
 
 if __name__ == "__main__":

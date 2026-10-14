@@ -545,9 +545,11 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   moved the new theme inside it: the theme's generated configs were
   missing, and foot reported that `current/theme/foot.ini` does not exist.
   `omarchy-theme-set-store-modes.patch` makes the staged copy the owner's
-  and the current theme removable, so choosing a theme once repairs an
-  account that hit this (`test_omarchy_theme_set.py`). Remove it once
-  Omarchy stages the theme without the source's modes.
+  and the current theme removable, and `roguix-omarchy-seed` rebuilds the
+  current theme on login when `current/theme/foot.ini` is missing, so
+  logging in or choosing a theme repairs an account that hit this
+  (`test_omarchy_theme_set.py`). Remove the patch once Omarchy stages the
+  theme without the source's modes.
 
 - **Power profiles:** the VM has no Linux power profile driver
   (`power-profiles-daemon`); `omarchy-macos-power-profile.patch`, Try

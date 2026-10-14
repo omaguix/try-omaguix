@@ -50,6 +50,29 @@ done
 # own install/user/default-keyring.sh, which only creates what is missing.
 bash "$omarchy/install/user/default-keyring.sh"
 
+# Ensure the top-level foot config is present even on seeded accounts.
+if [[ ! -e $HOME/.config/foot/foot.ini && -e $omarchy/config/foot/foot.ini ]]; then
+  mkdir -p "$HOME/.config/foot"
+  cp --no-preserve=mode "$omarchy/config/foot/foot.ini" \
+    "$HOME/.config/foot/foot.ini"
+fi
+
+# A theme change before omarchy-theme-set-store-modes.patch could not remove
+# current/theme's read-only backgrounds/ and moved next-theme inside it,
+# leaving current/theme/foot.ini missing. Rebuild the active theme on login
+# when its generated foot.ini is missing, even on an already-seeded account.
+if [[ -e $marker && ! -s $state/current/theme/foot.ini ]]; then
+  theme_name="Tokyo Night"
+  if [[ -s $state/current/theme.name ]]; then
+    read -r candidate <"$state/current/theme.name" || true
+    [[ -n $candidate ]] && theme_name=$candidate
+  fi
+  OMARCHY_THEME_HEADLESS=1 OMARCHY_PATH=$omarchy PATH="$omarchy/bin:$PATH" \
+    omarchy-theme-set "$theme_name" || \
+    OMARCHY_THEME_HEADLESS=1 OMARCHY_PATH=$omarchy PATH="$omarchy/bin:$PATH" \
+      omarchy-theme-set "Tokyo Night"
+fi
+
 [[ -e $marker ]] && exit 0
 
 mkdir -p "$HOME/.config" "$state/done" "$state/toggles/hypr" \
