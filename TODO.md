@@ -113,7 +113,7 @@ The repositories are now `omaguix/omaguix`, `omaguix/omaguix-channel`,
 and `omaguix/try-omaguix`; their histories and existing tags are preserved.
 Porkbun serves the domain's DNS, with the apex and
 `substitutes.omaguix.org` pointing at the existing VPS. The new substitute
-key's public bytes are unchanged, now staged as
+key's public half is staged as
 `guest/guix/modules/roguix/substitutes.omaguix.org.pub`.
 The earlier plan below uses the superseded domain and filename: current
 implementation uses `omaguix.org` and `substitutes.omaguix.org.pub`.
@@ -121,6 +121,16 @@ Do not activate the new guest trust record until HTTPS, signed substitute
 content and the matching CI signing secret have been verified. Changing
 the substitute key does not change the independently signed channel's
 introduction or signer.
+
+The owner instructed the migration to leave the old MacBook alone.
+On 2026-10-14 a replacement key was generated locally using Guix's
+libgcrypt generation parameters and checked by signing and verifying a
+message. Its private half was sent directly from memory to the GitHub
+`substitute-signing/SUBSTITUTE_SIGNING_KEY` secret, without creating a
+private file. The current public key's SHA-256 is
+`5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`.
+The earlier public key/checksum below is superseded; it must not be used
+with that secret.
 
 Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
 models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
