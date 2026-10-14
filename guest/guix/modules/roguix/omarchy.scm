@@ -1,4 +1,4 @@
-;;; Roguix — the Omarchy 4 desktop on Guix System.
+;;; Omaguix — the Omarchy 4 desktop on Guix System.
 ;;;
 ;;; Omarchy 4 ("Quattro") is installed like the Arch guest installs it: the
 ;;; pinned upstream tree as a package at /usr/share/omarchy (OMARCHY_PATH's
@@ -128,7 +128,7 @@
                    (let ((file (string-append bin "/" (car helper))))
                      (call-with-output-file file
                        (lambda (port)
-                         (format port "#!~a~%# Roguix: ~a~%~a~%"
+                         (format port "#!~a~%# Omaguix: ~a~%~a~%"
                                  bash (cadr helper) (caddr helper))))
                      (chmod file #o555)))
                  '(("omarchy-pkg-add" "add Guix packages to /etc/config.scm"
@@ -152,15 +152,15 @@
                   (chmod file #o755)
                   (substitute* file (("^#!/bin/bash") (string-append "#!" bash)))
                   (chmod file #o555))
-                ;; Web apps need a Chromium-family --app window; Roguix's
+                ;; Web apps need a Chromium-family --app window; Omaguix's
                 ;; browser is LibreWolf, so they open in a new browser window.
                 ;; See guest/guix/README.md, "Differences from Try Omarchy".
                 (let ((file (string-append bin "/omarchy-launch-webapp")))
                   (call-with-output-file file
                     (lambda (port)
-                      (format port "#!~a~%# Roguix: open a web app in a new window of the default browser.~%exec omarchy-launch-browser --new-window \"$1\"~%" bash)))
+                      (format port "#!~a~%# Omaguix: open a web app in a new window of the default browser.~%exec omarchy-launch-browser --new-window \"$1\"~%" bash)))
                   (chmod file #o555))
-                ;; Omarchy's time zone menu calls timedatectl. Roguix's
+                ;; Omarchy's time zone menu calls timedatectl. Omaguix's
                 ;; lists "Same as macOS" first while the Mac's zone is
                 ;; known (Try Omarchy 5cebb9b): choosing it follows the Mac
                 ;; again, any zone fixes it. system.scm's sudoers allows
@@ -171,7 +171,7 @@
                   (call-with-output-file file
                     (lambda (port)
                       (format port "#!~a
-# Roguix: choose a fixed time zone, or follow the Mac's.
+# Omaguix: choose a fixed time zone, or follow the Mac's.
 set -e
 helper=/run/current-system/profile/bin/roguix-timezone
 timezone=$({ $helper --mirror-label 2>/dev/null || true; $helper --list; } | omarchy-menu-select \"Set timezone\" -- --width 520 --maxheight 520) || exit 1
@@ -317,7 +317,7 @@ configuration, Quickshell desktop shell, themes and helper commands.")
 ;;; Compatibility commands for Omarchy's Arch assumptions, plus Try Omarchy's
 ;;; xdg-terminal-exec and the per-user seed.
 
-;; Roguix's commands never compile in the VM unless asked: packages come from
+;; Omaguix's commands never compile in the VM unless asked: packages come from
 ;; roguix.frolow.dev and Guix's servers, and --max-jobs=0 still lets Guix
 ;; build its local derivations (configuration, profiles, grafts) but refuses
 ;; any other build at once instead of compiling for hours.
@@ -382,7 +382,7 @@ while arguments and arguments[0].startswith('--'):
     if option == '--':
         break
     if option != '--pdeathsig' or not arguments:
-        sys.exit(f'setpriv: Roguix supports only --pdeathsig, not {option}')
+        sys.exit(f'setpriv: Omaguix supports only --pdeathsig, not {option}')
     name = arguments.pop(0).upper()
     number = int(name) if name.isdigit() else signal.Signals[
         name if name.startswith('SIG') else 'SIG' + name]
@@ -453,7 +453,7 @@ exit 0
 /var/guix/gcroots/roguix-guix/bin/guix system reconfigure $gate \\
   -L /etc/roguix/modules /etc/config.scm \"$@\" || gate_failed $?
 "))
-              ;; Update Roguix from its signed channel (docs/decisions/0004):
+              ;; Update Omaguix from its signed channel (docs/decisions/0004):
               ;; fetch it, authenticate every new commit from the channel
               ;; introduction, require the same Guix pin as this image, then
               ;; reconfigure /etc/config.scm with the channel's modules. The
@@ -479,8 +479,8 @@ head=$($git -C \"$dir\" rev-parse origin/main)
     '" #$(roguix-trust-channel-signer %roguix-trust) "' )
 $git -C \"$dir\" checkout --quiet --detach \"$head\"
 if ! cmp -s \"$dir/modules/roguix/guix-commit\" /etc/roguix/modules/roguix/guix-commit; then
-  echo 'roguix-update: this Roguix release needs a newer Guix than this VM has;' >&2
-  echo 'reset Roguix from the latest Try Roguix app to get it.' >&2
+  echo 'roguix-update: this Omaguix release needs a newer Guix than this VM has;' >&2
+  echo 'reset Omaguix from the latest Try Omaguix app to get it.' >&2
   exit 1
 fi
 $guix system reconfigure $gate -L \"$dir/modules\" /etc/config.scm \"$@\" \\
@@ -507,7 +507,7 @@ calls, a busctl subset over gdbus, and the Omarchy per-user seed.")
 ;; the host bridges and the per-session sound server (see integrations.scm).
 (define hypr-vm-lua
   (plain-file "hypr-vm.lua" "\
--- Roguix VM integration, loaded from ~/.config/hypr/monitors.lua.
+-- Omaguix VM integration, loaded from ~/.config/hypr/monitors.lua.
 local function host_setting(expected)
   local file = io.open(\"/run/roguix/host-settings\", \"r\")
   if not file then return false end

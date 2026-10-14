@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Try Roguix Settings
-Comment=Open the Try Roguix Mac app settings
+Name=Try Omaguix Settings
+Comment=Open the Try Omaguix Mac app settings
 Exec=roguix-settings
 TryExec=roguix-settings
 Icon=preferences-system

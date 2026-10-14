@@ -19,7 +19,7 @@ def open_settings(descriptor, timeout=3.0):
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise TimeoutError("The Mac app did not respond. Close and reopen Try Roguix, then try again.")
+            raise TimeoutError("The Mac app did not respond. Close and reopen Try Omaguix, then try again.")
         readable, writable, _ = select.select(
             [] if pending else [descriptor], [descriptor] if pending else [], [], remaining
         )
@@ -37,7 +37,7 @@ def open_settings(descriptor, timeout=3.0):
                 if b"\n" in response:
                     if response == b"opened\n":
                         return
-                    raise OSError("The Mac app cannot open settings right now. Try again when Roguix is running.")
+                    raise OSError("The Mac app cannot open settings right now. Try again when Omaguix is running.")
                 if len(response) >= 64:
                     raise OSError("The Mac app sent an invalid settings response.")
         except BlockingIOError:
@@ -54,10 +54,10 @@ def main():
     except (OSError, TimeoutError) as error:
         message = str(error)
         if isinstance(error, FileNotFoundError):
-            message = "This VM needs a version of the Try Roguix Mac app with settings access."
-        print(f"Try Roguix Settings: {message}", file=sys.stderr)
+            message = "This VM needs a version of the Try Omaguix Mac app with settings access."
+        print(f"Try Omaguix Settings: {message}", file=sys.stderr)
         try:
-            subprocess.run(["notify-send", "Try Roguix Settings", message], check=False, timeout=3)
+            subprocess.run(["notify-send", "Try Omaguix Settings", message], check=False, timeout=3)
         except (OSError, subprocess.TimeoutExpired):
             pass
         return 1

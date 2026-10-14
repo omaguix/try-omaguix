@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""roguix-setup: Roguix's first-start setup on tty1, run as root.
+"""roguix-setup: Omaguix's first-start setup on tty1, run as root.
 
 It asks in Omarchy's order (install/provisioning/setup-form.sh): keyboard
 layout, the password of the account, an optional Git name and email, the host
@@ -195,7 +195,7 @@ class Terminal:
     is read as it is.
     """
 
-    TITLE = "Roguix: first start"
+    TITLE = "Omaguix: first start"
 
     def __init__(self, input_fd=0, output_fd=1, events=None):
         self.input = input_fd
