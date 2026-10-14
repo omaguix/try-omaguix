@@ -83,10 +83,12 @@ macos_major=$(sw_vers -productVersion | cut -d. -f1)
 
 macos_dir=$(cd "$(dirname "$0")" && pwd)
 repo_dir=$(cd "$macos_dir/.." && pwd -P)
+# Bundle IDs and signing identities stay stable so existing privacy grants and
+# preferences survive the product rename.
 case "$configuration" in
   development)
     bundle_identifier=dev.tryroguix.native.development
-    app_display_name='Try Roguix Dev'
+    app_display_name='Try Omaguix Dev'
     (( build_dmg == 0 )) || {
       echo 'build-app: --dmg requires --configuration production' >&2
       exit 1
@@ -95,7 +97,7 @@ case "$configuration" in
     ;;
   production)
     bundle_identifier=dev.tryroguix.native
-    app_display_name='Try Roguix'
+    app_display_name='Try Omaguix'
     [[ $sign_identity != auto ]] || {
       echo 'build-app: production requires --sign-identity (use - for an explicit ad-hoc test build)' >&2
       exit 1
@@ -115,26 +117,26 @@ mkdir -p "$output_dir" && output_dir=$(cd "$output_dir" && pwd -P) || {
   echo "build-app: cannot use output directory $output_dir" >&2
   exit 1
 }
-app="$output_dir/Try Roguix.app"
+app="$output_dir/Try Omaguix.app"
 contents="$app/Contents"
 # QEMU owns the VM window, so it runs from a nested helper app: the window
 # then has its own bundle identifier, and a Dock tile pinned while the VM ran
 # launches the helper, which hands that launch to this app.
-vm_app="$contents/Helpers/Try Roguix.app"
+vm_app="$contents/Helpers/Try Omaguix.app"
 vm_bundle_identifier="$bundle_identifier.vm"
-bundled_qemu="$vm_app/Contents/MacOS/Try Roguix"
+bundled_qemu="$vm_app/Contents/MacOS/Try Omaguix"
 module_cache="$macos_dir/.build/module-cache"
 runtime_source="$macos_dir/.build/qemu-gpu-runtime"
 guest_dir=${guest_dir:-"$repo_dir/build/guix"}
 dependency_bundler="$macos_dir/bundle-macho-dependencies.sh"
 compatibility_verifier="$macos_dir/verify-macos-compatibility.sh"
 package_dmg="$macos_dir/package-dmg.sh"
-app_icon_source="$macos_dir/TryRoguixIcon.svg"
+app_icon_source="$macos_dir/TryOmaguixIcon.svg"
 app_icon_renderer_source="$macos_dir/render-app-icon.swift"
 app_icon_packer="$macos_dir/pack-app-icon.py"
 icon_renderer="$macos_dir/.build/app-icon-renderer"
-iconset="$macos_dir/.build/TryRoguix.iconset"
-generated_icon="$macos_dir/.build/TryRoguix.icns"
+iconset="$macos_dir/.build/TryOmaguix.iconset"
+generated_icon="$macos_dir/.build/TryOmaguix.icns"
 
 [[ -d $runtime_source && ! -L $runtime_source ]] || {
   echo "build-app: missing staged QEMU runtime; run build-qemu-gpu-runtime.sh first" >&2
@@ -266,17 +268,17 @@ python3 "$repo_dir/scripts/app_version.py" \
   --root "$repo_dir" --plist "$contents/Info.plist"
 install -m 0644 "$macos_dir/Credits.rtf" "$contents/Resources/Credits.rtf"
 install -m 0644 "$repo_dir/LICENSE" "$contents/Resources/LICENSE"
-install -m 0644 "$generated_icon" "$contents/Resources/TryRoguix.icns"
-install -m 0644 "$generated_icon" "$vm_app/Contents/Resources/TryRoguix.icns"
+install -m 0644 "$generated_icon" "$contents/Resources/TryOmaguix.icns"
+install -m 0644 "$generated_icon" "$vm_app/Contents/Resources/TryOmaguix.icns"
 # The helper shares the app's version, icon and privacy descriptions; only its
 # executable, identifier and name differ.
 python3 - "$contents/Info.plist" "$vm_app/Contents/Info.plist" "$vm_bundle_identifier" <<'PYTHON'
 import plistlib, sys
 from pathlib import Path
 value = plistlib.loads(Path(sys.argv[1]).read_bytes())
-value["CFBundleExecutable"] = "Try Roguix"
+value["CFBundleExecutable"] = "Try Omaguix"
 value["CFBundleIdentifier"] = sys.argv[3]
-value["CFBundleName"] = value["CFBundleDisplayName"] = "Try Roguix"
+value["CFBundleName"] = value["CFBundleDisplayName"] = "Try Omaguix"
 # QEMU makes itself a foreground app when it opens the VM window; a launch
 # from a pinned Dock tile only opens the app and exits, without a Dock icon.
 value["LSUIElement"] = True
@@ -412,7 +414,7 @@ codesign --verify --deep --strict --verbose=2 "$app"
 echo "[native] Built $app"
 if (( build_dmg )); then
   app_version=$(/usr/bin/plutil -extract CFBundleShortVersionString raw "$contents/Info.plist")
-  dmg="$output_dir/TryRoguix-v${app_version}.dmg"
+  dmg="$output_dir/TryOmaguix-v${app_version}.dmg"
   rm -f "$dmg"
   package_options=()
   if [[ $sign_identity != - ]]; then

@@ -78,7 +78,9 @@ struct AppReleaseTests {
             try payload(tag: "v0.5.0"), try payload(tag: "roguix-v0.5.0"),
             try payload(assetName: "source.zip"), try payload(assetState: "starter"),
             try payload(assetName: "TryRoguix-v0.4.0.dmg"),
+            try payload(assetName: "TryOmaguix-v0.4.0.dmg"),
             try payload(assetName: "TryRoguix-v0.5.0.dmg", assetState: "starter"),
+            try payload(assetName: "TryOmaguix-v0.5.0.dmg", assetState: "starter"),
         ] {
             #expect(throws: AppReleaseError.self) { try AppRelease.decode(data) }
         }
@@ -86,6 +88,7 @@ struct AppReleaseTests {
     }
 
     @Test("release downloads accept matching versioned names and legacy names", arguments: [
+        "TryOmaguix-v0.5.0.dmg", "TryOmaguix.dmg",
         "TryRoguix-v0.5.0.dmg", "TryRoguix.dmg",
     ])
     func releaseDownloadNames(assetName: String) throws {
@@ -214,7 +217,7 @@ struct AppReleaseTests {
             })
             await checker.check().value
             #expect(checker.state == .noRelease)
-            #expect(checker.state.message == "No stable Try Roguix release has been published yet.")
+            #expect(checker.state.message == "No stable Try Omaguix release has been published yet.")
             #expect(checker.state.releaseURL == AppRelease.releasesURL)
         }
     }

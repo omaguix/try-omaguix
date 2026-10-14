@@ -805,7 +805,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         guard childRunning, virtualMachineReachedStart, !lifecycle.isStopping,
               let controlSocketPath else { return }
         guard !hostSleepCoordinator.pausedForHostSleep else {
-            startMenuWindow?.shutdownDidFail("Wait for Roguix to resume after Mac sleep, then try again.")
+            startMenuWindow?.shutdownDidFail("Wait for Omaguix to resume after Mac sleep, then try again.")
             return
         }
         lifecycle.requestSettingsAction(action)
@@ -830,7 +830,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             "omarchy-vm-helper: host sleep control is unavailable: \(detail)\n",
             stderr
         )
-        pendingHostSleepControlFailure = "The virtual machine started, but Try Roguix could not enable safe Mac sleep. Please close and reopen the app. (\(detail))"
+        pendingHostSleepControlFailure = "The virtual machine started, but Try Omaguix could not enable safe Mac sleep. Please close and reopen the app. (\(detail))"
         lifecycle.requestQuit()
         supervisor.forward(signal: SIGTERM)
     }
@@ -985,7 +985,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             startMenuWindow?.show()
             let alert = NSAlert()
             alert.alertStyle = .critical
-            alert.messageText = "Roguix\u{2019}s data folder is unavailable"
+            alert.messageText = "Omaguix\u{2019}s data folder is unavailable"
             alert.informativeText = """
                 \(error.localizedDescription)
 
@@ -1092,10 +1092,10 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.alertStyle = .critical
-        alert.messageText = "Roguix is still paused"
-        alert.informativeText = "Try Roguix could not reconnect after this Mac woke, so the VM remains paused to protect its state. Try again, or quit the app. (\(error.localizedDescription))"
+        alert.messageText = "Omaguix is still paused"
+        alert.informativeText = "Try Omaguix could not reconnect after this Mac woke, so the VM remains paused to protect its state. Try again, or quit the app. (\(error.localizedDescription))"
         alert.addButton(withTitle: "Try Again")
-        alert.addButton(withTitle: "Quit Try Roguix")
+        alert.addButton(withTitle: "Quit Try Omaguix")
 
         isPresentingBlockingAlert = true
         let response = alert.runModal()
@@ -1116,7 +1116,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         activationController.reconcile()
         defer { activationController.reconcile() }
         fputs(
-            "omarchy-vm-helper: the volume holding the Roguix VM was unmounted; stopping\n",
+            "omarchy-vm-helper: the volume holding the Omaguix VM was unmounted; stopping\n",
             stderr
         )
         lifecycle.requestQuit()
@@ -1128,8 +1128,8 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.alertStyle = .critical
-        alert.messageText = "The Roguix disk was disconnected"
-        alert.informativeText = "The drive holding this VM was removed while it was running, so Roguix is shutting down. Reconnect the drive before launching again. Removing the drive while the VM is running can damage it."
+        alert.messageText = "The Omaguix disk was disconnected"
+        alert.informativeText = "The drive holding this VM was removed while it was running, so Omaguix is shutting down. Reconnect the drive before launching again. Removing the drive while the VM is running can damage it."
         alert.addButton(withTitle: "OK")
 
         // The child's own completion callback can arrive and call finish()
@@ -1194,7 +1194,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             // original command-line reset request. Reset still needs a new click.
             prepareStartMenu(startAutomatically: false, honorInitialReset: false)
             if status != 0 {
-                startMenuWindow?.shutdownDidFail("Roguix stopped unexpectedly while shutting down. Your saved settings are ready for the next launch.")
+                startMenuWindow?.shutdownDidFail("Omaguix stopped unexpectedly while shutting down. Your saved settings are ready for the next launch.")
             } else if settingsAction == .restart {
                 startMenuWindow?.launchOmarchy()
             }
@@ -1243,7 +1243,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                 }
                 let alert = NSAlert()
                 alert.alertStyle = .critical
-                alert.messageText = "Try Roguix couldn’t start"
+                alert.messageText = "Try Omaguix couldn’t start"
                 // The message already quotes the launcher's explanation; name
                 // the log that holds the rest.
                 alert.informativeText = supervisor.log.map {

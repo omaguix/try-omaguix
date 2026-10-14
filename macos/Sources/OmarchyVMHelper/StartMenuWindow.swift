@@ -26,7 +26,7 @@ enum OmarchyStartMenuTheme {
 }
 
 enum ResetConfirmationPolicy {
-    static let requiredText = "Try Roguix"
+    static let requiredText = "Try Omaguix"
 
     static func allowsReset(_ text: String) -> Bool {
         text == requiredText
@@ -44,7 +44,7 @@ final class ResetConfirmationPrompt {
     init(detail: String) {
         let alert = NSAlert()
         alert.alertStyle = .critical
-        alert.messageText = "Reset Roguix to factory settings?"
+        alert.messageText = "Reset Omaguix to factory settings?"
         alert.informativeText = detail
         alert.addButton(withTitle: "Cancel")
         let resetButton = alert.addButton(withTitle: "Reset")
@@ -124,7 +124,7 @@ final class ResetConfirmationPrompt {
 @MainActor
 enum StartMenuWindowChrome {
     static func apply(to window: NSWindow) {
-        window.title = "Try Roguix"
+        window.title = "Try Omaguix"
         // The start menu draws its own heading inside a full-size content view.
         // Keep the native title as the window identity, but do not composite a
         // second copy over that custom heading in the transparent title bar.
@@ -354,7 +354,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         virtualMachineRunning = true
         closeRunningSettings = closeSettings
         self.requestSettingsAction = requestSettingsAction
-        window.title = "Try Roguix Settings"
+        window.title = "Try Omaguix Settings"
         // The VM has its own Cocoa process and may occupy a fullscreen Space.
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.level = .floating
@@ -369,7 +369,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         shutdownInProgress = false
         render()
         let alert = NSAlert()
-        alert.messageText = "Roguix couldn’t shut down"
+        alert.messageText = "Omaguix couldn’t shut down"
         alert.informativeText = message
         alert.beginSheetModal(for: window)
     }
@@ -382,9 +382,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
               !microphoneRequestInFlight, !cameraRequestInFlight,
               window.attachedSheet == nil, portForwardingEditor == nil else { return }
         let alert = NSAlert()
-        alert.messageText = action == .restart ? "Restart Try Roguix?" : "Shut down Roguix to manage this VM?"
+        alert.messageText = action == .restart ? "Restart Try Omaguix?" : "Shut down Omaguix to manage this VM?"
         alert.informativeText = action == .restart
-            ? "Save your work first. Roguix will shut down and start again with your saved settings."
+            ? "Save your work first. Omaguix will shut down and start again with your saved settings."
             : "Save your work first. The settings window will stay open so you can change the VM location or reset it."
         alert.addButton(withTitle: action == .restart ? "Restart" : "Shut Down")
         alert.addButton(withTitle: "Cancel")
@@ -554,11 +554,11 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         let alert = NSAlert()
         if let errorMessage {
             alert.alertStyle = .critical
-            alert.messageText = "Roguix couldn’t be reset"
+            alert.messageText = "Omaguix couldn’t be reset"
             alert.informativeText = errorMessage
         } else {
             alert.alertStyle = .informational
-            alert.messageText = "Try Roguix has been reset"
+            alert.messageText = "Try Omaguix has been reset"
             if let estimate = pendingResetSpaceEstimate {
                 alert.informativeText = "The VM has been deleted. Up to \(estimate) of disk space was reclaimed. A fresh VM will be prepared on the next launch."
             } else {
@@ -588,7 +588,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     /// Clears the resetting state when the controller refused to start the
     /// reset at all. Deliberately silent, and deliberately not
     /// `resetDidFinish(errorMessage: nil)` — nothing was erased, so claiming
-    /// "Try Roguix has been reset" would be a lie about a destructive action.
+    /// "Try Omaguix has been reset" would be a lie about a destructive action.
     func resetDidAbort() {
         guard resetInProgress else { return }
         resetInProgress = false
@@ -602,7 +602,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Reset Roguix to continue"
+        alert.messageText = "Reset Omaguix to continue"
         alert.informativeText = StartMenuPresentation.incompatibleWorkspaceDetail
         alert.addButton(withTitle: "OK")
         alert.beginSheetModal(for: window)
@@ -629,7 +629,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         choices.selectionChanged = { [weak keep, weak choices] in
             keep?.isEnabled = choices?.selectedCandidate != nil
         }
-        alert.addButton(withTitle: "Reset Roguix…")
+        alert.addButton(withTitle: "Reset Omaguix…")
         alert.addButton(withTitle: "Cancel")
         alert.beginSheetModal(for: window) { [weak self] response in
             guard let self else { return }
@@ -699,7 +699,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
 
         let alert = NSAlert()
         alert.alertStyle = .critical
-        alert.messageText = "Try Roguix couldn’t start"
+        alert.messageText = "Try Omaguix couldn’t start"
         alert.informativeText = errorMessage
         alert.addButton(withTitle: "OK")
         alert.beginSheetModal(for: window)
@@ -733,12 +733,12 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
             icon.heightAnchor.constraint(equalToConstant: 62),
         ])
 
-        let title = NSTextField(labelWithString: virtualMachineRunning ? "Try Roguix Settings" : "Try Roguix")
+        let title = NSTextField(labelWithString: virtualMachineRunning ? "Try Omaguix Settings" : "Try Omaguix")
         title.font = .monospacedSystemFont(ofSize: 27, weight: .bold)
         title.textColor = OmarchyStartMenuTheme.foreground
         title.identifier = NSUserInterfaceItemIdentifier("app-title")
 
-        let subtitle = NSTextField(labelWithString: "Roguix, on macOS")
+        let subtitle = NSTextField(labelWithString: "Omaguix, on macOS")
         subtitle.font = .monospacedSystemFont(ofSize: 10, weight: .semibold)
         subtitle.textColor = OmarchyStartMenuTheme.accent
 
@@ -832,7 +832,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         let network = networkPreferences()
         let bridgeAvailable = VMBridgeInterfaces.available().contains { $0.name == network.interface }
         let networkWarning = network.mode == .bridged
-            ? (!bridgeAvailable ? "Adapter unavailable — Roguix will start offline" : NetworkService.service.status != .enabled ? "Setup required" : nil)
+            ? (!bridgeAvailable ? "Adapter unavailable — Omaguix will start offline" : NetworkService.service.status != .enabled ? "Setup required" : nil)
             : nil
         let networkingRow = permissionRow(
             symbolName: "network", title: "Networking",
@@ -986,7 +986,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         let integrationHeading = sectionHeading("INTEGRATIONS")
 
         let reset = OmarchyActionButton(
-            title: resetInProgress ? resetPhase.buttonTitle : "Reset Roguix",
+            title: resetInProgress ? resetPhase.buttonTitle : "Reset Omaguix",
             style: .danger,
             target: self,
             action: #selector(resetOmarchy)
@@ -1010,8 +1010,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         let resetAction = virtualMachineRunning && canResetStorage ? manage : reset
 
         let launchButtonTitle = virtualMachineRunning ? "Done"
-            : !launchInProgress ? "Launch Roguix"
-            : diskDownloadPercent.map { "Downloading Roguix… \($0)%" } ?? launchPhase.buttonTitle
+            : !launchInProgress ? "Launch Omaguix"
+            : diskDownloadPercent.map { "Downloading Omaguix… \($0)%" } ?? launchPhase.buttonTitle
         let launchButton = OmarchyActionButton(
             title: launchButtonTitle,
             style: .primary,
@@ -1055,7 +1055,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         resetTitle.font = .monospacedSystemFont(ofSize: 13, weight: .bold)
         resetTitle.textColor = OmarchyStartMenuTheme.foreground
         let resetDetail = NSTextField(wrappingLabelWithString: virtualMachineRunning
-            ? "Shut down Roguix to change the VM location or reset it to factory settings."
+            ? "Shut down Omaguix to change the VM location or reset it to factory settings."
             : "Erase this VM and return it to factory settings.")
         resetDetail.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
         resetDetail.textColor = OmarchyStartMenuTheme.muted
@@ -1076,14 +1076,14 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         resetRow.heightAnchor.constraint(greaterThanOrEqualToConstant: 64).isActive = true
         let resetCard = themedCard(containing: resetRow, identifier: "reset-card")
 
-        let restart = OmarchyActionButton(title: "Restart Roguix", style: .secondary, target: self, action: #selector(restartOmarchy))
+        let restart = OmarchyActionButton(title: "Restart Omaguix", style: .secondary, target: self, action: #selector(restartOmarchy))
         restart.heightAnchor.constraint(equalToConstant: 36).isActive = true
         restart.setContentCompressionResistancePriority(.required, for: .horizontal)
         restart.identifier = NSUserInterfaceItemIdentifier("restart-vm-button")
         restart.isEnabled = !controlsBusy
         let restartCaption = NSTextField(wrappingLabelWithString: shutdownInProgress
-            ? "Waiting for Roguix to shut down. Finish saving your work inside Roguix."
-            : "CPU, memory, shared folder, networking, port forwarding, immersive mode, and Command-Tab changes apply when Try Roguix next starts. Restart to apply them now.")
+            ? "Waiting for Omaguix to shut down. Finish saving your work inside Omaguix."
+            : "CPU, memory, shared folder, networking, port forwarding, immersive mode, and Command-Tab changes apply when Try Omaguix next starts. Restart to apply them now.")
         restartCaption.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
         restartCaption.textColor = OmarchyStartMenuTheme.muted
         restartCaption.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -1458,11 +1458,11 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
 
     private func commandTabSettingRow(isEnabled: Bool) -> NSView {
         let setting = toggleSettingRow(
-            titleText: "Send Command-Tab to Roguix",
+            titleText: "Send Command-Tab to Omaguix",
             detailText: StartMenuPresentation.commandTabDetail(isEnabled: isEnabled),
             symbolName: "command",
             identifier: "command-tab",
-            accessibilityLabel: "Send Command-Tab to Roguix",
+            accessibilityLabel: "Send Command-Tab to Omaguix",
             isEnabled: isEnabled,
             action: #selector(changeSendsCommandTab(_:))
         )
@@ -1472,8 +1472,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
 
     private func automaticStartSettingRow() -> NSView {
         let detail = virtualMachineRunning
-            ? "Launch Roguix with your saved settings. Open settings anytime from Omarchy’s Setup menu."
-            : "Launch Roguix with your saved settings. Hold Option while opening the app to show the launcher."
+            ? "Launch Omaguix with your saved settings. Open settings anytime from Omarchy’s Setup menu."
+            : "Launch Omaguix with your saved settings. Hold Option while opening the app to show the launcher."
         return toggleSettingRow(
             titleText: "Skip launcher",
             detailText: detail,
@@ -1654,8 +1654,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     @objc private func beginStorageLocationSelection() {
         guard canResetStorage, !prelaunchControlsLocked, !resetInProgress else { return }
         let panel = NSOpenPanel()
-        panel.title = "Choose where to keep the Roguix VM"
-        panel.message = "Roguix puts its VM files straight into the folder you choose \u{2014} it does not create a folder inside it. Pick an empty folder, or one Roguix already uses. The drive must be APFS."
+        panel.title = "Choose where to keep the Omaguix VM"
+        panel.message = "Omaguix puts its VM files straight into the folder you choose \u{2014} it does not create a folder inside it. Pick an empty folder, or one Omaguix already uses. The drive must be APFS."
         panel.prompt = "Use Folder"
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -1674,7 +1674,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         if let problem = validateStorageLocation(url.path) {
             let alert = NSAlert()
             alert.alertStyle = .warning
-            alert.messageText = "That folder can\u{2019}t hold the Roguix VM"
+            alert.messageText = "That folder can\u{2019}t hold the Omaguix VM"
             alert.informativeText = problem
             alert.addButton(withTitle: "OK")
             alert.beginSheetModal(for: window)
@@ -1684,9 +1684,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         let destination = StorageLocationPolicy.stateRoot(forContainer: url.path)
         let confirmation = NSAlert()
         confirmation.alertStyle = .warning
-        confirmation.messageText = "Keep the Roguix VM here?"
+        confirmation.messageText = "Keep the Omaguix VM here?"
         confirmation.informativeText = """
-            Roguix will use \(destination) from the next launch.
+            Omaguix will use \(destination) from the next launch.
 
             Your current VM is not moved. It stays where it is, and you can \
             reach it again by switching this setting back.
@@ -1698,7 +1698,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         if let problem = chooseStorageLocation(url.path) {
             let alert = NSAlert()
             alert.alertStyle = .warning
-            alert.messageText = "That folder can\u{2019}t hold the Roguix VM"
+            alert.messageText = "That folder can\u{2019}t hold the Omaguix VM"
             alert.informativeText = problem
             alert.addButton(withTitle: "OK")
             alert.beginSheetModal(for: window)
@@ -1718,8 +1718,8 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
               !microphoneRequestInFlight,
               !cameraRequestInFlight else { return }
         let panel = NSOpenPanel()
-        panel.title = "Choose a folder to share with Roguix"
-        panel.message = "Roguix will be able to read and change everything inside this folder, linked as ~/<folder name>."
+        panel.title = "Choose a folder to share with Omaguix"
+        panel.message = "Omaguix will be able to read and change everything inside this folder, linked as ~/<folder name>."
         panel.prompt = "Share"
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -1881,7 +1881,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
               !cameraRequestInFlight,
               resetConfirmationPrompt == nil else { return }
         let estimate = storageSpaceEstimate()
-        var detail = "This permanently erases everything in this Roguix virtual machine, including apps, files, accounts, and settings. This cannot be undone or recovered."
+        var detail = "This permanently erases everything in this Omaguix virtual machine, including apps, files, accounts, and settings. This cannot be undone or recovered."
         // With a chosen data folder there can be more than one workspace on the
         // Mac, so say which one is about to be erased.
         let location = storageLocationStatus()

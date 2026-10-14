@@ -74,7 +74,7 @@ final class PortForwardingEditor: NSObject, NSWindowDelegate, NSTextFieldDelegat
         title.font = .systemFont(ofSize: 21, weight: .bold)
 
         let explanation = NSTextField(
-            wrappingLabelWithString: "Mac → Roguix mappings expose guest services on Mac localhost. For Roguix → Mac, connect to \(PortForwardPolicy.guestToHostAddress)."
+            wrappingLabelWithString: "Mac → Omaguix mappings expose guest services on Mac localhost. For Omaguix → Mac, connect to \(PortForwardPolicy.guestToHostAddress)."
         )
         explanation.font = .systemFont(ofSize: 12.5)
         explanation.textColor = .secondaryLabelColor
@@ -122,7 +122,7 @@ final class PortForwardingEditor: NSObject, NSWindowDelegate, NSTextFieldDelegat
         addButton.target = self
         addButton.action = #selector(addPort)
         addButton.identifier = NSUserInterfaceItemIdentifier("port-forward-add")
-        addButton.setAccessibilityHelp("Adds another localhost-to-Roguix port mapping")
+        addButton.setAccessibilityHelp("Adds another localhost-to-Omaguix port mapping")
 
         addSSHButton.title = "Add SSH"
         addSSHButton.image = NSImage(systemSymbolName: "terminal", accessibilityDescription: nil)
@@ -132,7 +132,7 @@ final class PortForwardingEditor: NSObject, NSWindowDelegate, NSTextFieldDelegat
         addSSHButton.target = self
         addSSHButton.action = #selector(addSSH)
         addSSHButton.identifier = NSUserInterfaceItemIdentifier("port-forward-add-ssh")
-        addSSHButton.setAccessibilityHelp("Adds localhost:2222 to Roguix:22 over TCP")
+        addSSHButton.setAccessibilityHelp("Adds localhost:2222 to Omaguix:22 over TCP")
 
         validationLabel.font = .systemFont(ofSize: 11.5)
         validationLabel.maximumNumberOfLines = 2
@@ -275,7 +275,7 @@ final class PortForwardingEditor: NSObject, NSWindowDelegate, NSTextFieldDelegat
         let hostField = portField(value: draft.hostPort, index: index, kind: .host)
         let arrow = secondaryLabel("→")
         arrow.alignment = .center
-        let guest = secondaryLabel("Roguix:")
+        let guest = secondaryLabel("Omaguix:")
         let guestField = portField(value: draft.guestPort, index: index, kind: .guest)
 
         let protocolPicker = NSPopUpButton(frame: .zero, pullsDown: false)
@@ -336,7 +336,7 @@ final class PortForwardingEditor: NSObject, NSWindowDelegate, NSTextFieldDelegat
         field.setAccessibilityLabel(
             kind == .host
                 ? "Mac port for mapping \(index + 1)"
-                : "Roguix port for mapping \(index + 1)"
+                : "Omaguix port for mapping \(index + 1)"
         )
         field.widthAnchor.constraint(equalToConstant: 72).isActive = true
         return field

@@ -66,7 +66,7 @@ class AppVersionTests(unittest.TestCase):
             self.assertIn(expected_error, result.stderr)
 
     def check_app(self, info: dict[str, str], expected_error: str | None = None) -> None:
-        app = self.root / "dist/Try Roguix.app"
+        app = self.root / "dist/Try Omaguix.app"
         (app / "Contents").mkdir(parents=True, exist_ok=True)
         (app / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
         result = subprocess.run(

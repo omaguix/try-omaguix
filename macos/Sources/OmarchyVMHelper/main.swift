@@ -123,7 +123,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[audio-bridge] Host audio devices are available inside Roguix.\n", stderr)
+        fputs("[audio-bridge] Host audio devices are available inside Omaguix.\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -146,7 +146,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[clipboard-bridge] The Mac clipboard is shared with Roguix.\n", stderr)
+        fputs("[clipboard-bridge] The Mac clipboard is shared with Omaguix.\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -169,7 +169,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[authentication-bridge] Signed Touch ID sudo authentication is available inside Roguix.\n", stderr)
+        fputs("[authentication-bridge] Signed Touch ID sudo authentication is available inside Omaguix.\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -192,7 +192,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[camera-bridge] The Mac camera is available to Roguix on demand.\n", stderr)
+        fputs("[camera-bridge] The Mac camera is available to Omaguix on demand.\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -215,7 +215,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[battery-bridge] The Mac battery is mirrored inside Roguix.\n", stderr)
+        fputs("[battery-bridge] The Mac battery is mirrored inside Omaguix.\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -287,7 +287,7 @@ do {
             )
             ApplicationPresentation.installMainMenu(
                 in: application,
-                applicationName: "Try Roguix",
+                applicationName: "Try Omaguix",
                 actionsTarget: controller
             )
             application.delegate = controller

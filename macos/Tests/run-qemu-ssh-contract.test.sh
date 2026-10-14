@@ -51,16 +51,16 @@ esac
 stale_fixture=''
 trap '/bin/rm -rf "$test_root"; [[ -z "$stale_fixture" ]] || /bin/rm -rf "$stale_fixture"' EXIT HUP INT TERM
 
-app="$test_root/Try Roguix.app"
+app="$test_root/Try Omaguix.app"
 contents="$app/Contents"
 resources="$contents/Resources"
-qemu_fixture="$contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix"
+qemu_fixture="$contents/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix"
 shim_dir="$test_root/bin"
 mkdir -p \
   "$contents/MacOS" \
   "$resources/guest" \
   "$resources/runtime/bin" \
-  "$contents/Helpers/Try Roguix.app/Contents/MacOS" \
+  "$contents/Helpers/Try Omaguix.app/Contents/MacOS" \
   "$resources/scripts" \
   "$shim_dir"
 
@@ -132,7 +132,7 @@ chmod 755 "$contents/MacOS/omarchy-vm-helper"
 cat >"$qemu_fixture" <<'SH'
 #!/bin/bash
 # Identity markers validated by the production launcher:
-# Try Roguix: cannot open
+# Try Omaguix: cannot open
 # OMARCHY_SDL_AUDIO_CONTROL_DIRECTORY
 # OMARCHY_SDL_INPUT_DEVICE_NAME
 # OMARCHY_SDL_OUTPUT_DEVICE_NAME
@@ -513,7 +513,7 @@ assert_line_pair "$test_root/disabled/qemu.log" -bios "$firmware"
 for option in -kernel -initrd -append; do
   ! grep -Fxq -- "$option" "$test_root/disabled/qemu.log" || fail "UEFI launch passed $option"
 done
-assert_line_pair "$test_root/disabled/qemu.log" -name 'Try Roguix'
+assert_line_pair "$test_root/disabled/qemu.log" -name 'Try Omaguix'
 assert_line_pair "$test_root/disabled/qemu.log" -smbios 'type=11,value=omarchy.qemu_virgl=1'
 # roguix-setup's suggestions: a keyboard layout always, the time zone when
 # the Mac names one.
@@ -832,9 +832,9 @@ assert_keyboard_lockstep "$test_root/ephemeral/qemu.log" iso
 assert_contains "$(<"$test_root/ephemeral/storage.log")" 'select ephemeral'
 assert_line_pair "$test_root/ephemeral/qemu.log" -bios "$firmware"
 # A test run's window is told apart from the user's VM by its title.
-assert_line_pair "$test_root/ephemeral/qemu.log" -name 'Try Roguix (test)'
+assert_line_pair "$test_root/ephemeral/qemu.log" -name 'Try Omaguix (test)'
 run_scenario isolated 0 '' OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1
-assert_line_pair "$test_root/isolated/qemu.log" -name 'Try Roguix (test)'
+assert_line_pair "$test_root/isolated/qemu.log" -name 'Try Omaguix (test)'
 
 run_scenario malformed 1 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:02222:22
 [[ ! -s $test_root/malformed/storage.log ]] || fail 'malformed mapping touched storage'

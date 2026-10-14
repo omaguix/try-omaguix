@@ -101,7 +101,7 @@ struct SavedVMChoiceTests {
     @Test("the chooser keeps Reset as one option and says what it erases")
     func chooserText() {
         #expect(StartMenuPresentation.savedVMChoiceDetail.contains("archive"))
-        #expect(StartMenuPresentation.savedVMChoiceDetail.contains("reset Roguix to erase all of them"))
+        #expect(StartMenuPresentation.savedVMChoiceDetail.contains("reset Omaguix to erase all of them"))
         #expect(StartMenuPresentation.resetErasesSavedVMs(count: 3).contains("3 saved VMs, and Reset erases all of them"))
     }
 

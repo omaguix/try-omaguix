@@ -261,7 +261,7 @@ struct KernelProcessIdentity: Equatable {
 
     var isQEMUSystemProcess: Bool {
         let name = URL(fileURLWithPath: executablePath).lastPathComponent
-        if name == "Try Roguix" {
+        if name == "Try Omaguix" {
             return true
         }
         guard name.hasPrefix("qemu-system-") else { return false }

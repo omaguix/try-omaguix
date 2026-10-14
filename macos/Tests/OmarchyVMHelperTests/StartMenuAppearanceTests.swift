@@ -5,7 +5,7 @@ import Testing
 @Suite("Start menu appearance", .serialized)
 @MainActor
 struct StartMenuAppearanceTests {
-    @Test("start menu keeps the Roguix appearance across system themes")
+    @Test("start menu keeps the Omaguix appearance across system themes")
     func brandedWindowAppearance() throws {
         _ = NSApplication.shared
         let window = NSWindow(
@@ -24,11 +24,11 @@ struct StartMenuAppearanceTests {
         #expect(window.isOpaque)
     }
 
-    @Test("Roguix controls retain native keyboard and accessibility behavior")
+    @Test("Omaguix controls retain native keyboard and accessibility behavior")
     func brandedControlBehavior() {
         _ = NSApplication.shared
         let action = OmarchyActionButton(
-            title: "Launch Roguix",
+            title: "Launch Omaguix",
             style: .primary,
             target: nil,
             action: nil
@@ -36,8 +36,8 @@ struct StartMenuAppearanceTests {
         action.keyEquivalent = "\r"
 
         #expect(action.keyEquivalent == "\r")
-        #expect(action.accessibilityLabel() == "Launch Roguix")
-        #expect(action.attributedTitle.string == "LAUNCH ROGUIX")
+        #expect(action.accessibilityLabel() == "Launch Omaguix")
+        #expect(action.attributedTitle.string == "LAUNCH OMAGUIX")
         #expect(action.focusRingType == .exterior)
         #expect(!action.isBordered)
 

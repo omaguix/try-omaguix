@@ -111,10 +111,10 @@ enum SavedVMChoice {
     }
 
     static func keptMessage(for candidate: SavedVMCandidate, archivePath: String?, homeDirectory: String) -> String {
-        var message = "\(title(for: candidate)) is now the VM Roguix launches."
+        var message = "\(title(for: candidate)) is now the VM Omaguix launches."
         if let archivePath {
             let display = StorageLocationPolicy.displayPath(archivePath, homeDirectory: homeDirectory)
-            message += " The other saved VMs were moved, unchanged, to \(display). Roguix no longer uses or resets them; delete that folder when you no longer need them."
+            message += " The other saved VMs were moved, unchanged, to \(display). Omaguix no longer uses or resets them; delete that folder when you no longer need them."
         }
         return message
     }

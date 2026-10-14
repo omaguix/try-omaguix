@@ -302,11 +302,11 @@ def validate_runtime(root: Path, previous: dict[str, Any] | None) -> dict[str, A
 
 
 def validate_app(root: Path, previous: dict[str, Any] | None) -> dict[str, Any]:
-    app = root / "build/dev.noindex/Try Roguix.app"
+    app = root / "build/dev.noindex/Try Omaguix.app"
     required = [
         app / "Contents/MacOS/omarchy-vm-helper",
-        app / "Contents/Resources/TryRoguix.icns",
-        app / "Contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix",
+        app / "Contents/Resources/TryOmaguix.icns",
+        app / "Contents/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix",
         app / "Contents/Resources/guest/disk.raw.zst",
         app / "Contents/Resources/guest/guix-manifest.json",
         app / "Contents/Resources/guest/launch.plist",

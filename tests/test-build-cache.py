@@ -116,7 +116,7 @@ class BuildCacheTests(unittest.TestCase):
         self.assertIn('--guest-dir "' + str(REPOSITORY / "build/guix") + '"', dry_run)
         self.assertIn("Build output:", dry_run)
         self.assertIn(
-            str(REPOSITORY / "build/dev.noindex/Try Roguix.app"), dry_run
+            str(REPOSITORY / "build/dev.noindex/Try Omaguix.app"), dry_run
         )
 
         forced = subprocess.run(
@@ -147,7 +147,7 @@ class BuildCacheTests(unittest.TestCase):
             'output_dir="$repo_dir/build/dev.noindex"',
             build_script,
         )
-        self.assertIn('app="$output_dir/Try Roguix.app"', build_script)
+        self.assertIn('app="$output_dir/Try Omaguix.app"', build_script)
         self.assertIn(
             'legacy_app="$repo_dir/dist/Try Roguix.app"',
             build_script,
@@ -155,7 +155,7 @@ class BuildCacheTests(unittest.TestCase):
         self.assertIn('rm -rf -- "$legacy_app"', build_script)
         self.assertNotIn(".metadata_never_index", build_script)
         self.assertIn(
-            'app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/Try Roguix.app"}',
+            'app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/Try Omaguix.app"}',
             open_script,
         )
         # make run uses the same single saved VM as Finder; only
@@ -220,10 +220,10 @@ class BuildCacheTests(unittest.TestCase):
     def test_app_validation_requires_packaged_icon(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            app = root / "build/dev.noindex/Try Roguix.app"
+            app = root / "build/dev.noindex/Try Omaguix.app"
             for relative in (
                 "Contents/MacOS/omarchy-vm-helper",
-                "Contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix",
+                "Contents/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix",
                 "Contents/Resources/guest/disk.raw.zst",
                 "Contents/Resources/guest/guix-manifest.json",
                 "Contents/Resources/guest/launch.plist",

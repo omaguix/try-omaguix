@@ -17,8 +17,8 @@ struct StartMenuWindowWidthTests {
         for invalidValue in [
             "try omarchy",
             "TRY OMARCHY",
-            "Try Roguix ",
-            " Try Roguix",
+            "Try Omaguix ",
+            " Try Omaguix",
         ] {
             prompt.confirmationField.stringValue = invalidValue
             NotificationCenter.default.post(
@@ -28,7 +28,7 @@ struct StartMenuWindowWidthTests {
             #expect(!prompt.resetButton.isEnabled)
         }
 
-        prompt.confirmationField.stringValue = "Try Roguix"
+        prompt.confirmationField.stringValue = "Try Omaguix"
         NotificationCenter.default.post(
             name: NSControl.textDidChangeNotification,
             object: prompt.confirmationField

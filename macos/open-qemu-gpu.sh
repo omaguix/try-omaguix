@@ -43,7 +43,7 @@ fi
 
 repo_dir=$(cd "$macos_dir/.." && pwd -P)
 # make run passes the installed copy; by default, the development build.
-app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/Try Roguix.app"}
+app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/Try Omaguix.app"}
 helper="$app/Contents/MacOS/omarchy-vm-helper"
 info_plist="$app/Contents/Info.plist"
 [[ -d $app && ! -L $app ]] || {

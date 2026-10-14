@@ -39,16 +39,16 @@ case "$test_root" in
 esac
 trap '/bin/rm -rf "$test_root"' EXIT HUP INT TERM
 
-app="$test_root/Try Roguix.app"
+app="$test_root/Try Omaguix.app"
 contents="$app/Contents"
 resources="$contents/Resources"
-qemu_fixture="$contents/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix"
+qemu_fixture="$contents/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix"
 shim_dir="$test_root/bin"
 mkdir -p \
   "$contents/MacOS" \
   "$resources/guest" \
   "$resources/runtime/bin" \
-  "$contents/Helpers/Try Roguix.app/Contents/MacOS" \
+  "$contents/Helpers/Try Omaguix.app/Contents/MacOS" \
   "$resources/scripts" \
   "$shim_dir"
 
@@ -115,7 +115,7 @@ chmod 755 "$contents/MacOS/omarchy-vm-helper"
 cat >"$qemu_fixture" <<'SH'
 #!/bin/bash
 # Identity markers validated by the production launcher:
-# Try Roguix: cannot open
+# Try Omaguix: cannot open
 # OMARCHY_SDL_AUDIO_CONTROL_DIRECTORY
 # OMARCHY_SDL_INPUT_DEVICE_NAME
 # OMARCHY_SDL_OUTPUT_DEVICE_NAME

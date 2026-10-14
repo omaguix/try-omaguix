@@ -10,7 +10,7 @@ struct StartMenuPresentationTests {
         #expect(detail.contains("storage or boot format"))
         #expect(detail.contains("multiple saved VMs"))
         #expect(detail.contains("permanently erases"))
-        #expect(!detail.contains("different Try Roguix build"))
+        #expect(!detail.contains("different Try Omaguix build"))
     }
 
     @Test("the Accessibility list is named as the running macOS names it")
@@ -131,7 +131,7 @@ struct StartMenuPresentationTests {
         #expect(!disabled.isGranted)
         #expect(disabled.compactDetailLines == [
             "Mac folder: ~/Projects/demo",
-            "In Roguix: Off",
+            "In Omaguix: Off",
         ])
         #expect(disabled.toggleActionTitle == "Turn On")
 
@@ -146,7 +146,7 @@ struct StartMenuPresentationTests {
         #expect(enabled.isGranted)
         #expect(enabled.compactDetailLines == [
             "Mac folder: ~/Projects/demo",
-            "In Roguix: ~/demo",
+            "In Omaguix: ~/demo",
         ])
         #expect(enabled.toggleActionTitle == "Turn Off")
 
@@ -177,7 +177,7 @@ struct StartMenuPresentationTests {
         #expect(single.grantedStatusLabel == "●  1 Port")
         #expect(single.compactDetailLines == [
             "Mac: localhost:2222",
-            "Roguix: port 22 · TCP",
+            "Omaguix: port 22 · TCP",
         ])
 
         let multiple = StartMenuPresentation.portForwarding(mappings: [
@@ -195,17 +195,17 @@ struct StartMenuPresentationTests {
     @Test("immersive guidance distinguishes windowed and fullscreen launch")
     func immersiveGuidance() {
         #expect(StartMenuPresentation.immersiveDetail(isEnabled: true)
-            == "Roguix opens Full Screen with the Mac menu bar and Dock hidden.")
+            == "Omaguix opens Full Screen with the Mac menu bar and Dock hidden.")
         #expect(StartMenuPresentation.immersiveDetail(isEnabled: false)
-            == "Roguix opens in a window with the Mac menu bar and Dock available.")
+            == "Omaguix opens in a window with the Mac menu bar and Dock available.")
     }
 
     @Test("Command-Tab guidance names the release shortcut in both states")
     func commandTabGuidance() {
         #expect(StartMenuPresentation.commandTabReleaseShortcut == "Control-Option")
         #expect(StartMenuPresentation.commandTabDetail(isEnabled: true)
-            == "Roguix gets Command-Tab as Super-Tab. Press and release Control-Option to switch Mac apps with it.")
+            == "Omaguix gets Command-Tab as Super-Tab. Press and release Control-Option to switch Mac apps with it.")
         #expect(StartMenuPresentation.commandTabDetail(isEnabled: false)
-            == "Command-Tab switches Mac apps. When on, Roguix gets it and Control-Option hands it back.")
+            == "Command-Tab switches Mac apps. When on, Omaguix gets it and Control-Option hands it back.")
     }
 }

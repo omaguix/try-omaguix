@@ -50,7 +50,7 @@ resources_dir=$(cd "$script_dir/.." && pwd -P)
 contents_dir=$(cd "$resources_dir/.." && pwd -P)
 app_bundle=$(cd "$contents_dir/.." && pwd -P)
 guest_input=${1:-"$resources_dir/guest"}
-qemu_bin="$contents_dir/Helpers/Try Roguix.app/Contents/MacOS/Try Roguix"
+qemu_bin="$contents_dir/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix"
 native_bridge="$contents_dir/MacOS/omarchy-vm-helper"
 storage_library="$script_dir/qemu-persistent-storage.sh"
 port_forwarding_library="$script_dir/qemu-port-forwarding.sh"
@@ -67,9 +67,9 @@ guest_dir=$(cd "$guest_input" && pwd -P)
 uefi_boot_abi=uefi-gpt-v1
 # A disposable VM (--ephemeral) or a development build's own VM
 # (make run-isolated) is a test run: its window must not pass for the user's.
-qemu_window_name='Try Roguix'
+qemu_window_name='Try Omaguix'
 if [[ $storage_mode == ephemeral || ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 1 ]]; then
-  qemu_window_name='Try Roguix (test)'
+  qemu_window_name='Try Omaguix (test)'
 fi
 uefi_firmware="$resources_dir/runtime/share/qemu/edk2-aarch64-code.fd"
 
@@ -97,8 +97,8 @@ esac
   fail "missing bundled UEFI firmware; run make runtime"
 }
 file "$qemu_bin" | grep 'arm64' >/dev/null || fail "staged QEMU is not an ARM64 executable"
-LC_ALL=C grep -aFq 'Try Roguix: cannot open' "$qemu_bin" || {
-  fail "staged QEMU lacks the Try Roguix macOS identity; run make runtime"
+LC_ALL=C grep -aFq 'Try Omaguix: cannot open' "$qemu_bin" || {
+  fail "staged QEMU lacks the Try Omaguix macOS identity; run make runtime"
 }
 for marker in \
   OMARCHY_SDL_AUDIO_CONTROL_DIRECTORY \

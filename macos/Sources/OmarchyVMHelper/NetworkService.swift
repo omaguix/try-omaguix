@@ -31,7 +31,7 @@ enum NetworkService {
         guard service.status == .enabled else {
             if service.status == .requiresApproval {
                 SMAppService.openSystemSettingsLoginItems()
-                throw HelperError.io("Approve Try Roguix’s networking helper in System Settings → General → Login Items & Extensions, then launch again. This approval is needed once, not on every launch.")
+                throw HelperError.io("Approve Try Omaguix’s networking helper in System Settings → General → Login Items & Extensions, then launch again. This approval is needed once, not on every launch.")
             }
             throw HelperError.io(statusText)
         }

@@ -1,11 +1,11 @@
-From: Try Roguix contributors
-Subject: [PATCH] cocoa: present the VM as Try Roguix on macOS
+From: Try Omaguix contributors
+Subject: [PATCH] cocoa: present the VM as Try Omaguix on macOS
 
 Applies after startergo/homebrew-qemu-virgl-kosmickrisp v1.0.27.
 
 QEMU owns the visible Cocoa window, so macOS gives its process the Dock entry
 instead of the accessory launcher app. The app runs QEMU from a helper bundle
-(Contents/Helpers/Try Roguix.app) that supplies the process name, icon and
+(Contents/Helpers/Try Omaguix.app) that supplies the process name, icon and
 bundle identifier. Use the product name in QEMU's Cocoa window and application
 menu, and hand a launch without arguments (a pinned Dock tile) to the
 enclosing app.
@@ -47,7 +47,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      NSAlert *alert = [NSAlert new];
      [alert autorelease];
 -    [alert setMessageText: @"Are you sure you want to quit QEMU?"];
-+    [alert setMessageText: @"Are you sure you want to quit Try Roguix?"];
++    [alert setMessageText: @"Are you sure you want to quit Try Omaguix?"];
      [alert addButtonWithTitle: @"Cancel"];
      [alert addButtonWithTitle: @"Quit"];
      if([alert runModal] == NSAlertSecondButtonReturn) {
@@ -79,19 +79,19 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
      // Application menu
      menu = [[NSMenu alloc] initWithTitle:@""];
 -    [menu addItemWithTitle:@"About QEMU" action:@selector(do_about_menu_item:) keyEquivalent:@""]; // About QEMU
-+    [menu addItemWithTitle:@"About Try Roguix" action:@selector(do_about_menu_item:) keyEquivalent:@""];
++    [menu addItemWithTitle:@"About Try Omaguix" action:@selector(do_about_menu_item:) keyEquivalent:@""];
      [menu addItem:[NSMenuItem separatorItem]]; //Separator
      menuItem = [menu addItemWithTitle:@"Services" action:nil keyEquivalent:@""];
      [menuItem setSubmenu:[NSApp servicesMenu]];
      [menu addItem:[NSMenuItem separatorItem]];
 -    [menu addItemWithTitle:@"Hide QEMU" action:@selector(hide:) keyEquivalent:@"h"]; //Hide QEMU
-+    [menu addItemWithTitle:@"Hide Try Roguix" action:@selector(hide:) keyEquivalent:@"h"];
++    [menu addItemWithTitle:@"Hide Try Omaguix" action:@selector(hide:) keyEquivalent:@"h"];
      menuItem = (NSMenuItem *)[menu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"]; // Hide Others
      [menuItem setKeyEquivalentModifierMask:(NSEventModifierFlagOption|NSEventModifierFlagCommand)];
      [menu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""]; // Show All
      [menu addItem:[NSMenuItem separatorItem]]; //Separator
 -    [menu addItemWithTitle:@"Quit QEMU" action:@selector(terminate:) keyEquivalent:@"q"];
-+    [menu addItemWithTitle:@"Quit Try Roguix" action:@selector(terminate:) keyEquivalent:@"q"];
++    [menu addItemWithTitle:@"Quit Try Omaguix" action:@selector(terminate:) keyEquivalent:@"q"];
      menuItem = [[NSMenuItem alloc] initWithTitle:@"Apple" action:nil keyEquivalent:@""];
      [menuItem setSubmenu:menu];
      [[NSApp mainMenu] addItem:menuItem];
@@ -100,7 +100,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
  }
  
 +/*
-+ * The VM runs from a helper app bundle inside Try Roguix.app
++ * The VM runs from a helper app bundle inside Try Omaguix.app
 + * (Contents/Helpers), whose Info.plist gives the process its name, icon and
 + * bundle identifier. A Dock tile pinned while the VM ran launches that helper
 + * without arguments; open the enclosing app, whose start menu starts the VM,
@@ -134,7 +134,7 @@ diff --git a/ui/cocoa.m b/ui/cocoa.m
 +        if (application) {
 +            status = 0;
 +        } else {
-+            fprintf(stderr, "Try Roguix: cannot open %s: %s\n",
++            fprintf(stderr, "Try Omaguix: cannot open %s: %s\n",
 +                    [[app path] UTF8String],
 +                    [[error localizedDescription] UTF8String]);
 +        }

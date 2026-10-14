@@ -109,13 +109,13 @@ struct ApplicationPresentationTests {
         let actionsTarget = NSObject()
         ApplicationPresentation.installMainMenu(
             in: application,
-            applicationName: "Try Roguix",
+            applicationName: "Try Omaguix",
             actionsTarget: actionsTarget
         )
 
         let appMenu = try #require(application.mainMenu?.items.first?.submenu)
         let quit = try #require(appMenu.items.first(where: {
-            $0.title == "Quit Try Roguix"
+            $0.title == "Quit Try Omaguix"
         }))
         #expect(quit.keyEquivalent == "q")
         #expect(quit.action == #selector(NSApplication.terminate(_:)))
@@ -173,7 +173,7 @@ struct ApplicationPresentationTests {
 
         let helpMenu = try #require(application.helpMenu)
         #expect(application.mainMenu?.items.last?.submenu === helpMenu)
-        #expect(helpMenu.items.map(\.title) == ["Try Roguix Help", "Troubleshooting", "Report an Issue…"])
+        #expect(helpMenu.items.map(\.title) == ["Try Omaguix Help", "Troubleshooting", "Report an Issue…"])
         for link in ApplicationHelpLink.allCases {
             let item = try #require(helpMenu.items.first(where: { $0.tag == link.rawValue }))
             #expect(item.action == #selector(VMApplicationController.openHelpLink(_:)))

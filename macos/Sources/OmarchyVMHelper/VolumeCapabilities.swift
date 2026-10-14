@@ -40,7 +40,7 @@ enum VolumeProbeError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unreadable(let path):
-            "Try Roguix could not read the disk that holds \(path)."
+            "Try Omaguix could not read the disk that holds \(path)."
         }
     }
 }

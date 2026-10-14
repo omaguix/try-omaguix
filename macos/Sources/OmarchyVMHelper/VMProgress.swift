@@ -27,7 +27,7 @@ enum VMLaunchPhase: String, CaseIterable, Sendable {
         case .preparing: "Preparing image…"
         case .verifying: "Verifying image…"
         case .finishing: "Finishing setup…"
-        case .starting: "Starting Roguix…"
+        case .starting: "Starting Omaguix…"
         }
     }
 }

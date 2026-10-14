@@ -501,7 +501,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
 struct QEMUGPULauncherPathTests {
     @Test(
         "resolves only the executable inside the app resources",
-        arguments: ["Try Roguix.app", "Try Roguix Dev.app"]
+        arguments: ["Try Omaguix.app", "Try Omaguix Dev.app"]
     )
     func resolvesExpectedLayout(appName: String) throws {
         let fixture = try makeFixture(appName: appName)
@@ -541,7 +541,7 @@ struct QEMUGPULauncherPathTests {
     }
 
     private func makeFixture(
-        appName: String = "Try Roguix.app",
+        appName: String = "Try Omaguix.app",
         createLauncher: Bool = true
     ) throws -> PathFixture {
         let root = FileManager.default.temporaryDirectory
@@ -597,7 +597,7 @@ struct MicrophoneLaunchDecisionTests {
 
 @Suite("Accessibility launch policy")
 struct AccessibilityLaunchDecisionTests {
-    @Test("an unavailable grant never blocks Roguix startup")
+    @Test("an unavailable grant never blocks Omaguix startup")
     func unavailableStillLaunches() {
         let decision = AccessibilityLaunchDecision.make(for: .unavailable)
         #expect(decision.allowsLaunch)
