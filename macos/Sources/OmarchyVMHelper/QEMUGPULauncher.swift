@@ -13,11 +13,18 @@ enum QEMUGPUStorageOption: String, Equatable {
 enum QEMUGPURuntimeEnvironment {
     static let inspectOnlyKey = "OMARCHY_QEMU_GPU_INSPECT_ONLY"
     static let dryRunKey = "OMARCHY_QEMU_GPU_DRY_RUN"
+    static let testRunKey = "OMARCHY_QEMU_GPU_TEST_RUN"
 
-    static func sanitizedForLaunch(_ base: [String: String]) -> [String: String] {
+    static func sanitizedForLaunch(
+        _ base: [String: String], isDisposable: Bool = false
+    ) -> [String: String] {
         var environment = base
         environment.removeValue(forKey: inspectOnlyKey)
         environment.removeValue(forKey: dryRunKey)
+        // The app owns its disposable workspace across VM restarts, so the
+        // shell uses normal storage there. Mark only the window as a test run.
+        environment.removeValue(forKey: testRunKey)
+        if isDisposable { environment[testRunKey] = "1" }
         return environment
     }
 

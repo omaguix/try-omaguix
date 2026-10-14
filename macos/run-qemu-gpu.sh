@@ -67,8 +67,10 @@ guest_dir=$(cd "$guest_input" && pwd -P)
 uefi_boot_abi=uefi-gpt-v1
 # A disposable VM (--ephemeral) or a development build's own VM
 # (make run-isolated) is a test run: its window must not pass for the user's.
+# The native app marks its own disposable workspace independently of storage mode.
 qemu_window_name='Try Omaguix'
-if [[ $storage_mode == ephemeral || ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 1 ]]; then
+if [[ $storage_mode == ephemeral || ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 1 \
+      || ${OMARCHY_QEMU_GPU_TEST_RUN:-0} == 1 ]]; then
   qemu_window_name='Try Omaguix (test)'
 fi
 uefi_firmware="$resources_dir/runtime/share/qemu/edk2-aarch64-code.fd"

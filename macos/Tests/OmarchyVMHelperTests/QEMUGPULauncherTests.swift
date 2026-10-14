@@ -75,6 +75,18 @@ struct QEMUGPULaunchRequestTests {
 
 @Suite("QEMU runtime environment")
 struct QEMUGPURuntimeEnvironmentTests {
+    @Test("the app's disposable run controls the test title, not inherited environment",
+          arguments: [false, true])
+    func disposableWindowTitle(isDisposable: Bool) {
+        for inherited in ["0", "1", "invalid"] {
+            let environment = QEMUGPURuntimeEnvironment.sanitizedForLaunch(
+                [QEMUGPURuntimeEnvironment.testRunKey: inherited],
+                isDisposable: isDisposable
+            )
+            #expect(environment[QEMUGPURuntimeEnvironment.testRunKey] == (isDisposable ? "1" : nil))
+        }
+    }
+
     @Test("ordinary launches strip build-only controls")
     func sanitizesLaunch() {
         let environment = QEMUGPURuntimeEnvironment.sanitizedForLaunch([
@@ -99,6 +111,7 @@ struct QEMUGPURuntimeEnvironmentTests {
             VMResourceLaunchConfiguration.diskEnvironmentKey,
             QEMUGPURuntimeEnvironment.inspectOnlyKey,
             QEMUGPURuntimeEnvironment.dryRunKey,
+            QEMUGPURuntimeEnvironment.testRunKey,
         ]
         var inherited = ["KEEP_ME": "yes"]
         for key in controlledKeys {

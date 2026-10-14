@@ -835,6 +835,13 @@ assert_line_pair "$test_root/ephemeral/qemu.log" -bios "$firmware"
 assert_line_pair "$test_root/ephemeral/qemu.log" -name 'Try Omaguix (test)'
 run_scenario isolated 0 '' OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1
 assert_line_pair "$test_root/isolated/qemu.log" -name 'Try Omaguix (test)'
+# The native app keeps one disposable workspace through restarts; its title
+# marker must not switch the shell's storage backend to another ephemeral disk.
+run_scenario app-disposable 0 '' OMARCHY_QEMU_GPU_TEST_RUN=1
+assert_line_pair "$test_root/app-disposable/qemu.log" -name 'Try Omaguix (test)'
+assert_contains "$(<"$test_root/app-disposable/storage.log")" 'select-existing'
+assert_contains "$(<"$test_root/app-disposable/storage.log")" 'reuse'
+assert_not_contains "$(<"$test_root/app-disposable/storage.log")" 'select ephemeral'
 
 run_scenario malformed 1 '' OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:02222:22
 [[ ! -s $test_root/malformed/storage.log ]] || fail 'malformed mapping touched storage'

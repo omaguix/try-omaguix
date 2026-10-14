@@ -654,7 +654,9 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
     /// `launch()` validates the composed mappings itself, after calling this.
     private func childLaunchContext(forReset: Bool = false) -> ChildLaunchContext {
         let audio = AudioLaunchConfiguration.make(
-            baseEnvironment: QEMUGPURuntimeEnvironment.sanitizedForLaunch(baseEnvironment),
+            baseEnvironment: QEMUGPURuntimeEnvironment.sanitizedForLaunch(
+                baseEnvironment, isDisposable: isDisposable
+            ),
             preferences: preferenceStore.load(),
             catalog: deviceProvider.catalog()
         )
