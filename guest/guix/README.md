@@ -38,7 +38,7 @@ $GUIX system build -n --no-grafts -L guest/guix/modules guest/guix/system.scm \
 ```
 
 `check-builds.sh` reads the dry run and allows only two kinds of builds:
-Roguix's own packages (the name and version of each package its modules
+Omaguix's own packages (the name and version of each package its modules
 define) and derivations Guix marks `preferLocalBuild` (configuration files,
 profile hooks, grafts, GRUB's image). Anything else is a package bordeaux has
 not built for aarch64, and the script fails listing it: wait, or pick an
@@ -196,7 +196,7 @@ five seconds on the root-only `dev.tryomarchy.timezone` port and applies a
 change at once: it replaces `/etc/localtime`, records the zone in the
 settings file, so the next boot and reconfigure keep it, and refreshes
 Omarchy's clock in the running session. Omarchy's time zone menu is
-Roguix's: it lists **Same as macOS** first while the Mac's zone is known,
+Omaguix's: it lists **Same as macOS** first while the Mac's zone is known,
 which follows the Mac again from the latest zone it sent, and any zone
 fixes it. The menu runs without a terminal, so `/etc/sudoers` lets
 `wheel` run `roguix-timezone --select` with a valid zone or **Same as
@@ -386,7 +386,7 @@ genimage writes; later boots find nothing to fix.
 ## Running through the app
 
 ```sh
-make app   # build/dev.noindex/Try Roguix.app with the build/guix guest
+make app   # build/dev.noindex/Try Omaguix.app with the build/guix guest
 make run   # build it and open it
 ```
 
@@ -429,25 +429,25 @@ went straight to the desktop.
 
 ## Differences from Try Omarchy
 
-This is the one list of what a Roguix user sees differently from Try
+This is the one list of what an Omaguix user sees differently from Try
 Omarchy's Arch guest, which runs the same pinned Omarchy (`c668141e`). Code
 that diverges points here; review the table on every rebase onto Try
 Omarchy (see `AGENTS.md`). Pure packaging (Guix names, compatibility
 commands, build fixes) is described in the sections below, not here.
 
-| Feature | Try Omarchy | Roguix | Why | Patch or upstream status |
+| Feature | Try Omarchy | Omaguix | Why | Patch or upstream status |
 | --- | --- | --- | --- | --- |
-| Time zone | Follows the Mac until a zone is chosen in the setup or the time zone menu, or `/etc/localtime` is replaced outside the picker; **Follow Mac Time Zone** in the application launcher resumes ([`docs/host-timezone.md`](../../docs/host-timezone.md)). | Stops following only through the setup or the time zone menu; replacing `/etc/localtime` by hand or `#:timezone` in `/etc/config.scm` does not stop it. **Same as macOS** in the menu resumes; there is no launcher action. | In Guix `/etc/localtime` comes from the system configuration, which boots and reconfigures write again, so a hand edit is not a lasting choice; the policy lives in `machine-settings.scm` (the time zone paragraphs above). | Roguix's own, for as long as the guest is Guix: [`timezone`](modules/roguix/timezone) and `omarchy-menu-timezone` in [`omarchy.scm`](modules/roguix/omarchy.scm). |
+| Time zone | Follows the Mac until a zone is chosen in the setup or the time zone menu, or `/etc/localtime` is replaced outside the picker; **Follow Mac Time Zone** in the application launcher resumes ([`docs/host-timezone.md`](../../docs/host-timezone.md)). | Stops following only through the setup or the time zone menu; replacing `/etc/localtime` by hand or `#:timezone` in `/etc/config.scm` does not stop it. **Same as macOS** in the menu resumes; there is no launcher action. | In Guix `/etc/localtime` comes from the system configuration, which boots and reconfigures write again, so a hand edit is not a lasting choice; the policy lives in `machine-settings.scm` (the time zone paragraphs above). | Omaguix's own, for as long as the guest is Guix: [`timezone`](modules/roguix/timezone) and `omarchy-menu-timezone` in [`omarchy.scm`](modules/roguix/omarchy.scm). |
 | Menu and panel keys | Super+Space and the other menu and panel keys start a `qs ipc` client that `omarchy-shell` kills on its timeout under load; the toggle is then lost or late. | Hyprland global shortcuts: a keypress starts no process. | Lost Super+Space presses. | [`omarchy-global-shortcuts.patch`](modules/roguix/omarchy-global-shortcuts.patch), a backport of Omarchy #13418 (6762769b); remove once the pin includes it. |
 | Menu clicks | A click pressed on a row just before the menu's guard batch ends is lost. | Rows are rebuilt only when a guard result changed. | Lost clicks ([menu clicks](#the-omarchy-4-desktop)). | `Menu.qml` substitution in [`omarchy.scm`](modules/roguix/omarchy.scm); proposed in omacom/omarchy#14740. |
 | Background names | Title-cased as bytes: "02-über-städte.jpg" shows as "üBer StäDte". | Title-cased as UTF-8: "Über Städte". | Wrong capitals in non-ASCII names. | [`omarchy-theme-bg-utf8.patch`](modules/roguix/omarchy-theme-bg-utf8.patch); proposed in omacom/omarchy#14865. |
 | Low-battery warning | "Time to recharge!" is critical and never expires; it stays after the battery charges and comes back after every shell restart. | Closed once the battery is no longer low (charging, on AC or above 10%), also when restored after a restart. | A warning from a battery that was low once kept showing while the Mac charged. | [`omarchy-battery-warning-dismiss.patch`](modules/roguix/omarchy-battery-warning-dismiss.patch); reported in omacom/omarchy#14639 and #8813, with open pull requests that close it on a timer after a restart (#14218, #14739). |
 | Audio output in Chinese or Korean | Output switching, the output list and the volume OSD fail: the scripts parse `pactl`'s translated output. | They read `pactl` in the C locale and work. | `pactl` translates its output in a Chinese or Korean session; Omarchy already reads `pacman -Qi` in the C locale the same way. | [`omarchy-audio-c-locale.patch`](modules/roguix/omarchy-audio-c-locale.patch); reported in omacom/omarchy#14850. |
-| Screensaver | Omarchy's default: on, at 120 fps, through Try Omarchy's own `omarchy-screensaver`. | Off until Trigger → Toggle → Screensaver turns it on; 30 fps; `ttfx` built from source ([`ttfx.scm`](modules/roguix/ttfx.scm)). | macOS has its own screensaver and lock, and every frame costs the Mac's CPU and battery ([measurements](#the-omarchy-4-desktop)). | Roguix's choice: the `omarchy-screensaver` substitution in [`omarchy.scm`](modules/roguix/omarchy.scm) and [`omarchy-seed`](modules/roguix/omarchy-seed). |
-| Packages and updates | pacman, the AUR and Omarchy's update channels in the menu's Install, Remove and Update; the Mac app's Update review fixes existing VMs ([`docs/integration-updates.md`](../../docs/integration-updates.md)). | Guix: `/etc/config.scm`, `roguix-pkg`, Update → Guix System, `roguix-update` from the signed channel ([packages](#packages-etcconfigscm)). | The guest is Guix System. | Roguix's own: [`omarchy-menu.py`](modules/roguix/omarchy-menu.py) and the `use-guix-packages` phase in [`omarchy.scm`](modules/roguix/omarchy.scm). |
-| Default applications | Omarchy's list, with Chromium; web apps open as Chromium `--app` windows. | LibreWolf; web apps open in a new browser window. LibreOffice, Pinta, LocalSend, Signal and Obsidian are not installed. | Not in Guix, or no Chromium-family browser by default ([`docs/omarchy-packages.md`](../../docs/omarchy-packages.md)). | Roguix's own: `%omarchy-applications` and `omarchy-launch-webapp` in [`omarchy.scm`](modules/roguix/omarchy.scm). |
-| Logo | OMARCHY in Omarchy's block lettering (`omarchy-show-logo`, About, the screensaver). | GUIX in the same lettering. | The guest is Guix. | Roguix's own: [`roguix-logo.txt`](modules/roguix/roguix-logo.txt). |
-| Documents in `docs/` | Describe its Arch guest. | [`ghostty.md`](../../docs/ghostty.md), [`alacritty-migration.md`](../../docs/alacritty-migration.md), [`integration-updates.md`](../../docs/integration-updates.md), the guest side of [`host-timezone.md`](../../docs/host-timezone.md) and [`legacy-try-omarchy.md`](../../docs/legacy-try-omarchy.md) apply only to Try Omarchy; [`host-battery.md`](../../docs/host-battery.md), `integration-updates.md` and [`performance.md`](../../docs/performance.md) say so in a note at the top. | They are Try Omarchy's, kept as they are so rebases stay clean. | Roguix's own; this README describes the Guix guest. |
+| Screensaver | Omarchy's default: on, at 120 fps, through Try Omarchy's own `omarchy-screensaver`. | Off until Trigger → Toggle → Screensaver turns it on; 30 fps; `ttfx` built from source ([`ttfx.scm`](modules/roguix/ttfx.scm)). | macOS has its own screensaver and lock, and every frame costs the Mac's CPU and battery ([measurements](#the-omarchy-4-desktop)). | Omaguix's choice: the `omarchy-screensaver` substitution in [`omarchy.scm`](modules/roguix/omarchy.scm) and [`omarchy-seed`](modules/roguix/omarchy-seed). |
+| Packages and updates | pacman, the AUR and Omarchy's update channels in the menu's Install, Remove and Update; the Mac app's Update review fixes existing VMs ([`docs/integration-updates.md`](../../docs/integration-updates.md)). | Guix: `/etc/config.scm`, `roguix-pkg`, Update → Guix System, `roguix-update` from the signed channel ([packages](#packages-etcconfigscm)). | The guest is Guix System. | Omaguix's own: [`omarchy-menu.py`](modules/roguix/omarchy-menu.py) and the `use-guix-packages` phase in [`omarchy.scm`](modules/roguix/omarchy.scm). |
+| Default applications | Omarchy's list, with Chromium; web apps open as Chromium `--app` windows. | LibreWolf; web apps open in a new browser window. LibreOffice, Pinta, LocalSend, Signal and Obsidian are not installed. | Not in Guix, or no Chromium-family browser by default ([`docs/omarchy-packages.md`](../../docs/omarchy-packages.md)). | Omaguix's own: `%omarchy-applications` and `omarchy-launch-webapp` in [`omarchy.scm`](modules/roguix/omarchy.scm). |
+| Logo | OMARCHY in Omarchy's block lettering (`omarchy-show-logo`, About, the screensaver). | GUIX in the same lettering. | The guest is Guix. | Omaguix's own: [`roguix-logo.txt`](modules/roguix/roguix-logo.txt). |
+| Documents in `docs/` | Describe its Arch guest. | [`ghostty.md`](../../docs/ghostty.md), [`alacritty-migration.md`](../../docs/alacritty-migration.md), [`integration-updates.md`](../../docs/integration-updates.md), the guest side of [`host-timezone.md`](../../docs/host-timezone.md) and [`legacy-try-omarchy.md`](../../docs/legacy-try-omarchy.md) apply only to Try Omarchy; [`host-battery.md`](../../docs/host-battery.md), `integration-updates.md` and [`performance.md`](../../docs/performance.md) say so in a note at the top. | They are Try Omarchy's, kept as they are so rebases stay clean. | Omaguix's own; this README describes the Guix guest. |
 
 Not differences: the language is taken from the Mac once, at the first start,
 as in Try Omarchy 0.5; the power menu's single macOS-managed profile, the
@@ -477,7 +477,7 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   `OMARCHY_THEME_HEADLESS=1 omarchy-theme-set "Tokyo Night"`; first-run,
   user provisioning and shipped migrations marked done, since they install
   Arch packages and systemd units. An account from the pre-Omarchy image gets
-  its old Roguix `hyprland.lua` replaced.
+  its old Omaguix `hyprland.lua` replaced.
 - **The VM additions** live in `/etc/roguix-hypr-vm.lua`, which the seed
   appends to `~/.config/hypr/monitors.lua` as the Arch guest appends its QEMU
   fragment: Hyprland's cursor is hidden when the launcher reports VirGL (Cocoa
@@ -584,7 +584,7 @@ and is part of the system configuration:
   grafts* as `/var/guix/gcroots/roguix-ungrafted`: a reconfigure grafts
   again from those builds, and without them it would rebuild Hyprland and
   Quickshell, which have no substitutes, for hours.
-- **Substitutes for Roguix's own packages** come from
+- **Substitutes for Omaguix's own packages** come from
   `https://roguix.frolow.dev` (decisions 0002 and 0005), after Guix's servers;
   the guest authorizes `modules/roguix/roguix.frolow.dev.pub`. This server,
   its key and the signed channel `roguix-update` follows are named in one
