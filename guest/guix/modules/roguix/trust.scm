@@ -34,6 +34,6 @@
    ;; and signed with the channel key; Guix's channel introduction model
    ;; authenticates each commit from the first
    ;; (docs/decisions/0004-roguix-channel.md).
-   "https://github.com/roguixos/roguix-channel"
+   "https://github.com/omaguix/omaguix-channel"
    "bcc938512706d19de86dd8c6f50853fa80b063b8"
    "7D1A 8B40 0C26 0998 097F  63E5 28B8 3B16 11FA 815E"))

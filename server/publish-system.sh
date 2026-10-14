@@ -1,5 +1,5 @@
 #!/bin/bash
-# The builder VM fallback for roguixos/roguix's CI
+# The builder VM fallback for omaguix/omaguix's CI
 # (docs/decisions/0005-who-builds-roguix-substitutes.md): build the aarch64
 # reference system and publish on roguix.frolow.dev the package items neither
 # bordeaux nor roguix.frolow.dev serves yet (server/README.md, "Publishing").
@@ -11,14 +11,14 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 export_dir=.build/guix-validation/export
 commit=$(cat guest/guix/modules/roguix/guix-commit)
-# roguixos/roguix's scripts; moving this pin is a reviewed change
+# omaguix/omaguix's scripts; moving this pin is a reviewed change
 # (docs/decisions/0006-one-roguix-release-step.md).
 ROGUIX_SCRIPTS_COMMIT=e1e2d64f36bfd00cd020e2accab80aa14f321b60
 
 mkdir -p "$export_dir/roguix-scripts"
 for script in desktop-split reference-system-licenses.scm; do
   curl -fsSL -o "$export_dir/roguix-scripts/$script" \
-    "https://raw.githubusercontent.com/roguixos/roguix/$ROGUIX_SCRIPTS_COMMIT/scripts/$script"
+    "https://raw.githubusercontent.com/omaguix/omaguix/$ROGUIX_SCRIPTS_COMMIT/scripts/$script"
 done
 rm -f "$export_dir"/{closure,licenses,packages,package-closure,closure-status,vps-fetch,vps-has,publish}.txt
 

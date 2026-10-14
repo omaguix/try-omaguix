@@ -48,7 +48,7 @@ upstream-offer of that item.
 Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
 path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
 `.env`, then run guest/guix/release.py for current try-roguix main: a
-signed roguix-channel commit, roguixos/roguix's build-desktop.yml
+signed roguix-channel commit, omaguix/omaguix's build-desktop.yml
 dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
 the closure check, then the signed release.json moves the channel's main.
 Report the run ids and the release commit; on any failure, main stays.
@@ -80,13 +80,13 @@ Follow-up of the release step, decided by the user 2026-10-12
 CI run of the same channel commit, so a failed VPS import or closure
 check does not need a new multi-hour CI build. No build.
 
-Note for both: the release step works only after roguixos/roguix adds the
+Note for both: the release step works only after omaguix/omaguix adds the
 `channel_commit` workflow input and the `split-*` artifacts (sent to the
 guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
 `VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: installed at
 `/usr/local/sbin/vps-import` on root@vps.frolow.dev port 1027, roguix
 e1e2d64, also on root's PATH as vps-import; the release.py-resume worker
-sets it in the local `.env`). roguixos/roguix's side is done (the
+sets it in the local `.env`). omaguix/omaguix's side is done (the
 guix-x86_64-iso-omguix coordinator, 2026-10-12, roguix commit 356d2db1):
 build-desktop.yml takes `channel_commit`, authenticates the channel,
 uploads the `split-*` artifacts; not run in CI yet. The channel's main
@@ -105,7 +105,22 @@ list of every store path it published that is still meant to be served
 put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
 the VPS and say so. Until then nothing is deleted on the VPS.
 
-### Move Roguix to roguix.org
+### Move Omaguix to omaguix.org
+
+The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
+the organization is `omaguix`, and the public domain is `omaguix.org`.
+The repositories are now `omaguix/omaguix`, `omaguix/omaguix-channel`,
+and `omaguix/try-omaguix`; their histories and existing tags are preserved.
+Porkbun serves the domain's DNS, with the apex and
+`substitutes.omaguix.org` pointing at the existing VPS. The new substitute
+key's public bytes are unchanged, now staged as
+`guest/guix/modules/roguix/substitutes.omaguix.org.pub`.
+The earlier plan below uses the superseded domain and filename: current
+implementation uses `omaguix.org` and `substitutes.omaguix.org.pub`.
+Do not activate the new guest trust record until HTTPS, signed substitute
+content and the matching CI signing secret have been verified. Changing
+the substitute key does not change the independently signed channel's
+introduction or signer.
 
 Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
 models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
@@ -139,7 +154,7 @@ trust record and docs. App update feeds stay where they are until checked.
 ### Tagline and topics: "Roguix: Omarchy on Guix System"
 
 Asked 2026-10-12 (round 20261012-191411-5986): put "Roguix: Omarchy on
-Guix System" in README and in the descriptions of roguixos/try-roguix,
+Guix System" in README and in the descriptions of omaguix/try-omaguix,
 roguix and roguix-channel, with a short "independent, not affiliated with
 Omarchy" line in README (nominative use, no endorsement implied). Topics:
 omarchy, guix, guix-system, hyprland on all three; macos and
@@ -169,7 +184,7 @@ owning coordinators before choosing the publication order.
 ### Accept Guix's Ungoogled Chromium on the Metal path
 
 Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
-first"): once roguixos/roguix's CI builds `ungoogled-chromium` for aarch64
+first"): once omaguix/omaguix's CI builds `ungoogled-chromium` for aarch64
 (no substitute at the pin; a many-hour build), check it on `gl=es` like
 LibreWolf (GPU compositing, raster, WebGL 2, no software fallback) and fix
 what differs. Needs CI to build the package first.

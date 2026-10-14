@@ -2,7 +2,7 @@
 """Release Roguix: the signed channel commit, CI's builds of it and a manifest.
 
 docs/decisions/0006-one-roguix-release-step.md: publish-channel pushes the
-channel commit C to release/C, roguixos/roguix's CI builds C for every
+channel commit C to release/C, omaguix/omaguix's CI builds C for every
 architecture, the VPS imports CI's releases, every package item is checked on
 a server, and only then a signed release.json on top of C moves the channel's
 main. Any failure stops before main moves.
@@ -24,7 +24,7 @@ import urllib.request
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
-CI_REPO = "roguixos/roguix"
+CI_REPO = "omaguix/omaguix"
 WORKFLOW = "build-desktop.yml"
 # Matrix system -> artifact and release prefix in CI's workflow.
 ARCHITECTURES = {"aarch64-linux": "aarch64-desktop",

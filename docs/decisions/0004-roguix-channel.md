@@ -14,7 +14,7 @@ instead keeps the Guix that built it (`/var/guix/gcroots/roguix-guix`).
 ## Decision
 
 Roguix's modules are published as the `roguix` Guix channel at
-`https://github.com/roguixos/roguix-channel`, generated from `guest/guix` by
+`https://github.com/omaguix/omaguix-channel`, generated from `guest/guix` by
 `guest/guix/publish-channel`. Every commit is signed with a key used only for
 the channel (fingerprint `7D1A 8B40 0C26 0998 097F  63E5 28B8 3B16 11FA 815E`),
 held in `~/.config/roguix-channel/gnupg` on the maintainer's Mac without a

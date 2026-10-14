@@ -7,7 +7,7 @@ Supersedes [0004](0004-roguix-channel.md) on how a release is published;
 
 A Roguix release had two independent halves. The roguix channel got a signed
 commit whenever `guest/guix/publish-channel` ran on the maintainer's Mac,
-while `roguixos/roguix`'s CI built substitutes from a try-roguix commit pinned
+while `omaguix/omaguix`'s CI built substitutes from a try-roguix commit pinned
 in its workflow. Nothing tied them together: the channel lagged try-roguix by
 weeks, CI built modules no VM had, and a channel commit could reach VMs
 before its packages were on `roguix.frolow.dev`, so `roguix-update` would
@@ -58,7 +58,7 @@ push to `main` is not a fast-forward and fails.
 names only released commits. Checking `release.json` in the VM (its parent
 is C, and M changes no module) is a later guest change.
 
-The closure split is `roguixos/roguix`'s `scripts/desktop-split`, with its
+The closure split is `omaguix/omaguix`'s `scripts/desktop-split`, with its
 licence collector; try-roguix's builder fallback (`server/publish-system.sh`)
 runs the same two scripts at a pinned roguix commit instead of its own awk.
 

@@ -46,7 +46,7 @@ class OutputParsingTests(unittest.TestCase):
 
     def test_run_id_comes_from_the_ci_repositorys_run_url(self):
         output = ("✓ Created workflow_dispatch event for build-desktop.yml\n"
-                  "https://github.com/roguixos/roguix/actions/runs/123456\n")
+                  "https://github.com/omaguix/omaguix/actions/runs/123456\n")
         self.assertEqual(release.run_id(output), "123456")
         for other in ("", "https://github.com/someone/else/actions/runs/1"):
             with self.assertRaises(release.ReleaseError):

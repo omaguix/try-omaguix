@@ -22,7 +22,7 @@ class TrustRecordTests(unittest.TestCase):
         substitute, key, channel, introduction, signer = record_values()
         self.assertEqual(substitute, "https://roguix.frolow.dev")
         self.assertTrue((TRUST.parent / key).is_file(), key)
-        self.assertEqual(channel, "https://github.com/roguixos/roguix-channel")
+        self.assertEqual(channel, "https://github.com/omaguix/omaguix-channel")
         self.assertRegex(introduction, r"^[0-9a-f]{40}$")
         self.assertRegex(signer.replace(" ", ""), r"^[0-9A-F]{40}$")
 

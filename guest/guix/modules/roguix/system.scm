@@ -364,7 +364,7 @@ image's defaults."
                              config)))))))
 
 ;; The image's system with no extra packages and the default host settings,
-;; independent of any machine's settings file: what roguixos/roguix's CI
+;; independent of any machine's settings file: what omaguix/omaguix's CI
 ;; builds substitutes for, the same derivation wherever it is evaluated.
 ;; Defined last: it calls the procedures above when the module loads.
 (define %roguix-reference-system

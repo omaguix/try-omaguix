@@ -11,7 +11,7 @@ builder: it exported Roguix's store items and the VPS behind
 `roguix.frolow.dev` imported and served them, with the VPS's setup (Debian 13,
 `guix-install.sh`, a systemd unit and an nginx site) kept in `server/`.
 
-Since then substitutes are also built by the `roguixos/roguix` repository's CI
+Since then substitutes are also built by the `omaguix/omaguix` repository's CI
 on GitHub runners, for aarch64 and x86_64, from
 `(@ (roguix system) %roguix-reference-system)` (`guest/guix/README.md`),
 whose derivation is the same on any machine. The VPS is moving to a Guix
@@ -22,7 +22,7 @@ describes a private host.
 
 ## Decision
 
-- Builders: `roguixos/roguix`'s CI builds the reference system for both
+- Builders: `omaguix/omaguix`'s CI builds the reference system for both
   architectures; the builder VM (`guest/guix/builder-vm`) still builds the
   image and can build and export the same items when CI cannot.
 - Server: `roguix.frolow.dev` keeps serving signed substitutes with one key.

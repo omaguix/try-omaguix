@@ -3,7 +3,7 @@
 The Roguix substitute server (docs/decisions/0002-roguix-substitute-server.md),
 kept here until the VPS runs from its own Guix System configuration
 (docs/decisions/0005-who-builds-roguix-substitutes.md), then deleted:
-`guix publish` on a Debian 13 VPS behind nginx. It only serves; `roguixos/roguix`'s CI
+`guix publish` on a Debian 13 VPS behind nginx. It only serves; `omaguix/omaguix`'s CI
 and the aarch64 builder VM build. The host also serves other sites, so `guix-publish.service`
 is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 
@@ -32,7 +32,7 @@ is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 
 A release is one step from the Mac, `guest/guix/release.py`
 (docs/decisions/0006-one-roguix-release-step.md): `publish-channel` pushes the
-signed channel commit to `release/<commit>`, `roguixos/roguix`'s CI builds that
+signed channel commit to `release/<commit>`, `omaguix/omaguix`'s CI builds that
 commit for aarch64 and x86_64, the VPS imports CI's releases with roguix's
 `scripts/vps-import` over SSH (`VPS_IMPORT` in `.env`), every package item is
 checked on bordeaux or roguix.frolow.dev, and a signed `release.json` on top
