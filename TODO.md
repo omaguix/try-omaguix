@@ -2,7 +2,32 @@
 
 ## Next, in order
 
-### Upgrade existing VMs across Guix pin bumps
+### Finish and commit the Omaguix documentation rename [t-omadocs1]
+
+Queued 2026-10-14 at the user's request ("add to TODO what is still left to
+do; work through the TODO in order; ask the models", consult round
+20261014-193606-be7d with sol, MiMo, DeepSeek). Fifteen documentation files
+(`AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `THIRD_PARTY_NOTICES.md`,
+`docs/*.md`, `macos/README.md`, `server/README.md`) have uncommitted
+Roguix-to-Omaguix edits in the checkout. Before committing them, fix five
+review mismatches against the code and preserved compatibility contracts:
+1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
+   (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
+   `LauncherLogTests.swift`).
+2. `macos/README.md:109`: keep the `"Try Roguix Development"` certificate
+   subject name (matches `macos/development-signing-identity.sh:10`; changing
+   it would invalidate existing local TCC Accessibility grants).
+3. `docs/roguix-signing-keys.md:96`: keep `"Roguix from try-roguix <revision>"`
+   as the channel commit subject to audit (matches `guest/guix/publish-channel:34`
+   and `guest/guix/test_release.py:181`, and covers historical channel commits).
+4. `docs/releasing.md:26,45`: keep `"The first Try Roguix release, 0.5.0"` and
+   the `"Try Roguix 0.5.0 (...)"` historical example, while using Try Omaguix
+   for new releases.
+5. `docs/architecture.md:210`: replace the nonexistent
+   `try-roguix-operating-system` identifier with `roguix-operating-system`
+   (`guest/guix/modules/roguix/system.scm`).
+
+### Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
 
 Requested 2026-10-12 by the roguix-vps coordinator, approved by the
 owner (review of the Roguix repositories, consult round
@@ -12,15 +37,26 @@ upgrade path.
 roguix-update (guest/guix/modules/roguix/omarchy.scm:483) tells users to
 reset the VM when a release needs a newer Guix. Existing VMs should move to
 the new pin keeping their settings and data, with a rollback. New users
-are Try Roguix Mac app users for now; bare metal is not pursued.
+are Try Omaguix Mac app users for now; bare metal is not pursued.
 Decided by the user 2026-10-12, directly to the upgrade worker: the
 signed release.json names the new Guix's store path and the VM only
 substitutes it, without cloning Guix or contacting Codeberg. Nobody
-uses Roguix yet, so no older release format needs compatibility.
-The worker's v2 is in progress; the earlier time-machine implementation
-is not the final version.
+uses Omaguix yet, so no older release format needs compatibility.
+Checked 2026-10-14 (consult round 20261014-193606-be7d): the worker finished
+two commits (`f3df437a` "docs: upgrade Roguix VMs across Guix pins" and
+`e24e710d` "guest: roguix-update moves to a new Guix pin", which also covers
+`[t-omamanif]` below with `guest/guix/test_roguix_update.py`). Before landing
+them on `main`:
+1. Resolve the open `check-forward-update` Codeberg clone question in "Needs a
+   decision" below.
+2. Rebase both commits onto `main` and update the renamed product and
+   repository references (`Omaguix`, `omaguix/omaguix`, `omaguix/omaguix-channel`).
+3. Ensure `omaguix/omaguix`'s `.github/workflows/build-desktop.yml` emits
+   `split-<prefix>/guix-profile.txt` and includes that Guix profile in
+   `package-closure.txt` before `e24e710d`'s stricter `release.py` check is
+   used for a release.
 
-### Rebase and re-test the Omarchy menu-rows PR
+### Rebase and re-test the Omarchy menu-rows PR [t-omamenu1]
 
 Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
 obsolete now that Omarchy opens menus through Hyprland global shortcuts
@@ -43,20 +79,32 @@ short, the release takes hours); do not wait for #14993 (open, its
 timing and shape unknown; DeepSeek alone would wait). Pushing the PR branch and replying are covered by the approved
 upstream-offer of that item.
 
-### First Roguix release through release.py
+### First Omaguix release through release.py [t-omarel01]
 
 Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
 path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
-`.env`, then run guest/guix/release.py for current try-roguix main: a
-signed roguix-channel commit, omaguix/omaguix's build-desktop.yml
+`.env`, then run guest/guix/release.py for current try-omaguix main: a
+signed omaguix-channel commit, omaguix/omaguix's build-desktop.yml
 dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
 the closure check, then the signed release.json moves the channel's main.
 Report the run ids and the release commit; on any failure, main stays.
-Prerequisite received 2026-10-12 from the omguix coordinator: the fresh
-public key must reach roguix-channel before the first CI run, together
-with %roguix-reference-system; see the approved publication item below.
+Checked 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
+DeepSeek): before running `guest/guix/release.py`:
+1. In `omaguix/omaguix` `.github/workflows/build-desktop.yml`:
+   - Fix `sign-substitutes`'s `if:` gate (`github.actor == github.repository_owner`
+     is false when a maintainer dispatches `workflow_dispatch` in the
+     `omaguix` organization, skipping signing).
+   - Populate `split-<prefix>/release-tag.txt` when `publish.txt` is non-empty
+     (currently `: > split/release-tag.txt` is uploaded empty before
+     `sign-substitutes` computes `RELEASE_TAG`, which `release.py` rejects).
+   - Emit `split-<prefix>/guix-profile.txt` and include the Guix profile in
+     `package-closure.txt` (required by decision 0007 / `[t-omaupgrd]`).
+2. Complete the `omaguix.org` / `substitutes.omaguix.org` cutover prerequisites
+   (`[t-omabkfil]`, `[t-omaorg01]`, `[t-omakey01]` below) and switch
+   `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
+   and `substitutes.omaguix.org.pub` once signed substitute content is verified.
 
-### Offer the ANGLE multisample fix to startergo's virglrenderer tap
+### Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
 
 Decided by the user 2026-10-12: "yes, after acceptance". Proposed
 2026-10-12 by the Metal worker (models: after end-to-end
@@ -65,15 +113,17 @@ macos/patches/virgl-angle-multisample.patch upstream once Metal is the
 default and LibreWolf and Chromium pass (Metal became the default
 2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
 
-### roguix-update checks the release manifest
+### roguix-update checks the release manifest [t-omamanif]
 
 Follow-up of the release step (decision 0006, done 2026-10-12), decided by
 the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
 channel's release.json: it names HEAD's parent (the released commit) and
 its commit changes nothing but release.json, so modules can only come
-from a released commit. Needs a guest build.
+from a released commit. Needs a guest build. Implemented together with
+`[t-omaupgrd]` in commit `e24e710d` (`guest/guix/modules/roguix/omarchy.scm`
+and `guest/guix/test_roguix_update.py`).
 
-### release.py resumes from an existing CI run
+### release.py resumes from an existing CI run [t-omaresum]
 
 Follow-up of the release step, decided by the user 2026-10-12
 (d-6ff4fe5q). An option to resume guest/guix/release.py from a finished
@@ -91,9 +141,9 @@ guix-x86_64-iso-omguix coordinator, 2026-10-12, roguix commit 356d2db1):
 build-desktop.yml takes `channel_commit`, authenticates the channel,
 uploads the `split-*` artifacts; not run in CI yet. The channel's main
 (d610bc0c) lacks %roguix-reference-system, so the first run must be a
-release.py run with a channel commit from current try-roguix.
+release.py run with a channel commit from current try-omaguix.
 
-### Send roguix-vps the store paths server/publish.sh published
+### Send roguix-vps the store paths server/publish.sh published [t-omabkfil]
 
 Requested 2026-10-12 by the roguix-vps coordinator, passed on by the user:
 roguix.frolow.dev moves to static, CI-signed substitutes (roguix decision
@@ -105,7 +155,7 @@ list of every store path it published that is still meant to be served
 put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
 the VPS and say so. Until then nothing is deleted on the VPS.
 
-### Move Omaguix to omaguix.org
+### Move Omaguix to omaguix.org [t-omaorg01]
 
 The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
 the organization is `omaguix`, and the public domain is `omaguix.org`.
@@ -131,6 +181,26 @@ private file. The current public key's SHA-256 is
 `5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`.
 The earlier public key/checksum below is superseded; it must not be used
 with that secret.
+
+Verified 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
+DeepSeek):
+- Porkbun NS (`curitiba/fortaleza/maceio/salvador.ns.porkbun.com`) and
+  Let's Encrypt TLS certificates (`2026-10-14` to `2027-01-12`) are live on
+  `https://omaguix.org` and `https://substitutes.omaguix.org` (`A 192.255.242.95`).
+- Remaining on the VPS (`roguix-vps`): `www.omaguix.org` has a `CNAME` to
+  `omaguix.org.` but is missing from the TLS certificate SANs; `/var/www/omaguix.org/html`
+  is empty (`403 Forbidden`); `/var/lib/roguix-substitutes` is empty
+  (`https://substitutes.omaguix.org/nix-cache-info` returns `404 Not Found`),
+  while `https://roguix.frolow.dev/nix-cache-info` still serves `200 OK`.
+- Remaining in `omaguix/try-omaguix` (cutover order agreed in round
+  20261014-193606-be7d): once `omaguix/omaguix` CI signing gates are fixed and
+  `https://substitutes.omaguix.org` serves verified substitutes signed by the
+  `5e9b4547...` key, switch `%roguix-trust` in
+  `guest/guix/modules/roguix/trust.scm` from `"https://roguix.frolow.dev"` and
+  `roguix.frolow.dev.pub` to `"https://substitutes.omaguix.org"` and
+  `substitutes.omaguix.org.pub`, remove `guest/guix/modules/roguix/roguix.frolow.dev.pub`,
+  update `guest/guix/test_trust.py` and docs (`AGENTS.md`, `docs/architecture.md`,
+  `guest/guix/README.md`, `server/README.md`), and publish the release commit.
 
 Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
 models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
@@ -161,33 +231,35 @@ provides), the VPS vhost and certificate (the roguix-vps coordinator,
 which owns the host and its static-substitutes move), then try-roguix's
 trust record and docs. App update feeds stay where they are until checked.
 
-### Tagline and topics: "Roguix: Omarchy on Guix System"
+### Tagline and topics: "Omaguix: Omarchy on Guix System" [t-omatagln]
 
-Asked 2026-10-12 (round 20261012-191411-5986): put "Roguix: Omarchy on
-Guix System" in README and in the descriptions of omaguix/try-omaguix,
-roguix and roguix-channel, with a short "independent, not affiliated with
+Asked 2026-10-12 (round 20261012-191411-5986; updated for the 2026-10-14
+Omaguix rename): put "Omaguix: Omarchy on Guix System" in README and in
+the descriptions of omaguix/try-omaguix, omaguix/omaguix and
+omaguix/omaguix-channel, with a short "independent, not affiliated with
 Omarchy" line in README (nominative use, no endorsement implied). Topics:
 omarchy, guix, guix-system, hyprland on all three; macos and
-virtual-machine on try-roguix. Repository descriptions and topics are
+virtual-machine on try-omaguix. Repository descriptions and topics are
 GitHub settings (gh repo edit); README is a docs commit.
 
-### Publish the fresh substitute key before the first Roguix CI run
+### Publish the fresh substitute key before the first Omaguix CI run [t-omakey01]
 
 Requested 2026-10-12 by the omguix coordinator, relayed by the user:
 publish the fresh public key and %roguix-reference-system through
 publish-channel, then send the channel commit to the coordinator before
-the first CI run. Roguix commit be56772 already verifies
-modules/roguix/substitutes.roguix.org.pub and uses
-https://substitutes.roguix.org; its backfill code is removed. The secret
-is held only in GitHub, pending the user's environment-secret step.
-The received Ed25519 public point is
-AA89E5E3D2B0635D406B526E030248A7838E5206CDDB444D846A1E262F0ED09B;
-the exact public key file's SHA-256 is
-f59f581309d9270a1e8b12b9c73313ca74cb66143c7cf39535c0c251bc309881.
-This is a prerequisite of the first release and part of the approved
-roguix.org clean cutover, not permission to dispatch CI before the new
-endpoint and signing secret are ready. Check those conditions with the
-owning coordinators before choosing the publication order.
+the first CI run.
+Updated 2026-10-14: `omaguix/omaguix` commits `45c7613` and `09d6aa1`
+verify `modules/roguix/substitutes.omaguix.org.pub` (`SHA-256:
+5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`,
+Ed25519 public point
+`7A43D7E9EAEE861ABCCDA7F383E16E41EF12CFBB7D402F419CA5ECD1CBDD8E4C`) and
+use `https://substitutes.omaguix.org` (superseding the earlier `AA89E5...` /
+`f59f5813...` key). Candidate channel commit
+`cba50b560a38ac885b3d282f132793fe740345f6` (from `try-omaguix` `8839313d`)
+is signed and pushed to `omaguix/omaguix-channel` as
+`release/cba50b560a38ac885b3d282f132793fe740345f6` with
+`modules/roguix/substitutes.omaguix.org.pub` and `%roguix-reference-system`,
+leaving `main` at `d610bc0c` until the first full `release.py` run succeeds.
 
 ## Proposed
 
@@ -440,6 +512,18 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### Register `.herdr/checks.toml` (`[t-atkjktc5]`) to unblock `herdr todo run`
+
+Approve `[t-atkjktc5]` and have the coordinator commit `.herdr/checks.toml` so `herdr todo run` can dispatch workers?
+Options: approve `[t-atkjktc5]` and let the coordinator commit `.herdr/checks.toml` (`test-contracts` and `git diff --check`; no automatic `make install`) | approve `[t-atkjktc5]` with `make test` and `make install` in `.herdr/checks.toml` | keep `.herdr/checks.toml` unconfigured for now
+Checked 2026-10-14: the coordinator workflow requires dispatching TODO workers through `herdr todo run` (which enforces the subscription usage gate and reads `.herdr/checks.toml`), and `.herdr/checks.toml` does not exist yet on `main` (`[t-atkjktc5]` is in "Proposed"), blocking worker dispatch for `[t-omadocs1]` and subsequent items.
+
+### Avoid `check-forward-update`'s Codeberg clone when moving across Guix pins (`[t-omaupgrd]`)
+
+How should `roguix-update` handle `guix system reconfigure`'s `check-forward-update` clone of Guix from Codeberg when moving a VM to a new Guix pin (decision 0007)?
+Options: pass `--no-check-forward-update` in `roguix-update` after `roguix-update` authenticates `release.json` and verifies `P/bin/guix describe` matches `guix-commit` | pre-seed `/root/.cache/guix/checkouts` for Guix in the image and release | leave `check-forward-update` cloning from Codeberg
+Checked 2026-10-14 (upgrade worker commits `f3df437a` and `e24e710d`, consult round 20261014-193606-be7d with sol, MiMo, DeepSeek): `guix system reconfigure` runs `check-forward-update`, which clones Guix's channel URL from Codeberg into root's cache to relate the running system's provenance commit to the new one (in VM testing, Codeberg reset the connection twice and a local libgit2 mirror clone took 8224 s); `roguix-update` already authenticates the signed channel release commit and verifies `P/bin/guix describe` before invoking `reconfigure`.
 
 ### Background: renaming to Omaguix (2026-10-12)
 
