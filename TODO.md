@@ -33,6 +33,33 @@
   omaguix-rename; wait job 20261016-214642-c573. Host follow-ups after landing (coordinator):
   the Karabiner exemption matches `dev.tryroguix.native(.development)?.vm`
   and must follow the new bundle ids.
+  Worker result 2026-10-16: 70d92104 on branch omaguix-rename (138 files).
+  `make test` passes; `build.py --check` and a full no-grafts dry run with
+  the channel's main d610bc0c evaluate (122 derivations, no `roguix`).
+  The worker checked the pinned `guix/channels.scm:149-159,401-452`: the
+  introduction is the first signed commit plus the key fingerprint, and the
+  name takes no part in authentication, so DeepSeek's claim is false.
+  Its image build went beyond the task and filled the Mac's disk; it was
+  stopped and removed.
+  Not landed yet:
+  - `make app` fails until a new guest image is built and packaged, because
+    `build/guix`'s manifest kind is still `roguix-guest-artifacts`. Landing
+    it alone would break main's `make app`. Build the image after the
+    pendrive item, with exports going to the pendrive.
+  - omaguix/omaguix's workflow and scripts read `modules/roguix` and
+    `(roguix system)`; they must follow before the next release
+    ([t-omarelfs]).
+  - The channel repository's README and `.guix-channel` comment still say
+    Roguix.
+  Host follow-ups after landing (coordinator):
+  - Karabiner's exemption: `dev.tryomaguix.native(.development)?.vm`.
+  - The old keychain and `~/.config/try-roguix/`.
+  - `~/Library/Application Support|Logs/Try Roguix` and the old plists.
+  - The local channel checkout `../roguix-channel` and its `~/.config` GnuPG
+    home.
+  - TCC is reset.
+  The dev.tryroguix.network LaunchDaemon is not installed. The first
+  try-omaguix-v tag must be above 0.5.1.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
