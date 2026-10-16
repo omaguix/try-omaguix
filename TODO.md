@@ -290,6 +290,9 @@
   and read them there; Try Omaguix keeps accepting its historical
   `TryRoguix*.dmg` names. Swift and `make test`: a pane worker.
   Decided by the user 2026-10-16 (d-6spz6nsu): approved.
+  When it lands, send the commit in one line to the guix-bend coordinator
+  (session guix-bend-60, pane wCX:p97): Try Omabend's app build waits only
+  on this item.
 
 - [ ] UI strings name the app from its identity [t-5gcnv3af]
   Follow-up of [t-omabendl] (worker open point): windows and alerts say
