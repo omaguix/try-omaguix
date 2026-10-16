@@ -263,6 +263,24 @@ leaving `main` at `d610bc0c` until the first full `release.py` run succeeds.
 
 ## Proposed
 
+### Parameterize the launcher build and guest packaging for a second app [t-omabend1]
+
+Requested 2026-10-16 (decision d-4evijsti, "parameterize try-roguix through
+its coordinator; keep try-omabend thin"; consult round 20261016-095300-4764
+with sol, MiMo, DeepSeek, Muse Wonder): parameterize the launcher build and
+guest packaging so a second macOS app (Try Omabend) can be built from this
+repository without forking it:
+- app name and bundle identifier;
+- `Application Support` and `Logs` directory names, so the two apps do not
+  share VM state or logs;
+- the networking mode, with QEMU user-mode networking as an option so a
+  second privileged LaunchDaemon (such as `dev.tryroguix.network`) is not
+  needed;
+- the development signing identity name (`macos/development-signing-identity.sh`);
+- the guest artifact's provenance in `guest/guix/package.py`: hash the
+  actual build inputs instead of `modules/roguix`, allow a credentials
+  policy other than `first-boot`, and keep the partition checks.
+
 ### Accept Guix's Ungoogled Chromium on the Metal path
 
 Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
