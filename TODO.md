@@ -2,39 +2,6 @@
 
 ## Next, in order
 
-- [ ] Finish and commit the Omaguix documentation rename [t-omadocsr]
-  Queued 2026-10-14 at the user's request ("add to TODO what is still left to
-  do; work through the TODO in order; ask the models", consult round
-  20261014-193606-be7d with sol, MiMo, DeepSeek). Fifteen documentation files
-  (`AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `THIRD_PARTY_NOTICES.md`,
-  `docs/*.md`, `macos/README.md`, `server/README.md`) had uncommitted
-  Roguix-to-Omaguix edits in the checkout. Decided by the user 2026-10-16
-  (d-7jqkrmk7): the coordinator saved them as a patch for the worker and
-  restored the files to `HEAD`. Asked by the user 2026-10-16: review the
-  worker's commit with the models before approving it, since the edits may
-  have been made by DeepSeek and be messy. Done 2026-10-16: round
-  20261016-143529-9786; commit a33cf1e4 on run r-scr4gxwa waits for approval.
-  Decided by the user 2026-10-16 (d-hgimrsal): approving it pushes `main`,
-  so first review the unpushed product commits from 2026-10-14 (`599ae36a`
-  to `512520a1`) with the models for secrets and bugs. Before committing
-  them, fix five
-  review mismatches against the code and preserved compatibility contracts:
-  1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
-     (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
-     `LauncherLogTests.swift`).
-  2. `macos/README.md:109`: keep the `"Try Roguix Development"` certificate
-     subject name (matches `macos/development-signing-identity.sh:10`; changing
-     it would invalidate existing local TCC Accessibility grants).
-  3. `docs/roguix-signing-keys.md:96`: keep `"Roguix from try-roguix <revision>"`
-     as the channel commit subject to audit (matches `guest/guix/publish-channel:34`
-     and `guest/guix/test_release.py:181`, and covers historical channel commits).
-  4. `docs/releasing.md:26,45`: keep `"The first Try Roguix release, 0.5.0"` and
-     the `"Try Roguix 0.5.0 (...)"` historical example, while using Try Omaguix
-     for new releases.
-  5. `docs/architecture.md:210`: replace the nonexistent
-     `try-roguix-operating-system` identifier with `roguix-operating-system`
-     (`guest/guix/modules/roguix/system.scm`).
-
 - [ ] Parameterize the launcher build and guest packaging for a second app [t-omabendl]
   Requested 2026-10-16 (decision d-4evijsti, "parameterize try-roguix through
   its coordinator; keep try-omabend thin"; consult round 20261016-095300-4764
