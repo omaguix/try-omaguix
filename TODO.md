@@ -60,6 +60,13 @@
   - TCC is reset.
   The dev.tryroguix.network LaunchDaemon is not installed. The first
   try-omaguix-v tag must be above 0.5.1.
+  Step 2, allowed by the user 2026-10-16: the same worker (wD4:p33) rebases
+  onto main, frees the builder (old roots, guix gc, fstrim), builds the
+  renamed image with the export on the pendrive
+  (`BUILDER_EXPORT=/Volumes/Samsung128GB/exports`, set only in the job
+  command), stops when the Mac has less than 15 GiB free, then runs
+  `make guix-package`, `make app` and `make test`; wait job 20261016-231627-5459. Next: the
+  models review the diff, then it lands.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
