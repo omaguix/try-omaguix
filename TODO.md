@@ -273,38 +273,41 @@
   `modules/roguix/substitutes.omaguix.org.pub` and `%roguix-reference-system`,
   leaving `main` at `d610bc0c` until the first full `release.py` run succeeds.
 
-## Proposed
-
-- [ ] The storage helper's messages name "Reset Omaguix"
-  Follow-up of the app rename (61d00144; review rounds 20261016-144822-3e03,
-  20261016-144944-b189, 20261016-145303-b71d): `macos/qemu-persistent-storage.sh`
-  still tells users to "use Reset Roguix" (lines 1142, 1288, 1371, 1566), but
-  the button is "Reset Omaguix" (`StartMenuPresentation.swift:72`). Rename the
-  messages and any test that matches them.
-
-- [ ] Correct two stale sentences in `guest/guix/README.md`
-  Follow-up of 8839313d (same review): it still says the logo shows "GUIX in
-  the same lettering" (line 449), but the new logo is OMAGUIX in different
-  lettering; and "its old Omaguix `hyprland.lua`" (under "Substitutes for
-  Omaguix's own packages") describes the pre-Omarchy Roguix image, so it
-  should say Roguix.
-
-- [ ] Shell contract tests keep their scratch files under `TMPDIR`
+- [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
   shell suites create scratch directories under `/private/tmp`
   (`macos/Tests/qemu-monitor-ready.test.sh:10`, `network-helper.test.sh:4`,
   `runtime-relocation.test.sh:26`, `qemu-memory-contract.test.sh:35`), which a
   headless worker's sandbox cannot write and which collide in parallel runs.
   Use `TMPDIR`; sockets, `ps` and `codesign` still need a pane worker.
+  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
 
-- [ ] Accept Guix's Ungoogled Chromium on the Metal path
+- [ ] The storage helper's messages name "Reset Omaguix" [t-imgr6n4p]
+  Follow-up of the app rename (61d00144; review rounds 20261016-144822-3e03,
+  20261016-144944-b189, 20261016-145303-b71d): `macos/qemu-persistent-storage.sh`
+  still tells users to "use Reset Roguix" (lines 1142, 1288, 1371, 1566), but
+  the button is "Reset Omaguix" (`StartMenuPresentation.swift:72`). Rename the
+  messages and any test that matches them.
+  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
+
+- [ ] Correct two stale sentences in `guest/guix/README.md` [t-icmqmryc]
+  Follow-up of 8839313d (same review): it still says the logo shows "GUIX in
+  the same lettering" (line 449), but the new logo is OMAGUIX in different
+  lettering; and "its old Omaguix `hyprland.lua`" (under "Substitutes for
+  Omaguix's own packages") describes the pre-Omarchy Roguix image, so it
+  should say Roguix.
+  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
+
+## Proposed
+
+- [ ] Accept Guix's Ungoogled Chromium on the Metal path [t-wgeohswx]
   Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
   first"): once omaguix/omaguix's CI builds `ungoogled-chromium` for aarch64
   (no substitute at the pin; a many-hour build), check it on `gl=es` like
   LibreWolf (GPU compositing, raster, WebGL 2, no software fallback) and fix
   what differs. Needs CI to build the package first.
 
-- [ ] Let agents click in a VM and see the result: evaluate hypruse first
+- [ ] Let agents click in a VM and see the result: evaluate hypruse first [t-kmsxorgt]
   Deferred by the user 2026-10-11: "the rest later" (the coordinator
   and the supervisor come first).
 
@@ -347,7 +350,7 @@
   screendump is black under VirGL (the brief omitted our readback patch).
   Running upstream's acceptance suite on Roguix is a separate proposal.
 
-- [ ] Run Omarchy's acceptance suite on Roguix
+- [ ] Run Omarchy's acceptance suite on Roguix [t-sn5o2yrj]
   Deferred by the user 2026-10-11: "the rest later" (the coordinator
   and the supervisor come first).
 
@@ -521,12 +524,6 @@
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
-
-### Update path for apps that look for `TryRoguix.dmg`
-
-Should the next app release also upload a `TryRoguix.dmg` copy so apps built before the rename (61d00144) still see the update?
-Options: no, a clean cutover (nobody uses the app yet, as d-2zft4rjx says of the guest) | yes, for one release, then drop it
-Checked 2026-10-16: on `origin/main` the update checker accepts only `TryRoguix-v<version>.dmg` or `TryRoguix.dmg` (`macos/Sources/OmarchyVMHelper/AppRelease.swift:82`), while `macos/release.sh:33` now publishes only `TryOmaguix.dmg`; the new checker accepts both names (`AppRelease.swift:83-84`). Review round 20261016-144944-b189 (sol, Muse Wonder, DeepSeek).
 
 ### Background: renaming to Omaguix (2026-10-12)
 
