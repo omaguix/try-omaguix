@@ -63,6 +63,10 @@
   older G; the release step must refuse that.
   CI's share (building P from G plus the patch, in omaguix/omaguix's
   workflow) is a gate of the first release [t-omarelfs].
+  Decided by the user 2026-10-16 (d-726tnvqe), after the coordinator raised
+  the GitHub Actions cost (a patched Guix has no upstream substitutes, so CI
+  builds guix from source for both systems at every pin bump): stay with the
+  patch.
 
 - [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
   Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
