@@ -20,6 +20,9 @@
   Decided by the user 2026-10-16 (d-ekffmmrt): approved for x86_64 and
   aarch64, next after [t-omabendl]; it is released with the first channel
   release ([t-omarelfs]).
+  Started 2026-10-16 with the user's grant for this launch: pane worker
+  codex-package (wD4:p1D), worktree ../try-roguix-codex, branch
+  codex-package; wait job 20261016-161354-38c7.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
