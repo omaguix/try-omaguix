@@ -32,6 +32,12 @@
      `split-<prefix>/guix-profile.txt` and includes that Guix profile in
      `package-closure.txt` before `e24e710d`'s stricter `release.py` check is
      used for a release.
+  Run r-xyks6pbv started 2026-10-16 (headless, checks test-contracts and
+  diff-check; wait job 20261016-165802-040b). The coordinator added a safety step: since
+  --no-check-forward-update also skips Guix's downgrade check,
+  roguix-update refuses a channel main that does not descend from the
+  checkout's previous commit. Point 3 (the CI workflow) is a gate of
+  [t-omarelfs], not of this landing.
 
 - [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
   Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
