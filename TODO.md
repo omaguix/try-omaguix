@@ -60,6 +60,8 @@
   names still hardcoded in `macos/open-qemu-gpu.sh`, `macos/run-qemu-gpu.sh`,
   `package-dmg.sh` (the volume name), the `TryOmaguix*` icon, Info.plist's
   privacy strings and the `dev.tryroguix.network` plist.
+  Slice 1 landed 2026-10-16 as d8d49b0e (run r-2mh55so3, attempt 2, verify
+  test-contracts and diff-check passed); pushed. Slice 2 is next.
 
 - [ ] Package OpenAI Codex CLI in the omaguix channel [t-fjlrfmnx]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
