@@ -68,6 +68,33 @@
   builds guix from source for both systems at every pin bump): stay with the
   patch.
 
+- [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
+  Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
+  more names like that left unchanged? Ask the models." The rename kept the
+  Guix modules and commands, the channel name, the guest paths, the domain
+  and the macOS identifiers (`docs/architecture.md:3-8`), calling them
+  contracts with existing guests and installed host components, although
+  nobody uses Omaguix yet (decision 0007, d-t2jjk3yw). The repository has
+  about 1200 `roguix` occurrences. Consult round in progress; then the user
+  decides.
+  Consult round 20261016-172829-f1c0 (sol, MiMo, DeepSeek, Argon, Muse
+  Wonder): rename before the first release in one cutover after
+  [t-omaupgrd] lands; keep git history, the channel introduction and the
+  v0.5.0 tag. Costs: every Omaguix substitute is rebuilt, since store hashes
+  change; TCC grants are reset; the old `dev.tryroguix.network` daemon must
+  be unloaded; validate on a clean host and with a fresh authenticated
+  `guix pull` of the renamed channel. DeepSeek alone says that renaming the
+  channel needs a new introduction; check it.
+  Decided by the user 2026-10-16 (d-n6eajaie): everything, modules included.
+  That means guest commands, services and agents, guest paths (`/etc`,
+  `/var/lib`, `/run`, the gcroots), environment variables, the
+  `(omaguix ...)` modules and the channel name, the macOS bundle ids, the
+  LaunchDaemon, data and log directories, the signing identity, the
+  Info.plist keys and the tag prefix. Kept: git history, the channel
+  introduction and `v0.5.0`. The domain goes through [t-omaorgdm]. Update
+  `docs/architecture.md:3-8`, the AGENTS.md section, the identity file's
+  comments and decision records.
+
 - [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
   Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
   obsolete now that Omarchy opens menus through Hyprland global shortcuts
@@ -549,16 +576,6 @@
   `-Dvideo-codecs=all`) over virgl's video protocol to a virglrenderer
   patched to encode with VideoToolbox, as OmacVM does (#48). Needs
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
-
-- [ ] Decide which remaining Roguix names become Omaguix [t-xzufmvj7]
-  Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
-  more names like that left unchanged? Ask the models." The rename kept the
-  Guix modules and commands, the channel name, the guest paths, the domain
-  and the macOS identifiers (`docs/architecture.md:3-8`), calling them
-  contracts with existing guests and installed host components, although
-  nobody uses Omaguix yet (decision 0007, d-t2jjk3yw). The repository has
-  about 1200 `roguix` occurrences. Consult round in progress; then the user
-  decides.
 
 ## Needs a decision
 
