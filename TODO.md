@@ -38,6 +38,14 @@
   roguix-update refuses a channel main that does not descend from the
   checkout's previous commit. Point 3 (the CI workflow) is a gate of
   [t-omarelfs], not of this landing.
+  Run r-xyks6pbv attempt 1 is WORKER-BLOCKED (event 165486): Guix has no
+  `--no-check-forward-update` option (checked at the pin 7e74121a:
+  `guix/scripts/system.scm:837` always runs check-forward-update, and
+  `reconfigure.scm:400-422` clones Guix whenever the commit changes), so
+  d-avv7ucxt chose an option that does not exist. Also, nothing records
+  which channel commit built a system, so the first run has no base for the
+  descendant check. Consult round 20261016-170251 is weighing the real
+  options; then the user re-decides.
 
 - [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
   Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
