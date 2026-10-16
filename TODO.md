@@ -10,7 +10,9 @@
   `docs/*.md`, `macos/README.md`, `server/README.md`) had uncommitted
   Roguix-to-Omaguix edits in the checkout. Decided by the user 2026-10-16
   (d-7jqkrmk7): the coordinator saved them as a patch for the worker and
-  restored the files to `HEAD`. Before committing them, fix five
+  restored the files to `HEAD`. Asked by the user 2026-10-16: review the
+  worker's commit with the models before approving it, since the edits may
+  have been made by DeepSeek and be messy. Before committing them, fix five
   review mismatches against the code and preserved compatibility contracts:
   1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
      (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
