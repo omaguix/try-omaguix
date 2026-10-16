@@ -61,6 +61,25 @@
   `package-dmg.sh` (the volume name), the `TryOmaguix*` icon, Info.plist's
   privacy strings and the `dev.tryroguix.network` plist.
 
+- [ ] Package OpenAI Codex CLI in the omaguix channel [t-fjlrfmnx]
+  Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
+  the user's decision there (its TODO item 28, consult round
+  20261016-143228-dbe3): package Codex CLI (github.com/openai/codex,
+  Apache-2.0) as the official static release binary pinned by hash with
+  `copy-build-system`, clearly labelled as a binary package (nothing is
+  compiled, so no substitutes are needed), with Codex's self-updater off
+  (the store is read-only), and release it through the one release step
+  (decision 0006). Facts relayed, to check before use: release `rust-v0.163.0`
+  (2026-10-15), asset `codex-x86_64-unknown-linux-musl.tar.gz`, sha256
+  `beb339e8ecd9ba057a6bb2dc81ad8ca474812edfbf0fc5056ca818797648dde4`,
+  unpacking to one static-pie binary (297 MB); aarch64 assets exist too.
+  Untested: `codex exec` and its sandbox (releases also ship
+  `bwrap-x86_64-unknown-linux-musl`). Tell the requesting session the
+  released channel commit.
+  Decided by the user 2026-10-16 (d-ekffmmrt): approved for x86_64 and
+  aarch64, next after [t-omabendl]; it is released with the first channel
+  release ([t-omarelfs]).
+
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
   owner (review of the Roguix repositories, consult round
@@ -537,22 +556,6 @@
   `-Dvideo-codecs=all`) over virgl's video protocol to a virglrenderer
   patched to encode with VideoToolbox, as OmacVM does (#48). Needs
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
-
-- [ ] Package OpenAI Codex CLI in the omaguix channel [t-fjlrfmnx]
-  Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
-  the user's decision there (its TODO item 28, consult round
-  20261016-143228-dbe3): package Codex CLI (github.com/openai/codex,
-  Apache-2.0) as the official static release binary pinned by hash with
-  `copy-build-system`, clearly labelled as a binary package (nothing is
-  compiled, so no substitutes are needed), with Codex's self-updater off
-  (the store is read-only), and release it through the one release step
-  (decision 0006). Facts relayed, to check before use: release `rust-v0.163.0`
-  (2026-10-15), asset `codex-x86_64-unknown-linux-musl.tar.gz`, sha256
-  `beb339e8ecd9ba057a6bb2dc81ad8ca474812edfbf0fc5056ca818797648dde4`,
-  unpacking to one static-pie binary (297 MB); aarch64 assets exist too.
-  Untested: `codex exec` and its sandbox (releases also ship
-  `bwrap-x86_64-unknown-linux-musl`). Tell the requesting session the
-  released channel commit.
 
 ## Needs a decision
 
