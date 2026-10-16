@@ -55,6 +55,19 @@
   only headless workers and AGENTS.md sends `make test`/`make app` items to
   pane workers: "make it so headless can run make test/make app? change
   AGENTS.md? ask the models".
+  Consult round 20261016-144120-c88a (sol, MiMo, DeepSeek, Argon, Muse
+  Wonder), all five: do not adopt "headless worker plus full checks in the
+  driver's verify" as is. The verify runs the worker's own Makefile, tests and
+  build scripts outside the sandbox with the coordinator's environment (home,
+  network, the development keychain's password file), so a worker's commit
+  gets unsandboxed execution; this item must edit those very files, so they
+  cannot be frozen. A registered `make app` would add signing and network.
+  The worker also cannot run the shell contract tests it changes, so its
+  three attempts become blind round trips. Suggested instead: split the item
+  (a headless slice testable in the sandbox; integration and `make app` in a
+  pane worker), make the shell tests sandbox-friendly, and isolate the verify
+  (scrubbed environment or a separate user, no keychain, harness pinned).
+  Open question in "Needs a decision" below.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
@@ -285,6 +298,14 @@
 
 ## Proposed
 
+- [ ] Shell contract tests keep their scratch files under `TMPDIR`
+  Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
+  shell suites create scratch directories under `/private/tmp`
+  (`macos/Tests/qemu-monitor-ready.test.sh:10`, `network-helper.test.sh:4`,
+  `runtime-relocation.test.sh:26`, `qemu-memory-contract.test.sh:35`), which a
+  headless worker's sandbox cannot write and which collide in parallel runs.
+  Use `TMPDIR`; sockets, `ps` and `codesign` still need a pane worker.
+
 - [ ] Accept Guix's Ungoogled Chromium on the Metal path
   Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
   first"): once omaguix/omaguix's CI builds `ungoogled-chromium` for aarch64
@@ -509,6 +530,12 @@
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
+
+### How to run `[t-omabendl]` given the verify's trust gap
+
+How should `[t-omabendl]` run, given that the driver's verify runs the worker's Makefile and tests outside the sandbox with the coordinator's environment?
+Options: split it: a headless slice whose verify runs only `test-contracts` and `diff-check`, then integration (`make test`, `make app`) in a pane worker you allow per launch | accept the verify running `make test` (not `make app`) with the coordinator's environment for this item | wait until herdr isolates the verify and enforces host operations | headless with `make test` and `make app` both in the verify
+Checked 2026-10-16: herdr's headless sandbox denies Unix sockets and network and its capability adapter enforces nothing yet (herdr `src/workers/mod.rs:228-290`, `src/workers/capabilities.rs:361-398`); the verify runs outside the sandbox with the caller's environment (herdr `src/workers/verify.rs:1-8,509-530`); `make test` binds AF_UNIX sockets, runs `codesign --sign -` and `/bin/ps` and writes to `/private/tmp`; `make app` downloads sources and unlocks the development keychain (`macos/development-signing-identity.sh:26-47`). Consult round 20261016-144120-c88a above.
 
 ### Background: renaming to Omaguix (2026-10-12)
 
