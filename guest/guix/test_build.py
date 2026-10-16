@@ -273,7 +273,7 @@ class ProjectModuleTests(unittest.TestCase):
         # package picks its release when lowered for a system, never from a
         # `source' evaluated once at module load.
         apps = (self.MODULES / "apps.scm").read_text()
-        packages = ("lazygit-bin", "lazydocker-bin", "gum-bin", "dua-bin", "cliamp-bin")
+        packages = ("lazygit-bin", "lazydocker-bin", "gum-bin", "dua-bin", "cliamp-bin", "codex-bin")
         definitions = re.split(r"\n(?=\(define)", apps)
         for name in packages:
             with self.subTest(package=name):

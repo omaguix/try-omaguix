@@ -15,7 +15,12 @@ pinned by URL and SHA-256. Four are statically linked. cliamp links glibc and
 ALSA dynamically; patchelf breaks this Go binary, so `bin/cliamp` runs the
 untouched binary through the store's loader with an explicit library path.
 The builder builds them and `roguix.frolow.dev` serves them like Roguix's
-other packages (decision 0002).
+other packages (decision 0002). The channel also offers OpenAI's Codex CLI
+(`codex-bin`, Apache-2.0) the same way, not installed by default. Its
+`bin/codex` puts Guix's bubblewrap first on PATH for Codex's sandbox and turns
+off Codex's startup update check with a command-line override, which
+`~/.codex/config.toml` cannot undo but a later `-c` of the user's can;
+`codex update` cannot replace a store path and only says to update by hand.
 
 Not provided: Pinta (.NET), LocalSend (Flutter), Signal and Obsidian
 (Electron, Obsidian non-free), and LibreOffice, which Guix packages but has

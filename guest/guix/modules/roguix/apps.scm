@@ -20,11 +20,13 @@
   #:use-module (gnu packages linux)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages video)
+  #:use-module (gnu packages virtualization)
   #:export (lazygit-bin
             lazydocker-bin
             gum-bin
             dua-bin
             cliamp-bin
+            codex-bin
             fastfetch-without-zfs
             obs-without-vlc
             fcitx5-qt6))
@@ -51,7 +53,8 @@
 ;; directory and install its PLAN (copy-build-system's #:install-plan).
 ;; RELEASES lists (SYSTEM URL BASE32-HASH PLAN) for each supported system.
 (define* (static-binary-package name version releases
-                                #:key home-page synopsis description)
+                                #:key home-page synopsis description
+                                (license license:expat))
   (package
     (name name)
     (version version)
@@ -74,7 +77,7 @@
     (home-page home-page)
     (synopsis synopsis)
     (description description)
-    (license license:expat)))
+    (license license)))
 
 (define lazygit-bin
   (static-binary-package
@@ -144,6 +147,67 @@ shell scripts; Omarchy's menus and installers use it."))
    #:synopsis "Disk usage analyzer"
    #:description "Dua shows and interactively deletes what uses disk space;
 Omarchy's Disk Usage entry runs it."))
+
+;; Codex's update paths cannot touch the read-only store: its updater picks
+;; an installer (npm, Homebrew, its install script) from where the binary
+;; lives, and a store path matches none, so `codex update' only prints a link
+;; to update by hand. bin/codex also turns off the startup check for a newer
+;; release with the documented key check_for_update_on_startup
+;; (codex-rs/tui/src/updates.rs, rust-v0.163.0). It is a command-line
+;; override, which beats ~/.codex/config.toml; a later `-c' of the user's own
+;; or /etc/codex/managed_config.toml still wins. `codex app-server daemon
+;; update' installs a separate Codex under ~/.codex/packages, outside Guix.
+;; The Linux sandbox runs the first `bwrap' on PATH, so bin/codex puts Guix's
+;; bubblewrap first; upstream's own bwrap is only a fallback beside the binary
+;; and is left out.
+(define codex-bin
+  (let ((base
+         (static-binary-package
+          "codex" "0.163.0"
+          (list
+           (list "aarch64-linux"
+                 "https://github.com/openai/codex/releases/download/rust-v0.163.0/codex-aarch64-unknown-linux-musl.tar.gz"
+                 "1r7z3x3akzffi83lh7ilzkg36b6wy9n9q1jslr68yvd9yijiw9m7"
+                 #~'(("codex-aarch64-unknown-linux-musl" "libexec/codex")))
+           (list "x86_64-linux"
+                 "https://github.com/openai/codex/releases/download/rust-v0.163.0/codex-x86_64-unknown-linux-musl.tar.gz"
+                 "1r6x91v7j658dh2wa3xzvwp82x54ijnq3p5jddx0bfnrxkl3kcxy"
+                 #~'(("codex-x86_64-unknown-linux-musl" "libexec/codex"))))
+          #:home-page "https://github.com/openai/codex"
+          #:synopsis "OpenAI's coding agent for the terminal (upstream binary)"
+          #:description "Codex CLI is OpenAI's coding agent that runs in the
+terminal.  This package installs upstream's prebuilt static release binary; it
+is not built from source.  Its startup check for updates is turned off and
+@command{codex update} cannot replace it: update it with Guix.  Its sandbox
+uses Guix's bubblewrap."
+          #:license license:asl2.0)))
+    (package
+      (inherit base)
+      (arguments
+       (substitute-keyword-arguments (package-arguments base)
+         ((#:phases phases)
+          #~(modify-phases #$phases
+              (add-after 'install 'wrap
+                (lambda* (#:key inputs #:allow-other-keys)
+                  (let ((wrapper (string-append #$output "/bin/codex")))
+                    (mkdir-p (dirname wrapper))
+                    (call-with-output-file wrapper
+                      (lambda (port)
+                        (format port "#!~a
+export PATH=\"~a${PATH:+:$PATH}\"
+exec ~a -c check_for_update_on_startup=false \"$@\"~%"
+                                (search-input-file inputs "bin/sh")
+                                (dirname (search-input-file inputs "bin/bwrap"))
+                                (string-append #$output "/libexec/codex"))))
+                    (chmod wrapper #o555))))
+              ;; Runs the binary, so not when cross-compiling.
+              (add-after 'wrap 'check
+                (lambda* (#:key tests? #:allow-other-keys)
+                  (when (and tests? (not #$(%current-target-system)))
+                    (invoke (string-append #$output "/bin/codex")
+                            "--version"))))))))
+      (inputs (modify-inputs (package-inputs base)
+                (append bash-minimal bubblewrap))))))
 
 ;; cliamp's release binary links glibc and ALSA dynamically. patchelf breaks
 ;; this Go binary (the loader segfaults), so bin/cliamp runs the untouched
