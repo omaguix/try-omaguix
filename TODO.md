@@ -62,6 +62,10 @@
   privacy strings and the `dev.tryroguix.network` plist.
   Slice 1 landed 2026-10-16 as d8d49b0e (run r-2mh55so3, attempt 2, verify
   test-contracts and diff-check passed); pushed. Slice 2 is next.
+  Slice 2 started 2026-10-16 with the user's grant for this launch: pane
+  worker omabendl-slice2 (wD4:pX), worktree ../try-roguix-omabendl2, branch
+  omabendl-slice2; wait job 20261016-153231-aa50. The coordinator reviews
+  and lands it with git merge --ff-only.
 
 - [ ] Package OpenAI Codex CLI in the omaguix channel [t-fjlrfmnx]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
