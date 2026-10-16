@@ -330,6 +330,14 @@
   and fix the producer or the reader (Rule 10).
   Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
 
+- [ ] Keep VM images on the pendrive [t-lbtv3hc2]
+  Asked by the user 2026-10-16, after the rename worker's image build grew
+  the builder disk to 63 GB and left a 11 GB export, which filled the Mac's
+  disk: "export to the pendrive, keep the images there; ask the models". The
+  pendrive is a 119 GiB exFAT USB volume (105 GiB free) that also holds
+  another session's `m1-archive/`. exFAT has no sparse files. Consult round
+  in progress.
+
 ## Proposed
 
 - [ ] Accept Guix's Ungoogled Chromium on the Metal path [t-wgeohswx]
