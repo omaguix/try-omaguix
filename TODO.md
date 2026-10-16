@@ -17,6 +17,8 @@
   `system.scm`, the `ROGUIX_GUIX` pin and the `release.json` checks evaluate
   under real Guix. It needs `guest/guix/vm-run`, so a pane worker does it.
   The patched Guix and a real pin move wait for CI ([t-omarelfs]).
+  Started 2026-10-16 with the user's grant for this launch: pane worker
+  manif-check (wD4:p2S); wait job 20261016-173819-a655.
 
 - [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
   Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
