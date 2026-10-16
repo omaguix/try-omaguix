@@ -47,6 +47,31 @@
   `docs/architecture.md:3-8`, the AGENTS.md section, the identity file's
   comments and decision records.
 
+- [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
+  Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
+  the user's decision there (its TODO item 29; consult rounds
+  20261016-152300-7ecb, 20261016-152343-e8b2 and 20261016-155613-830a; reviews
+  20261016-184929-b5d2 and 20261016-184929-d03b):
+  two x86_64-only packages, so that `guix install claude-code-x86-64-v1` gives
+  a working `claude` on Core 2 CPUs.
+  1. `x86-64-v2-sigill-shim` 0.1.0, GPL-3.0-or-later, from
+     github.com/omaguix/x86-64-v2-sigill-shim at commit 917cb04c (tag v0.1.0).
+     Built with gnu-build-system, `make check` under qemu-x86_64 10.0 user
+     mode, normal substitutes.
+  2. `claude-code-x86-64-v1` 2.1.301: Anthropic's non-free npm binary, marked
+     experimental and unsupported, `#:substitutable? #f`, kept out of CI
+     publication. `bin/claude` is compiled from the shim's `launcher.c`,
+     with `DISABLE_AUTOUPDATER=1`.
+  All facts (hashes, flags, the check commands) are in that session's
+  message; check them before use. Conflicts with decision 0003, which leaves
+  out non-free applications such as Obsidian. Tell the requester the
+  released channel commit.
+  Decided by the user 2026-10-16 (d-4qoszbfl): approved, both packages.
+  Decision 0003 gets an exception: a non-free package only as
+  non-substitutable and experimental, kept out of CI publication. Queued
+  after the rename [t-xzufmvj7], so it is written under the new names; it
+  needs an x86_64 build and check on the MacBook (the `macbook-2010` skill).
+
 - [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
   Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
   obsolete now that Omarchy opens menus through Hyprland global shortcuts
@@ -543,26 +568,6 @@
   Decided by the user 2026-10-16 (d-q55wvgua): not now, there is space for
   now. Redo the plan when space runs short (the `macbook-2010` skill covers
   the move).
-
-- [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
-  Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
-  the user's decision there (its TODO item 29; consult rounds
-  20261016-152300-7ecb, 20261016-152343-e8b2 and 20261016-155613-830a; reviews
-  20261016-184929-b5d2 and 20261016-184929-d03b):
-  two x86_64-only packages, so that `guix install claude-code-x86-64-v1` gives
-  a working `claude` on Core 2 CPUs.
-  1. `x86-64-v2-sigill-shim` 0.1.0, GPL-3.0-or-later, from
-     github.com/omaguix/x86-64-v2-sigill-shim at commit 917cb04c (tag v0.1.0).
-     Built with gnu-build-system, `make check` under qemu-x86_64 10.0 user
-     mode, normal substitutes.
-  2. `claude-code-x86-64-v1` 2.1.301: Anthropic's non-free npm binary, marked
-     experimental and unsupported, `#:substitutable? #f`, kept out of CI
-     publication. `bin/claude` is compiled from the shim's `launcher.c`,
-     with `DISABLE_AUTOUPDATER=1`.
-  All facts (hashes, flags, the check commands) are in that session's
-  message; check them before use. Conflicts with decision 0003, which leaves
-  out non-free applications such as Obsidian. Tell the requester the
-  released channel commit.
 
 ## Needs a decision
 
