@@ -46,6 +46,23 @@
   which channel commit built a system, so the first run has no base for the
   descendant check. Consult round 20261016-170251 is weighing the real
   options; then the user re-decides.
+  Consult round 20261016-170251 (sol, MiMo, DeepSeek, Argon, Muse Wonder).
+  Decided by the user 2026-10-16, superseding d-avv7ucxt:
+  - d-qqlris3g: a patched Guix built by CI. P is upstream G plus a small,
+    named patch that adds a flag to skip check-forward-update.
+    `release.json` names the patch and the patched commit. roguix-update
+    checks `P/bin/guix describe` against the patched commit, and passes the
+    flag only after its own descendant check has passed. A test shows that a
+    downgrade still aborts without the flag.
+  - d-iudmnb4g: the image records the channel commit it was built from
+    (`/etc/roguix/channel-commit`); images come from a published channel
+    release. roguix-update fails closed when the record is missing, checks
+    `git merge-base --is-ancestor <recorded> <main>`, and, after a successful
+    reconfigure, advances its durable cursor atomically.
+  Open from the round (sol): a newer channel release can still name an
+  older G; the release step must refuse that.
+  CI's share (building P from G plus the patch, in omaguix/omaguix's
+  workflow) is a gate of the first release [t-omarelfs].
 
 - [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
   Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
@@ -97,6 +114,9 @@
   (guix-x86-64-iso-omguix-86), which asked for it. Its x86_64 build was not
   run on the aarch64 builder (no emulation), so CI builds it first here;
   untested: the sandbox inside an Omaguix guest and `codex exec` after login.
+  Gate from [t-omaupgrd] (d-qqlris3g): omaguix/omaguix's workflow builds
+  P from upstream G plus try-roguix's forward-check patch, and the release
+  names the patched commit.
 
 - [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
   Decided by the user 2026-10-12: "yes, after acceptance". Proposed
