@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for helping improve Try Roguix. The project has one product target: a
-native Apple Silicon macOS app that runs Roguix — Guix System with the pinned
+Thanks for helping improve Try Omaguix. The project has one product target: a
+native Apple Silicon macOS app that runs Omaguix — Guix System with the pinned
 upstream Omarchy desktop — in a project-built ARM64 virtual machine image.
 
 ## Pull requests
@@ -58,7 +58,7 @@ input must be rebuilt; do not work around the cache by editing generated state.
 
 Omarchy is the `omarchy` package in `guest/guix/modules/roguix/omarchy.scm`,
 pinned to an upstream commit and its `guix hash -rx` digest. To update it,
-change both, then review the upstream diff against what Roguix rewrites at
+change both, then review the upstream diff against what Omaguix rewrites at
 build time: the menu (`omarchy-menu.py`, which drops Arch-only entries), the
 package helpers replaced with `roguix-pkg`, the two `MenuModel.js`
 substitutions and the `Menu.qml` one that rebuilds rows only when a guard

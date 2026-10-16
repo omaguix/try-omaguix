@@ -39,15 +39,15 @@ coding agents.
   than committing it. Remove secrets and unrelated personal information.
 - If runtime verification is unavailable, say what remains unchecked.
 
-## Roguix differences from Try Omarchy
+## Omaguix differences from Try Omarchy
 
 The sections above are Try Omarchy's, kept verbatim so rebases onto it stay
 clean; edit them only upstream. Where they differ, this repository follows:
 
-- The guest is Roguix (Guix System), built from `guest/guix/` in a Guix System
+- The guest is Omaguix (Guix System), built from `guest/guix/` in a Guix System
   builder VM (`guest/guix/README.md`) and packaged into `build/guix` with
   `make guix-package`; there is no Arch guest, package lock or Docker build.
-- Roguix's own packages are served from `roguix.frolow.dev` (`server/`).
+- Omaguix's own packages are served from `roguix.frolow.dev` (`server/`).
 - Sync with Try Omarchy by rebasing `main` onto `upstream/main` and
   force-pushing it with `--force-with-lease=main:<the reviewed old SHA>`. The
   maintainer approves this standing rewrite of `main` (2026-10-01) until they
@@ -58,7 +58,7 @@ clean; edit them only upstream. Where they differ, this repository follows:
   `try-omarchy/*` (`docs/releasing.md`).
 - On every such rebase, review the table in "Differences from Try Omarchy"
   (`guest/guix/README.md`) against what upstream changed: update the rows
-  that moved, and delete those where upstream converged with Roguix.
+  that moved, and delete those where upstream converged with Omaguix.
 - Repository files (TODO.md, docs, commit messages) never carry details
   private to the maintainer's machine: paths outside this repository and its
   documented app locations, other projects, personal dotfiles or tools.
@@ -540,15 +540,15 @@ and exits 125. Put the `env` inside the `herdr-job run` command: a job's tab
 does not inherit the caller's exported variables.
 
 `make run-isolated` opens the start menu and waits for a click on **Launch
-Roguix**, so an unattended check must not leave it waiting: start the VM in
+Omaguix**, so an unattended check must not leave it waiting: start the VM in
 a way that needs no click, or say that the in-app step stayed unchecked.
 
 A test VM that opens a window is announced before it starts, in the agent's
 pane and in its report to whoever coordinates it: a window will open and
 take the keyboard focus, and it must stay open until the check ends, since
 closing it breaks the check. The VM window of a test run (`make
-run-isolated`, `--ephemeral`) is titled "Try Roguix (test)", the user's own
-VM "Try Roguix"; the start menu before it is titled "Try Roguix" in both.
+run-isolated`, `--ephemeral`) is titled "Try Omaguix (test)", the user's own
+VM "Try Omaguix"; the start menu before it is titled "Try Omaguix" in both.
 
 A script that types text into a test VM through QMP `send-key` checks what
 actually reached the field: under host load key releases arrive late and the

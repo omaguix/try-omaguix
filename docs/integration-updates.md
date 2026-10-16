@@ -1,6 +1,6 @@
 # Integration updates for existing VMs
 
-> **Roguix:** this page describes Try Omarchy's Arch guest. Roguix's Guix System
+> **Omaguix:** this page describes Try Omarchy's Arch guest. Omaguix's Guix System
 > guest is updated with `guix system reconfigure`; see [its README](../guest/guix/README.md).
 
 App upgrades retain existing guest disks. The integration manager delivers

@@ -1,6 +1,6 @@
 # Third-party notices
 
-Try Roguix builds and redistributes third-party components under their own
+Try Omaguix builds and redistributes third-party components under their own
 licenses. The repository's MIT license applies only to this project's original
 code.
 

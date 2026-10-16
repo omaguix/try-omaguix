@@ -1,6 +1,6 @@
 # roguix.frolow.dev
 
-The Roguix substitute server (docs/decisions/0002-roguix-substitute-server.md),
+The Omaguix substitute server (docs/decisions/0002-roguix-substitute-server.md),
 kept here until the VPS runs from its own Guix System configuration
 (docs/decisions/0005-who-builds-roguix-substitutes.md), then deleted:
 `guix publish` on a Debian 13 VPS behind nginx. It only serves; `omaguix/omaguix`'s CI

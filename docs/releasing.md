@@ -1,12 +1,12 @@
-# Releasing Try Roguix
+# Releasing Try Omaguix
 
-Try Roguix changes reach people in two ways, and a change decides which one
+Try Omaguix changes reach people in two ways, and a change decides which one
 it needs:
 
 - **Channel release** (`guest/guix/release.py`; see `server/README.md` and
   docs/decisions/0006-one-roguix-release-step.md): anything a running
   VM can pick up with `roguix-update`, such as guest packages, services,
-  Omarchy's desktop and Roguix's own guest commands. Existing VMs get it
+  Omarchy's desktop and Omaguix's own guest commands. Existing VMs get it
   without a new app.
 - **App release** (this page): the Mac app, its QEMU runtime, the launcher
   and its settings passed to the guest, and the factory image that new and
@@ -17,18 +17,22 @@ meets a guest without its half.
 
 ## Versions and tags
 
-Try Roguix releases are tagged `try-roguix-vX.Y.Z`, independently of the
+Try Omaguix releases are tagged `try-roguix-vX.Y.Z`, independently of the
 three upstreams it carries; the prefix names the Mac app, as opposed to the
-Roguix guest and its channel. The Mac app's `CFBundleShortVersionString`
+Omaguix guest and its channel. The Mac app's `CFBundleShortVersionString`
 comes from that tag (`scripts/app_version.py`) and must be three integers,
 and the update checker (`AppRelease.swift`) only accepts such tags with a
-`TryRoguix.dmg` asset, on a published release that is not marked as a
+`TryOmaguix.dmg` asset (or the published historical `TryRoguix.dmg`), on a published release that is not marked as a
 prerelease. The first Try Roguix release, 0.5.0, was tagged `v0.5.0` before
 this scheme; that tag stays, and releases from 0.5.1 on use the prefix.
 `v0.1.0` to `v0.4.1` were Try Omarchy's.
 
+The historical `try-roguix-v` tag prefix remains the release-version
+contract after the product rename; existing tags and assets are never
+renamed or moved.
+
 Upstream's tags are kept locally under `try-omarchy/`, apart from Try
-Roguix's:
+Omaguix's:
 
 ```sh
 git config remote.upstream.tagOpt --no-tags
@@ -38,7 +42,8 @@ git config --add remote.upstream.fetch '+refs/tags/*:refs/tags/try-omarchy/*'
 Each build records its upstreams in `Info.plist` (`RoguixTryOmarchyBase`,
 `RoguixOmarchyVersion`, `RoguixGuixCommit`), and the updates window shows
 them. Release titles name them too, for example
-"Try Roguix 0.5.0 (Try Omarchy v0.4.1+33, Omarchy 4.0.4, Guix 7e74121a)".
+"Try Roguix 0.5.0 (Try Omarchy v0.4.1+33, Omarchy 4.0.4, Guix 7e74121a)";
+releases after the rename say Try Omaguix.
 
 ## The factory image
 
@@ -63,15 +68,15 @@ after the first attempt; never to turn Gatekeeper off.
 2. Build and package the factory image (`guest/guix/README.md`,
    `make guix-package GUIX_IMAGE=...`) from the commit being released.
 3. `make test`.
-4. Tag the release commit: `git tag -a try-roguix-v0.5.1 -m "Try Roguix 0.5.1"`.
-5. `macos/release.sh`: `TryRoguix.dmg`, the disk parts and `SHA256SUMS` in
+4. Tag the release commit: `git tag -a try-roguix-vX.Y.Z -m "Try Omaguix X.Y.Z"`.
+5. `macos/release.sh`: `TryOmaguix.dmg`, the disk parts and `SHA256SUMS` in
    `dist/TAG`. It builds the release app in `build/release.noindex`, so a
    development app running from `~/Applications` is never touched, and stops
    before writing any asset unless the built app's version and build
    description match the tag.
 6. Push the tag and create the release as a prerelease with all of
    `dist/TAG/*`; prerelease assets are already downloadable.
-7. Install `TryRoguix.dmg` on a clean account and launch it: the disk
+7. Install `TryOmaguix.dmg` on a clean account and launch it: the disk
    downloads, expands and boots, the first-start setup runs, and the
    updates window names the upstreams.
 8. On the same clean account, with no key remapper installed, check the
@@ -85,7 +90,7 @@ after the first attempt; never to turn Gatekeeper off.
    - With the VM window focused, Command-Space opens the guest's menu, not
      Spotlight; outside the VM, Command-Space opens Spotlight.
    - Command-Return works in the guest; Command-Tab switches Mac apps with
-     **Send Command-Tab to Roguix** off, and guest windows with it on
+     **Send Command-Tab to Omaguix** off, and guest windows with it on
      (Control-Option hands it back to macOS).
    - Typing, key repeat and copy-paste between macOS and the guest behave as
      before.

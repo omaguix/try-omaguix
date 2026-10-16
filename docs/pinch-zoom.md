@@ -13,7 +13,7 @@ replace the existing multitouch touchscreen device.
 
 The gesture device needs tapping and disable-while-typing off: its synthetic
 contacts must not become tap clicks or be suppressed after keyboard input.
-Roguix does not ship this override yet; add it to `~/.config/hypr/input.lua`:
+Omaguix does not ship this override yet; add it to `~/.config/hypr/input.lua`:
 
 ```lua
 hl.device({

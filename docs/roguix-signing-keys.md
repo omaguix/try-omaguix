@@ -1,6 +1,6 @@
-# Roguix signing keys
+# Omaguix signing keys
 
-A Roguix VM trusts two keys beyond Guix's own (`%roguix-trust` in
+An Omaguix VM trusts two keys beyond Guix's own (`%roguix-trust` in
 `guest/guix/modules/roguix/trust.scm`): the roguix channel's OpenPGP key
 (decision 0004) and the substitute server's `guix publish` key (decision
 0002). This page is the owner's procedure for both; agents prepare the
@@ -24,7 +24,7 @@ the main key is gone.
    ```sh
    export GNUPGHOME=/media/<usb>/roguix-recovery/gnupg
    mkdir -p -m 700 "$GNUPGHOME"
-   gpg --quick-generate-key 'Roguix channel recovery key' ed25519 sign never
+   gpg --quick-generate-key 'Omaguix channel recovery key' ed25519 sign never
    gpg --list-keys --with-fingerprint     # note the fingerprint, <RECOVERY>
    gpg --armor --export <RECOVERY> > /media/<usb>/roguix-recovery/recovery.key
    ```
@@ -104,7 +104,7 @@ try-roguix <revision>", each followed by "Release <commit>" with
 `guix publish` on the VPS behind roguix.frolow.dev signs every `.narinfo`
 with `/etc/guix/signing-key.sec`, so the key sits on a network-facing host
 that also serves other sites. Whoever gets root there can sign code that
-every Roguix VM installs.
+every Omaguix VM installs.
 
 ### Options
 

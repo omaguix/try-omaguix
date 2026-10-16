@@ -1,7 +1,7 @@
 # Performance profiling
 
-> **Roguix:** the method and host side apply; the results were measured on Try
-> Omarchy's Arch guest, which Roguix replaced with a [Guix System guest](../guest/guix/README.md).
+> **Omaguix:** the method and host side apply; the results were measured on Try
+> Omarchy's Arch guest, which Omaguix replaced with a [Guix System guest](../guest/guix/README.md).
 
 CPU instructions execute through HVF on the Apple Silicon CPU. Graphics take a
 longer path: guest Mesa → VirGL → ANGLE → Metal → Cocoa. Accelerated
@@ -412,9 +412,9 @@ was skipped. The UI tool could not inspect the restarted QEMU guest window, so
 the browser GPU report and visual checks above are from the disposable guest,
 not a new measurement of the personal full-screen session.
 
-### ANGLE/Metal browser acceleration (Roguix, October 12)
+### ANGLE/Metal browser acceleration (Omaguix, October 12)
 
-The same Roguix guest image (Guix System, Mesa 26.0.2) ran in throwaway test
+The same Omaguix guest image (Guix System, Mesa 26.0.2) ran in throwaway test
 VMs on `cocoa,gl=on` and `cocoa,gl=es` on an M1 Pro.
 
 - Host ANGLE 2.1.27632 (Metal renderer) creates only OpenGL ES 3.0 contexts;
@@ -453,7 +453,7 @@ LibreWolf's WebGL had two causes, found later the same day:
 
 - By design, LibreWolf asks each site for permission to create a WebGL context
   (`librewolf.webgl.prompt`, default on, from LibreWolf's own patches, not
-  Guix's or Roguix's configuration). Until a site is allowed, WebGL reports
+  Guix's or Omaguix's configuration). Until a site is allowed, WebGL reports
   "WebGL is currently disabled"; `file://` pages and `about:support` cannot be
   allowed, so their WebGL fields always say so.
 - On `gl=on`, an allowed site still failed with an empty "WebGL creation

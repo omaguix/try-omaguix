@@ -50,13 +50,13 @@ Save, then run `hyprctl reload` and `hyprctl configerrors`.
 ## Command-Tab
 
 System chords such as Command-Space reach the guest as Super only while
-Try Roguix is allowed in System Settings > Privacy & Security > Device Control
+Try Omaguix is allowed in System Settings > Privacy & Security > Device Control
 and Data Access on macOS 27 (Accessibility before); the start menu names the
 list the running macOS uses.
 
 Command-Tab and Command-Shift-Tab stay with the macOS app switcher by
 default, so the keyboard can always leave the VM. The **Send Command-Tab to
-Roguix** setting (start menu and settings, off by default, applied on the
+Omaguix** setting (start menu and settings, off by default, applied on the
 next start) sends them to the guest as Super-Tab and Super-Shift-Tab instead,
 for switching guest windows.
 
@@ -73,10 +73,10 @@ becomes the Cocoa display's `send-command-tab=on|off` from
 
 ## Host tools that take a chord first
 
-Roguix needs no key remapper such as Karabiner-Elements or Hammerspoon. With
+Omaguix needs no key remapper such as Karabiner-Elements or Hammerspoon. With
 the Accessibility grant, QEMU's own event tap captures Command chords,
 Command-Space included, before Spotlight; Command-Tab follows the **Send
-Command-Tab to Roguix** setting. This section only matters if you already run
+Command-Tab to Omaguix** setting. This section only matters if you already run
 such a tool.
 
 Without the grant the VM still starts, only without the Command-to-Super
@@ -96,13 +96,13 @@ into F18 for a launcher makes the guest receive F18 instead of Super+Space.
 
 Exempt the VM window in the Karabiner rule by adding a condition to its
 manipulator. The window belongs to the bundled QEMU process, which runs from
-a helper app inside the app bundle (`Contents/Helpers/Try Roguix.app`) with
+a helper app inside the app bundle (`Contents/Helpers/Try Omaguix.app`) with
 its own bundle identifier, one per build:
 
 | Build | App | VM window |
 | --- | --- | --- |
 | Release | `dev.tryroguix.native` | `dev.tryroguix.native.vm` |
-| Development (`make app`, `Try Roguix Dev.app`) | `dev.tryroguix.native.development` | `dev.tryroguix.native.development.vm` |
+| Development (`make app`, `Try Omaguix Dev.app`) | `dev.tryroguix.native.development` | `dev.tryroguix.native.development.vm` |
 
 ```json
 "conditions": [

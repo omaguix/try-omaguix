@@ -1,17 +1,24 @@
 # Architecture
 
-Try Roguix packages three pieces into one macOS app:
+The product was renamed from Roguix to Omaguix in October 2026.
+The rename preserves the existing Guix module and command names, channel
+signing introduction, macOS bundle and service identifiers, preferences,
+and VM workspace paths. These identities are contracts with existing
+guests and installed host components; visible app names and artifacts use
+Omaguix without abandoning that state.
+
+Try Omaguix packages three pieces into one macOS app:
 
 1. A small Swift/AppKit launcher for the macOS side.
 2. A patched QEMU runtime that creates and runs the virtual machine.
-3. A Roguix disk image: Guix System for ARM64 with the pinned upstream Omarchy
+3. An Omaguix disk image: Guix System for ARM64 with the pinned upstream Omarchy
    desktop, built by this project (`guest/guix`).
 
 ```text
-Try Roguix.app
+Try Omaguix.app
 └── Swift/AppKit launcher
     └── QEMU + Apple Hypervisor Framework
-        └── Roguix (Guix System, UEFI/GPT disk)
+        └── Omaguix (Guix System, UEFI/GPT disk)
             └── Omarchy desktop on Hyprland
 ```
 
@@ -196,12 +203,12 @@ Mac endpoint after either operation can require removing that endpoint from the
 Mac's `known_hosts`. Loopback prevents LAN access but other local Mac processes
 and users can still attempt authentication.
 
-## The Roguix image
+## The Omaguix image
 
 The guest image is built by this project with `guix time-machine` from a
 pinned, signature-verified Guix commit (`guest/guix/build.py`); it is not an
-official Guix or Basecamp image. The system is `try-roguix-operating-system`
-in `guest/guix/modules/roguix/system.scm`: Guix's own packages, plus Roguix's
+official Guix or Basecamp image. The system is `roguix-operating-system`
+in `guest/guix/modules/roguix/system.scm`: Guix's own packages, plus Omaguix's
 Hyprland 0.56 and Quickshell builds and the pinned upstream Omarchy tree,
 installed read-only at `/usr/share/omarchy` from the store. Omarchy's Arch
 assumptions are met by small compatibility commands instead of changes to its
@@ -211,7 +218,7 @@ time to manage Guix packages (`guest/guix/README.md`).
 The image carries no password; the first start asks for one on the console.
 In the VM, `/etc/config.scm` calls the same procedure with the owner's package
 list and `roguix-reconfigure` applies it with the Guix that built the image.
-Roguix's own packages have no substitutes on Guix's servers, so
+Omaguix's own packages have no substitutes on Guix's servers, so
 `https://roguix.frolow.dev` publishes them
 ([decision 0002](decisions/0002-roguix-substitute-server.md)), built by
 `omaguix/omaguix`'s CI and the builder VM
@@ -277,12 +284,12 @@ unrecognized host files stay untouched, as everywhere else here.
 
 ## Build layout
 
-- `guest/guix/` defines Roguix and builds its image with a pinned Guix in a
+- `guest/guix/` defines Omaguix and builds its image with a pinned Guix in a
   Guix System builder; `make guix-package` compresses it into `build/guix`.
 - `macos/` builds the Swift launcher and a patched QEMU runtime. The runtime is
   isolated, relocated, and signed before it enters the app bundle. QEMU,
   which owns the VM window, runs from a nested helper app,
-  `Contents/Helpers/Try Roguix.app`, with its own bundle identifier (the
+  `Contents/Helpers/Try Omaguix.app`, with its own bundle identifier (the
   app's identifier plus `.vm`, listed in [Mac keyboard](mac-keyboard.md)) and
   the runtime's libraries and firmware left in `Contents/Resources/runtime`.
   Its code signature keeps the app's identifier, so the Accessibility grant

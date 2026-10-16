@@ -10,11 +10,11 @@ Use the root Makefile for normal development:
 
 ```sh
 make runtime   # macos/.build/qemu-gpu-runtime
-make app       # build/dev.noindex/Try Roguix.app
-make install   # copy it to ~/Applications/Try Roguix Dev.app
+make app       # build/dev.noindex/Try Omaguix.app
+make install   # copy it to ~/Applications/Try Omaguix Dev.app
 make run       # install, then open the installed copy
-make package   # signed and notarized build/release.noindex/TryRoguix-vX.Y.Z.dmg
-make release   # signed and notarized build/release.noindex/TryRoguix-vX.Y.Z.dmg
+make package   # signed and notarized build/release.noindex/TryOmaguix-vX.Y.Z.dmg
+make release   # signed and notarized build/release.noindex/TryOmaguix-vX.Y.Z.dmg
 make test
 ```
 
@@ -85,11 +85,11 @@ macos/build-app.sh \
   --notarize-profile try-omarchy
 ```
 
-Local app builds appear as **Try Roguix Dev**, with bundle ID
+Local app builds appear as **Try Omaguix Dev**, with bundle ID
 `dev.tryroguix.native.development`. Production keeps `dev.tryroguix.native`
 and its own privacy decisions. `make build`, `make app`, and `make run` all use
 the development identity; opening the generated `.app` directly works the
-same way. `make install` copies the build to `~/Applications/Try Roguix Dev.app`,
+same way. `make install` copies the build to `~/Applications/Try Omaguix Dev.app`,
 so it never replaces an installed release; both still keep the VM in the
 default `~/Library/Application Support/Try Roguix` unless one is given another
 storage location. Development signing is local, with secure timestamping disabled, and
@@ -137,7 +137,7 @@ Releases are unaffected (`docs/releasing.md`, "Signing").
 `make package` uses `PACKAGE_SIGN_IDENTITY` and `PACKAGE_NOTARY_PROFILE`, which
 default to the configured release credentials. It fails instead of producing
 an unnotarized fallback.
-Production assembly goes to `build/release.noindex/Try Roguix.app`, leaving the
+Production assembly goes to `build/release.noindex/Try Omaguix.app`, leaving the
 development bundle in place. Without an installed certificate, development
 stops with setup instructions instead of silently invalidating existing grants.
 Create an Apple Development certificate in Xcode to enable persistence, or use
@@ -157,7 +157,7 @@ can opt into identity-keyed parallel disks by setting
 persistent disk keeps the identity of the factory that created it and boots
 through the runtime's UEFI firmware from its own GRUB and Guix System
 generations. The VM window of an ephemeral or identity-keyed run is titled
-"Try Roguix (test)", so a test VM is not mistaken for the user's own. App
+"Try Omaguix (test)", so a test VM is not mistaken for the user's own. App
 updates reuse the disk; the current bundled factory is
 selected only for a new, reset, or ephemeral VM, so an existing VM launches
 without first preparing the new factory disk.
@@ -182,11 +182,11 @@ launch or reset scans the archive; the user deletes it when it is no longer
 needed. A single identity-keyed disk is still adopted as `current` without
 asking.
 
-Unsupported storage or boot ABIs use the user-facing, confirmed Reset Roguix
+Unsupported storage or boot ABIs use the user-facing, confirmed Reset Omaguix
 flow, which is also the chooser's other option; with several saved VMs Reset
 erases all of them, and its confirmation says so.
 That destructive flow keeps **Reset** disabled until the user types
-`Try Roguix` exactly in a native sheet. Cancelling or dismissing the sheet
+`Try Omaguix` exactly in a native sheet. Cancelling or dismissing the sheet
 returns control without invoking the storage reset. During reset, the disabled
 button names the current phase: checking the VM, deleting it, then finishing
 the reset. The next launch prepares a new disk if needed, with its button
@@ -196,7 +196,7 @@ Phase changes come from the launcher process and are also announced to VoiceOver
 The start menu can move that workspace to any APFS folder the user picks; the
 folder is used exactly as chosen, never with a folder created inside it — a
 folder with other files already in it, or a drive's top level, is refused
-instead of restructured. A folder Roguix already uses, recognized by the
+instead of restructured. A folder Omaguix already uses, recognized by the
 launcher's `.omarchy-qemu-storage` marker in its `guix/`, can be picked again. The choice is stored in `UserDefaults` and published
 to the launcher as `OMARCHY_QEMU_GPU_STATE_ROOT`. An inherited value of that
 variable still wins, so the development and test override keeps working

@@ -1,9 +1,9 @@
-# Omarchy packages in Roguix
+# Omarchy packages in Omaguix
 
 Omarchy 4.0.4 lists its default Arch packages in
-`install/omarchy-base.packages` (150 entries). Roguix installs the Guix
+`install/omarchy-base.packages` (150 entries). Omaguix installs the Guix
 equivalents through `%omarchy-applications` and the system definition in
-`guest/guix/modules/roguix/`. This page lists only where Roguix differs, and
+`guest/guix/modules/roguix/`. This page lists only where Omaguix differs, and
 why. Everything not listed here is installed under the same or an obvious
 Guix name (for example `nvim` as `neovim`, `networkmanager` as
 `network-manager`, `noto-fonts-cjk` as `font-google-noto-sans-cjk`).
@@ -13,25 +13,25 @@ Checked on 2026-09-26 against Guix commit `7e74121a`, the pin in
 
 ## Not Omarchy: VLC and Qt 5
 
-VLC is not an Omarchy package; Omarchy plays video with `mpv`, which Roguix
+VLC is not an Omarchy package; Omarchy plays video with `mpv`, which Omaguix
 also has. Guix's OBS pulled in VLC 3 for its optional VLC video source, and
-VLC brought the whole Qt 5 stack. Roguix builds OBS without it
+VLC brought the whole Qt 5 stack. Omaguix builds OBS without it
 (`obs-without-vlc`) and fcitx5-qt without its Qt 5 plugin (`fcitx5-qt6`), so
 the system has no Qt 5; both refuse to build if Qt 5 comes back. Omarchy's
 own applications use Qt 6 or GTK.
 
-## Rebuilt for Roguix
+## Rebuilt for Omaguix
 
-| Omarchy | Roguix | Why |
+| Omarchy | Omaguix | Why |
 | --- | --- | --- |
-| `xdg-desktop-portal-hyprland` | `xdg-desktop-portal-hyprland-0.56` | Guix builds it against its own Hyprland 0.55.4: a second Hyprland in the system, and a 0.55 `hyprctl` in the share picker talking to Roguix's 0.56 compositor, whose dispatchers changed. Roguix rebuilds it against its Hyprland and hypr libraries. |
+| `xdg-desktop-portal-hyprland` | `xdg-desktop-portal-hyprland-0.56` | Guix builds it against its own Hyprland 0.55.4: a second Hyprland in the system, and a 0.55 `hyprctl` in the share picker talking to Omaguix's 0.56 compositor, whose dispatchers changed. Omaguix rebuilds it against its Hyprland and hypr libraries. |
 | `obs-studio` | `obs-without-vlc` | See above. |
 | `fcitx5-qt` | `fcitx5-qt6` | See above. |
-| `ttfx` | `ttfx` from `modules/roguix/ttfx.scm` | Not in Guix; built from its source with the crates Guix already has. Omarchy's screensaver is off by default in Roguix and runs at 30 fps instead of 120 (`guest/guix/README.md`). |
+| `ttfx` | `ttfx` from `modules/roguix/ttfx.scm` | Not in Guix; built from its source with the crates Guix already has. Omarchy's screensaver is off by default in Omaguix and runs at 30 fps instead of 120 (`guest/guix/README.md`). |
 
-## Replaced by a Roguix counterpart
+## Replaced by an Omaguix counterpart
 
-| Omarchy | Roguix | Why |
+| Omarchy | Omaguix | Why |
 | --- | --- | --- |
 | `chromium` | LibreWolf | Owner's choice of browser; web apps open in a new LibreWolf window |
 | `sddm` | tty1 autologin into Hyprland | A single-user VM; the first-start setup sets the password |
@@ -58,7 +58,7 @@ own applications use Qt 6 or GTK.
 
 ## In Guix but not installed yet
 
-Guix has these at the pinned commit; Roguix has not added them to the system
+Guix has these at the pinned commit; Omaguix has not added them to the system
 profile. `alsa-utils`, `bluez`, `libsecret` and `nss-mdns` are in the system
 already, as dependencies, but their commands are not installed. Some only
 matter on real hardware, which the VM does not have; the rest have simply
@@ -84,25 +84,25 @@ not been reviewed.
 ### Decided against, for now
 
 - `mpv-mpris`: the package is a plugin that mpv only loads when its
-  configuration names it, which Roguix does not set up; on its own it
+  configuration names it, which Omaguix does not set up; on its own it
   changes nothing.
 
 ## The keyring and disk encryption
 
-Try Roguix exists to try what an installed system is like, so it follows
+Try Omaguix exists to try what an installed system is like, so it follows
 Omarchy wherever the VM does not force a difference. Like an Omarchy
-install, and like upstream Try Omarchy, Roguix ships `gnome-keyring` and
+install, and like upstream Try Omarchy, Omaguix ships `gnome-keyring` and
 runs Omarchy's own `install/user/default-keyring.sh` at the first login: the
 default keyring has no password, so applications store secrets without ever
-prompting. A Roguix-only encrypted keyring (for example with its password in
+prompting. An Omaguix-only encrypted keyring (for example with its password in
 the Mac Keychain) was rejected because it would behave differently from the
 system being tried.
 
 Omarchy can leave the keyring open because its installer encrypts the whole
-disk with LUKS. Try Roguix does not: the VM disk is an unencrypted image in
+disk with LUKS. Try Omaguix does not: the VM disk is an unencrypted image in
 `~/Library/Application Support/Try Roguix`, protected only by FileVault
 while the Mac is off or locked, and readable by anything running as the Mac
-user. Treat the VM as a place to try Roguix, not to keep production
+user. Treat the VM as a place to try Omaguix, not to keep production
 passwords, tokens or SSH keys. Optional guest disk encryption, with its key
 in the Mac Keychain, is a possible later addition.
 

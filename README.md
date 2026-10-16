@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="macos/TryRoguixIcon.svg" width="128" height="128" alt="Try Roguix icon">
+  <img src="macos/TryOmaguixIcon.svg" width="128" height="128" alt="Try Omaguix icon">
 </p>
 
-<h1 align="center">Try Roguix</h1>
+<h1 align="center">Try Omaguix</h1>
 
 Run a [Guix System](https://guix.gnu.org) desktop with the
 [Omarchy](https://omarchy.org) 4 look (Hyprland, its Quickshell bar, menu and
 themes) as a native, hardware-accelerated app on an Apple Silicon Mac.
 
-Try Roguix packages a Guix System ARM64 disk image, a QEMU runtime using Apple's
+Try Omaguix packages a Guix System ARM64 disk image, a QEMU runtime using Apple's
 Hypervisor Framework with VirGL/ANGLE-Metal graphics, and a small Swift/AppKit
 launcher into one macOS app. The guest is built with `guix time-machine` from a
 pinned, signature-verified Guix commit. The macOS side comes from
@@ -43,13 +43,13 @@ for the verified results and what is still open.
 
 ## Install
 
-Download `TryRoguix.dmg` from the
+Download `TryOmaguix.dmg` (older releases use `TryRoguix.dmg`) from the
 [latest release](https://github.com/omaguix/try-omaguix/releases/latest) on an
 Apple Silicon Mac with macOS 15 or newer, and drag the app to Applications.
 Releases are not notarized yet: after macOS refuses the first launch, allow
 it in **System Settings > Privacy & Security > Open Anyway**. Compare the
 download with the release's `SHA256SUMS` if you like. The first launch
-downloads the Roguix disk, about 3 GB, from the same release and checks it
+downloads the Omaguix disk, about 3 GB, from the same release and checks it
 before use. How releases are made: [docs/releasing.md](docs/releasing.md).
 
 ## Quick start (from source)
@@ -60,8 +60,8 @@ before use. How releases are made: [docs/releasing.md](docs/releasing.md).
    [guest/guix/README.md](guest/guix/README.md#build)), copy the raw image to
    the Mac, and package it: `make guix-package GUIX_IMAGE=/path/to/image.raw`.
 3. Build and open the app: `make run`. It is built as
-   `build/dev.noindex/Try Roguix.app`, installed to
-   `~/Applications/Try Roguix Dev.app`, and opened from there.
+   `build/dev.noindex/Try Omaguix.app`, installed to
+   `~/Applications/Try Omaguix Dev.app`, and opened from there.
 
 On the first start the VM console asks, as Omarchy's installer does, for the
 keyboard layout, the password of the account `guest` (for `sudo`), an
@@ -74,10 +74,10 @@ The desktop is Omarchy's: **Super+Return** opens a terminal, **Super+Space**
 the Omarchy menu, **Super+Alt+Space** the app launcher, **Super+W** closes a
 window. Command acts as Super while the VM window is focused, except
 Command-Tab, which stays with the Mac's app switcher. System shortcuts such as
-Command-Space reach the guest once Try Roguix is allowed in
+Command-Space reach the guest once Try Omaguix is allowed in
 **System Settings > Privacy & Security > Device Control and Data Access** on
 macOS 27 (**Accessibility** before); the start menu's **Open Settings** asks
-for it. Turn on **Send Command-Tab to Roguix** in the start menu or settings
+for it. Turn on **Send Command-Tab to Omaguix** in the start menu or settings
 to switch guest windows with it instead; then press and release **Control-Option** to hand Command-Tab
 back to the Mac until you leave the VM window
 ([docs/mac-keyboard.md](docs/mac-keyboard.md#command-tab)). Host tools such as
@@ -86,8 +86,8 @@ it; [docs/mac-keyboard.md](docs/mac-keyboard.md#host-tools-that-take-a-chord-fir
 shows how to exempt the VM window. Omarchy's
 Install, Remove and Update menus manage Guix packages and the Guix system
 configuration. [docs/omarchy-packages.md](docs/omarchy-packages.md) lists
-where Roguix's applications differ from Omarchy's. A VM created before the
-Omarchy desktop keeps its old one; **Reset Roguix** starts a new one.
+where Omaguix's applications differ from Omarchy's. A VM created before the
+Omarchy desktop keeps its old one; **Reset Omaguix** starts a new one.
 
 ## Using the Mac integrations
 
@@ -113,10 +113,10 @@ corresponding sections of [docs/legacy-try-omarchy.md](docs/legacy-try-omarchy.m
 
 The VM lives in `~/Library/Application Support/Try Roguix/VM/v1/guix/`: the
 verified factory image under `images/` and the VM's own disk under
-`disks/current/`. Updating the app never replaces an existing VM; **Reset Roguix**
+`disks/current/`. Updating the app never replaces an existing VM; **Reset Omaguix**
 on the start menu erases it and starts again from the factory image. When
 the folder holds several saved VMs, the start menu asks which to keep and
-moves the others, unchanged, to `archive/`, which Roguix no longer uses.
+moves the others, unchanged, to `archive/`, which Omaguix no longer uses.
 
 ## The runtime
 
@@ -133,7 +133,7 @@ GIC, and fixes two audio problems found along the way.
 | Python build deps | Host interpreter | Pinned `setuptools`, `wheel`, `pip` wheels | QEMU 11.1 builds `qemu.qmp`, and Python 3.12+ dropped `setuptools` |
 | Render patch source | Downloaded from the startergo tarball | Vendored in `macos/patches/` | That tree is unmaintained since 2026-01-14; the archive is no longer fetched at all |
 | Cocoa keyboard capture | Capture follows the mouse grab | Capture follows the key window | An absolute-pointing guest drops the grab as soon as virtio-tablet binds, leaking host Command chords mid-session |
-| Command-Tab | Captured as Super-Tab | Left to the macOS app switcher unless **Send Command-Tab to Roguix** is on; then Control-Option hands it back | Full grab otherwise leaves no keyboard way out of the VM |
+| Command-Tab | Captured as Super-Tab | Left to the macOS app switcher unless **Send Command-Tab to Omaguix** is on; then Control-Option hands it back | Full grab otherwise leaves no keyboard way out of the VM |
 
 ### What it fixes
 
@@ -164,7 +164,7 @@ and nothing released it. The host resampled silence for the life of the VM.
 Microphone capture is stricter: its initial device open is deferred until an
 guest application actually records, and the device is closed again when the
 guest capture stream stops. The first recording may therefore take one device
-open longer to begin, but merely launching Try Roguix does not activate the
+open longer to begin, but merely launching Try Omaguix does not activate the
 Mac microphone.
 
 **An unconditional re-render every refresh tick.** The vendored
