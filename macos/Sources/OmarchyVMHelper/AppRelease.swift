@@ -32,12 +32,12 @@ struct InstalledAppRelease: Equatable {
     let version: AppReleaseVersion?
     let label: String
 
-    init(info: [String: Any]) {
+    init(info: [String: Any], identity: AppIdentity) {
         // Older bundles all reported 0.4.0 (5), regardless of their release.
         // Require the build provenance introduced by #223 before comparing.
         let describe = info["TryOmarchyBuildDescribe"] as? String
         let shortVersion = info["CFBundleShortVersionString"] as? String ?? ""
-        if let parsed = AppReleaseVersion(shortVersion), describe == AppRelease.tag(parsed) {
+        if let parsed = AppReleaseVersion(shortVersion), describe == identity.releaseTag(parsed) {
             version = parsed
             let build = info["CFBundleVersion"] as? String
             label = "Version \(parsed)" + (build.map { " (\($0))" } ?? "")
@@ -47,7 +47,7 @@ struct InstalledAppRelease: Equatable {
         }
     }
 
-    static var current: Self { Self(info: Bundle.main.infoDictionary ?? [:]) }
+    static var current: Self { Self(info: Bundle.main.infoDictionary ?? [:], identity: .main) }
 
     /// The upstreams this build carries (scripts/app_version.py), for bug
     /// reports: Try Omarchy's base, Omarchy and the pinned Guix.
@@ -67,35 +67,48 @@ struct InstalledAppRelease: Equatable {
     }
 }
 
+/// Where the running app's releases are published, from its identity.
+extension AppIdentity {
+    var releasesURL: URL { URL(string: "https://github.com/\(releaseRepository)/releases")! }
+    var latestReleaseAPIURL: URL {
+        URL(string: "https://api.github.com/repos/\(releaseRepository)/releases/latest")!
+    }
+
+    func releaseTag(_ version: AppReleaseVersion) -> String { releaseTagPrefix + version.description }
+
+    /// A release's disk image is `NAME.dmg` or `NAME-vX.Y.Z.dmg`, under the
+    /// current name or one that older releases published and keep.
+    func releaseAssetNames(_ version: AppReleaseVersion) -> Set<String> {
+        Set(([releaseDMG] + legacyReleaseDMGs).flatMap { name -> [String] in
+            guard name.hasSuffix(".dmg") else {
+                fatalError("Info.plist has a release disk image name without .dmg: \(name)")
+            }
+            return [name, "\(name.dropLast(".dmg".count))-v\(version).dmg"]
+        })
+    }
+}
+
 struct AppRelease: Equatable {
-    static let releasesURL = URL(string: "https://github.com/omaguix/try-omaguix/releases")!
-    /// Release tags are this prefix and X.Y.Z (docs/releasing.md).
-    static let tagPrefix = "try-roguix-v"
     let version: AppReleaseVersion
     let url: URL
 
-    static func decode(_ data: Data) throws -> Self {
+    static func decode(_ data: Data, identity: AppIdentity) throws -> Self {
         let payload = try JSONDecoder().decode(Payload.self, from: data)
-        guard !payload.draft, !payload.prerelease, payload.tagName.hasPrefix(tagPrefix),
-              let version = AppReleaseVersion(String(payload.tagName.dropFirst(tagPrefix.count))),
-              // Published Try Roguix releases keep their original artifact names.
-              payload.assets.contains(where: {
-                  ["TryOmaguix-v\(version).dmg", "TryOmaguix.dmg",
-                   "TryRoguix-v\(version).dmg", "TryRoguix.dmg"].contains($0.name)
-                      && $0.state == "uploaded"
-              }) else {
+        let prefix = identity.releaseTagPrefix
+        guard !payload.draft, !payload.prerelease, payload.tagName.hasPrefix(prefix),
+              let version = AppReleaseVersion(String(payload.tagName.dropFirst(prefix.count))),
+              case let names = identity.releaseAssetNames(version),
+              payload.assets.contains(where: { names.contains($0.name) && $0.state == "uploaded" }) else {
             throw AppReleaseError.invalidRelease
         }
         // Construct the project URL instead of opening an arbitrary URL from JSON.
-        return Self(version: version)
+        return Self(version: version, identity: identity)
     }
 
-    init(version: AppReleaseVersion) {
+    init(version: AppReleaseVersion, identity: AppIdentity) {
         self.version = version
-        url = Self.releasesURL.appendingPathComponent("tag/" + Self.tag(version))
+        url = identity.releasesURL.appendingPathComponent("tag/" + identity.releaseTag(version))
     }
-
-    static func tag(_ version: AppReleaseVersion) -> String { tagPrefix + version.description }
 
     private struct Payload: Decodable {
         let tagName: String
@@ -157,10 +170,11 @@ enum AppReleaseCheckState: Equatable {
         }
     }
 
-    var releaseURL: URL {
+    /// The release to review, or the releases page when there is none.
+    func releaseURL(identity: AppIdentity) -> URL {
         switch self {
         case .available(let release), .unknownInstalledVersion(let release): return release.url
-        default: return AppRelease.releasesURL
+        default: return identity.releasesURL
         }
     }
 
@@ -172,12 +186,16 @@ enum AppReleaseCheckState: Equatable {
 
 struct AppReleasePreferences {
     private let defaults: UserDefaults
+    private let identity: AppIdentity
     private static let enabledKey = "appReleaseAutomaticChecks"
     private static let lastAttemptKey = "appReleaseLastCheckAttempt"
     private static let latestVersionKey = "appReleaseLatestVersion"
     private static let lastPromptedVersionKey = "appReleaseLastPromptedVersion"
 
-    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+    init(defaults: UserDefaults = .standard, identity: AppIdentity = .main) {
+        self.defaults = defaults
+        self.identity = identity
+    }
 
     var automaticChecks: Bool {
         get { defaults.object(forKey: Self.enabledKey) == nil || defaults.bool(forKey: Self.enabledKey) }
@@ -202,7 +220,7 @@ struct AppReleasePreferences {
         get {
             guard let text = defaults.string(forKey: Self.latestVersionKey),
                   let version = AppReleaseVersion(text) else { return nil }
-            return AppRelease(version: version)
+            return AppRelease(version: version, identity: identity)
         }
         nonmutating set { defaults.set(newValue?.version.description, forKey: Self.latestVersionKey) }
     }

@@ -12,9 +12,15 @@ struct AppIdentityTests {
             "RoguixApplicationSupportDirectory": "Try Omabend Data",
             "RoguixLogsDirectory": "Try Omabend Logs",
             "RoguixNetworkHelperService": "",
+            "RoguixReleaseRepository": "example/try-omabend",
+            "RoguixReleaseTagPrefix": "try-omabend-v",
+            "RoguixReleaseDMG": "TryOmabend.dmg",
+            "RoguixLegacyReleaseDMGs": "",
         ]
         #expect(AppIdentity(values: values) == .second)
         #expect(AppIdentity.second.networkHelperService == nil)
+        #expect(AppIdentity.second.legacyReleaseDMGs == [])
+        #expect(AppIdentity.tryOmaguix.legacyReleaseDMGs == ["TryRoguix.dmg"])
         #expect(AppIdentity.tryOmaguix.networkHelperService == "dev.tryroguix.network")
     }
 
@@ -32,7 +38,8 @@ struct AppIdentityTests {
         }
         for key in ["RoguixApplicationName", "RoguixDevelopmentApplicationName",
                     "RoguixApplicationSupportDirectory", "RoguixLogsDirectory",
-                    "RoguixNetworkHelperService"] {
+                    "RoguixNetworkHelperService", "RoguixReleaseRepository",
+                    "RoguixReleaseTagPrefix", "RoguixReleaseDMG", "RoguixLegacyReleaseDMGs"] {
             #expect(build.contains("value[\"\(key)\"]"))
         }
         #expect(launcher.contains(

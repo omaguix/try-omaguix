@@ -126,7 +126,8 @@ a backslash, which Make would read as a continuation.
 | `DEVELOPMENT_KEYCHAIN_PASSWORD` | `try-roguix/development-keychain-password` | the keychain's password file under `~/.config` |
 | `RELEASE_TAG_PREFIX` | `try-roguix-v` | release tags, the prefix plus `X.Y.Z` (`docs/releasing.md`) |
 | `RELEASE_DMG` | `TryOmaguix.dmg` | the release asset; local DMG builds are `STEM-vX.Y.Z.dmg` |
-| `RELEASE_REPOSITORY` | `omaguix/try-omaguix` | the GitHub repository whose releases host the disk parts |
+| `LEGACY_RELEASE_DMGS` | `TryRoguix.dmg` | disk image names older releases published, comma-separated (may be empty); the update check accepts them like `RELEASE_DMG` |
+| `RELEASE_REPOSITORY` | `omaguix/try-omaguix` | the GitHub repository whose releases host the disk parts and that the update check reads |
 | `ICON` | `TryOmaguix.svg` | the app icon's SVG source, in the identity file's directory; the bundle carries it as `NAME.icns` (`TryOmaguix.icns`) |
 | `NETWORK_HELPER_SERVICE` | `dev.tryroguix.network` | the bridged-networking helper's launchd label and Mach service, and its LaunchDaemon plist's name (`NAME.plist`); empty for an app without the helper, which then has no LaunchDaemon, networking daemon or helper binaries, offers only NAT, and whose launcher refuses bridged networking |
 
@@ -138,8 +139,10 @@ never share VM state, logs, preferences or signing keys.
 The build writes what the app and its launcher need at run time into the
 bundle's `Info.plist`: `RoguixApplicationName` (`APP_NAME`, which also names
 the VM helper app and the QEMU window), `RoguixDevelopmentApplicationName`,
-`RoguixApplicationSupportDirectory`, `RoguixLogsDirectory` and
-`RoguixNetworkHelperService` (empty without the helper), besides the bundle
+`RoguixApplicationSupportDirectory`, `RoguixLogsDirectory`,
+`RoguixNetworkHelperService` (empty without the helper) and, for the update
+check, `RoguixReleaseRepository`, `RoguixReleaseTagPrefix`, `RoguixReleaseDMG`
+and `RoguixLegacyReleaseDMGs` (comma-separated, may be empty), besides the bundle
 identifier, display name, icon file and the privacy descriptions, whose
 `{APP_NAME}` in `macos/Info.plist` becomes `APP_NAME`. The app
 (`AppIdentity.swift`) and `run-qemu-gpu.sh` read them from there; a missing
@@ -149,10 +152,13 @@ dispatch-queue labels start with the running app's bundle identifier.
 and `package-dmg.sh` names the volume and the disk image's signing identifier
 after the packaged app's display name and bundle identifier.
 
+The update check queries `RELEASE_REPOSITORY`'s latest release and accepts
+a `RELEASE_TAG_PREFIX` tag with an uploaded `NAME.dmg` or `NAME-vX.Y.Z.dmg`,
+for `RELEASE_DMG` or one of `LEGACY_RELEASE_DMGS`.
+
 Still named after Try Omaguix: the user-visible texts in the app's windows
-and alerts, the QEMU runtime's Cocoa menus (`patches/`, shared by every app),
-and the release update check (`AppRelease.swift`, which reads Try Omaguix's
-repository, tag prefix and DMG names).
+and alerts (the update check's messages among them), and the QEMU runtime's
+Cocoa menus (`patches/`, shared by every app).
 
 ### Development signing identity
 

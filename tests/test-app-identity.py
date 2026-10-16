@@ -35,6 +35,7 @@ DEFAULT = {
     "DEVELOPMENT_KEYCHAIN_PASSWORD": "try-roguix/development-keychain-password",
     "RELEASE_TAG_PREFIX": "try-roguix-v",
     "RELEASE_DMG": "TryOmaguix.dmg",
+    "LEGACY_RELEASE_DMGS": "TryRoguix.dmg",
     "RELEASE_REPOSITORY": "omaguix/try-omaguix",
     "ICON": "TryOmaguix.svg",
     "NETWORK_HELPER_SERVICE": "dev.tryroguix.network",
@@ -53,6 +54,8 @@ SECOND = {
     "DEVELOPMENT_KEYCHAIN_PASSWORD": "try-omabend/development-keychain-password",
     "RELEASE_TAG_PREFIX": "try-omabend-v",
     "RELEASE_DMG": "TryOmabend.dmg",
+    # No older releases.
+    "LEGACY_RELEASE_DMGS": "",
     "RELEASE_REPOSITORY": "example/try-omabend",
     "ICON": "TryOmabend.svg",
     # No bridged-networking helper: NAT only.
@@ -175,9 +178,21 @@ class IdentityTests(unittest.TestCase):
         self.assertIn('value["RoguixApplicationName"] = sys.argv[6]', build)
         self.assertIn('value["RoguixDevelopmentApplicationName"] = sys.argv[7]', build)
         self.assertIn('value["RoguixNetworkHelperService"] = sys.argv[8]', build)
+        self.assertIn('value["RoguixReleaseRepository"] = sys.argv[10]', build)
+        self.assertIn('value["RoguixReleaseTagPrefix"] = sys.argv[11]', build)
+        self.assertIn('value["RoguixReleaseDMG"] = sys.argv[12]', build)
+        self.assertIn('value["RoguixLegacyReleaseDMGs"] = sys.argv[13]', build)
         self.assertIn('"$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" "$APP_NAME" \\\n'
-                      '  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns"',
+                      '  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" \\\n'
+                      '  "$RELEASE_REPOSITORY" "$RELEASE_TAG_PREFIX" "$RELEASE_DMG" "$LEGACY_RELEASE_DMGS"',
                       build)
+
+    def test_legacy_release_disk_images_may_be_one_several_or_none(self):
+        for value in ("", "TryRoguix.dmg", "TryRoguix.dmg,Try.Old-1.dmg"):
+            with self.subTest(value=value):
+                path = write_identity(self.directory / "legacy.env",
+                                      {**SECOND, "LEGACY_RELEASE_DMGS": value})
+                self.assertEqual(identity.load(path)["LEGACY_RELEASE_DMGS"], value)
 
     def test_icon_lives_beside_the_identity_file(self):
         default_icon = identity.icon(DEFAULT, identity.DEFAULT)
@@ -204,6 +219,12 @@ class IdentityTests(unittest.TestCase):
             "icon in another directory": {**SECOND, "ICON": "../TryOmabend.svg"},
             "icon not an SVG": {**SECOND, "ICON": "TryOmabend.png"},
             "invalid service": {**SECOND, "NETWORK_HELPER_SERVICE": "network"},
+            "legacy disk image not a DMG": {**SECOND, "LEGACY_RELEASE_DMGS": "TryOmabend.zip"},
+            "legacy disk image in a directory": {**SECOND, "LEGACY_RELEASE_DMGS": "old/TryOmabend.dmg"},
+            "legacy disk images with an empty entry": {**SECOND, "LEGACY_RELEASE_DMGS":
+                                                       "A.dmg,,B.dmg"},
+            "legacy disk images with a trailing comma": {**SECOND, "LEGACY_RELEASE_DMGS": "A.dmg,"},
+            "legacy disk images with a space": {**SECOND, "LEGACY_RELEASE_DMGS": "A.dmg, B.dmg"},
         }
         for case, values in cases.items():
             with self.subTest(case=case):

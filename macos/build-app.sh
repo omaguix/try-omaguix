@@ -269,7 +269,8 @@ install -m 0755 "$helper" "$contents/MacOS/omarchy-vm-helper"
 install -m 0644 "$macos_dir/Info.plist" "$contents/Info.plist"
 python3 - "$contents/Info.plist" "$bundle_identifier" "$app_display_name" \
   "$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" "$APP_NAME" \
-  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" <<'PYTHON'
+  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" \
+  "$RELEASE_REPOSITORY" "$RELEASE_TAG_PREFIX" "$RELEASE_DMG" "$LEGACY_RELEASE_DMGS" <<'PYTHON'
 import plistlib, sys
 from pathlib import Path
 path = Path(sys.argv[1])
@@ -287,12 +288,17 @@ if "{APP_NAME}" in plistlib.dumps(value).decode():
 # (macos/README.md, "App identity"): the directories under
 # ~/Library/Application Support and ~/Library/Logs that hold this app's VM and
 # logs, the app's names (the VM helper app is named after the production
-# name), and the bridged-networking helper's service, empty without one.
+# name), the bridged-networking helper's service, empty without one, and
+# where the update check finds this app's releases.
 value["RoguixApplicationSupportDirectory"] = sys.argv[4]
 value["RoguixLogsDirectory"] = sys.argv[5]
 value["RoguixApplicationName"] = sys.argv[6]
 value["RoguixDevelopmentApplicationName"] = sys.argv[7]
 value["RoguixNetworkHelperService"] = sys.argv[8]
+value["RoguixReleaseRepository"] = sys.argv[10]
+value["RoguixReleaseTagPrefix"] = sys.argv[11]
+value["RoguixReleaseDMG"] = sys.argv[12]
+value["RoguixLegacyReleaseDMGs"] = sys.argv[13]
 path.write_bytes(plistlib.dumps(value))
 PYTHON
 python3 "$repo_dir/scripts/app_version.py" \

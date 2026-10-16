@@ -22,6 +22,7 @@ DEFAULT = Path(__file__).resolve().parent / "try-omaguix.env"
 
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]*")
 BUNDLE = re.compile(r"[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
+DMG = r"[A-Za-z0-9][A-Za-z0-9._-]*\.dmg"
 # Each key's pattern; names that become a path component exclude "/".
 KEYS = {
     "APP_NAME": NAME,
@@ -37,7 +38,10 @@ KEYS = {
     # Relative to ~/.config.
     "DEVELOPMENT_KEYCHAIN_PASSWORD": re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*"),
     "RELEASE_TAG_PREFIX": re.compile(r"[a-z0-9][a-z0-9._-]*-v"),
-    "RELEASE_DMG": re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\.dmg"),
+    "RELEASE_DMG": re.compile(DMG),
+    # Disk image names older releases published, comma-separated; may be
+    # empty. The update check accepts them as it accepts RELEASE_DMG.
+    "LEGACY_RELEASE_DMGS": re.compile(f"(|{DMG}(,{DMG})*)"),
     "RELEASE_REPOSITORY": re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+"),
     # The app icon's SVG source, in the identity file's directory.
     "ICON": re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\.svg"),

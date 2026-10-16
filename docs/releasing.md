@@ -22,8 +22,10 @@ three upstreams it carries; the prefix names the Mac app, as opposed to the
 Omaguix guest and its channel. The Mac app's `CFBundleShortVersionString`
 comes from that tag (`scripts/app_version.py`) and must be three integers,
 and the update checker (`AppRelease.swift`) only accepts such tags with a
-`TryOmaguix.dmg` asset (or the published historical `TryRoguix.dmg`), on a published release that is not marked as a
-prerelease. The first Try Roguix release, 0.5.0, was tagged `v0.5.0` before
+`TryOmaguix.dmg` asset (or the published historical `TryRoguix.dmg`), on a
+published release that is not marked as a prerelease; it reads the prefix,
+repository and names from the app identity (`macos/README.md`, "App
+identity"). The first Try Roguix release, 0.5.0, was tagged `v0.5.0` before
 this scheme; that tag stays, and releases from 0.5.1 on use the prefix.
 `v0.1.0` to `v0.4.1` were Try Omarchy's.
 

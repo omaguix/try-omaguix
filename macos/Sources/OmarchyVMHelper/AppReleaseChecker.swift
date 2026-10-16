@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 final class AppReleaseChecker {
     typealias Fetch = () async throws -> AppRelease
+    let identity: AppIdentity
     let installed: InstalledAppRelease
     let preferences: AppReleasePreferences
     private let fetch: Fetch
@@ -35,18 +36,22 @@ final class AppReleaseChecker {
         }
     }
 
+    /// Installed releases, preferences and fetches default to `identity`'s.
     init(
-        installed: InstalledAppRelease = .current,
-        preferences: AppReleasePreferences = AppReleasePreferences(),
+        identity: AppIdentity = .main,
+        installed: InstalledAppRelease? = nil,
+        preferences: AppReleasePreferences? = nil,
         now: @escaping () -> Date = Date.init,
-        fetch: @escaping Fetch = { try await AppReleaseChecker.fetchLatest() }
+        fetch: Fetch? = nil
     ) {
+        self.identity = identity
         self.installed = installed
-        self.preferences = preferences
+            ?? InstalledAppRelease(info: Bundle.main.infoDictionary ?? [:], identity: identity)
+        self.preferences = preferences ?? AppReleasePreferences(identity: identity)
         self.now = now
-        self.fetch = fetch
-        if let latest = preferences.latestRelease {
-            state = .result(installed: installed, latest: latest)
+        self.fetch = fetch ?? { try await AppReleaseChecker.fetchLatest(identity: identity) }
+        if let latest = self.preferences.latestRelease {
+            state = .result(installed: self.installed, latest: latest)
         }
     }
 
@@ -77,7 +82,9 @@ final class AppReleaseChecker {
         return pending
     }
 
-    static func fetchLatest(session: URLSession? = nil) async throws -> AppRelease {
+    var releaseURL: URL { state.releaseURL(identity: identity) }
+
+    static func fetchLatest(identity: AppIdentity, session: URLSession? = nil) async throws -> AppRelease {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 15
         configuration.timeoutIntervalForResource = 20
@@ -85,7 +92,7 @@ final class AppReleaseChecker {
         configuration.urlCredentialStorage = nil
         let client = session ?? URLSession(configuration: configuration)
         defer { if session == nil { client.finishTasksAndInvalidate() } }
-        var request = URLRequest(url: URL(string: "https://api.github.com/repos/omaguix/try-omaguix/releases/latest")!)
+        var request = URLRequest(url: identity.latestReleaseAPIURL)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
         request.setValue("Try-Roguix-Release-Check", forHTTPHeaderField: "User-Agent")
@@ -93,6 +100,6 @@ final class AppReleaseChecker {
         guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
             throw AppReleaseError.response((response as? HTTPURLResponse)?.statusCode ?? 0)
         }
-        return try AppRelease.decode(data)
+        return try AppRelease.decode(data, identity: identity)
     }
 }

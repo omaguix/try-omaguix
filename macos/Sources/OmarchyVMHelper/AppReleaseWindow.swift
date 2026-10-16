@@ -102,5 +102,5 @@ final class AppReleaseWindow: NSObject {
         checker.checkAutomaticallyIfDue()
     }
 
-    @objc private func openRelease() { NSWorkspace.shared.open(checker.state.releaseURL) }
+    @objc private func openRelease() { NSWorkspace.shared.open(checker.releaseURL) }
 }

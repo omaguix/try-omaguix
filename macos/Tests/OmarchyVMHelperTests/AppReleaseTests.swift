@@ -10,11 +10,11 @@ struct AppReleaseTests {
             "CFBundleShortVersionString": version,
             "CFBundleVersion": "321",
             "TryOmarchyBuildDescribe": "try-roguix-v\(version)",
-        ])
+        ], identity: .tryOmaguix)
     }
 
     private func release(_ version: String = "0.5.0") throws -> AppRelease {
-        try AppRelease.decode(payload(tag: "try-roguix-v\(version)"))
+        try AppRelease.decode(payload(tag: "try-roguix-v\(version)"), identity: .tryOmaguix)
     }
 
     private func payload(
@@ -28,11 +28,13 @@ struct AppReleaseTests {
         ])
     }
 
-    private func withPreferences(_ body: (AppReleasePreferences) async throws -> Void) async rethrows {
+    private func withPreferences(
+        identity: AppIdentity = .tryOmaguix, _ body: (AppReleasePreferences) async throws -> Void
+    ) async rethrows {
         let suite = "AppReleaseTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
-        try await body(AppReleasePreferences(defaults: defaults))
+        try await body(AppReleasePreferences(defaults: defaults, identity: identity))
     }
 
     @Test("names the upstreams a build carries, or nothing without them")
@@ -59,11 +61,11 @@ struct AppReleaseTests {
     @Test("legacy and development metadata never claim an installed stable release")
     func installedIdentity() {
         #expect(installed("0.5.0").label == "Version 0.5.0 (321)")
-        let legacy = InstalledAppRelease(info: ["CFBundleShortVersionString": "0.4.0", "CFBundleVersion": "5"])
+        let legacy = InstalledAppRelease(info: ["CFBundleShortVersionString": "0.4.0", "CFBundleVersion": "5"], identity: .tryOmaguix)
         #expect(legacy.version == nil)
         #expect(legacy.label == "Installed release unknown")
         for describe in ["try-roguix-v0.5.0-2-gabc", "try-roguix-v0.5.0-dirty", "try-roguix-v0.6.0", "v0.5.0"] {
-            let build = InstalledAppRelease(info: ["CFBundleShortVersionString": "0.5.0", "TryOmarchyBuildDescribe": describe])
+            let build = InstalledAppRelease(info: ["CFBundleShortVersionString": "0.5.0", "TryOmarchyBuildDescribe": describe], identity: .tryOmaguix)
             #expect(build.version == nil)
         }
     }
@@ -82,9 +84,9 @@ struct AppReleaseTests {
             try payload(assetName: "TryRoguix-v0.5.0.dmg", assetState: "starter"),
             try payload(assetName: "TryOmaguix-v0.5.0.dmg", assetState: "starter"),
         ] {
-            #expect(throws: AppReleaseError.self) { try AppRelease.decode(data) }
+            #expect(throws: AppReleaseError.self) { try AppRelease.decode(data, identity: .tryOmaguix) }
         }
-        #expect(throws: DecodingError.self) { try AppRelease.decode(Data("{}".utf8)) }
+        #expect(throws: DecodingError.self) { try AppRelease.decode(Data("{}".utf8), identity: .tryOmaguix) }
     }
 
     @Test("release downloads accept matching versioned names and legacy names", arguments: [
@@ -92,9 +94,65 @@ struct AppReleaseTests {
         "TryRoguix-v0.5.0.dmg", "TryRoguix.dmg",
     ])
     func releaseDownloadNames(assetName: String) throws {
-        let latest = try AppRelease.decode(payload(assetName: assetName))
+        let latest = try AppRelease.decode(payload(assetName: assetName), identity: .tryOmaguix)
         #expect(latest.version == AppReleaseVersion("0.5.0"))
         #expect(latest.url.absoluteString == "https://github.com/omaguix/try-omaguix/releases/tag/try-roguix-v0.5.0")
+    }
+
+    @Test("Try Omaguix accepts exactly its current and historical disk image names")
+    func defaultIdentityAssetNames() throws {
+        let version = try #require(AppReleaseVersion("0.5.0"))
+        #expect(AppIdentity.tryOmaguix.releaseAssetNames(version) == [
+            "TryOmaguix-v0.5.0.dmg", "TryOmaguix.dmg", "TryRoguix-v0.5.0.dmg", "TryRoguix.dmg",
+        ])
+        for name in ["TryOmabend.dmg", "TryOmabend-v0.5.0.dmg"] {
+            #expect(throws: AppReleaseError.self) {
+                try AppRelease.decode(payload(assetName: name), identity: .tryOmaguix)
+            }
+        }
+    }
+
+    @Test("a second app accepts and queries only its own releases")
+    func secondIdentityReleases() async throws {
+        let version = try #require(AppReleaseVersion("0.5.0"))
+        #expect(AppIdentity.second.releaseAssetNames(version) == ["TryOmabend-v0.5.0.dmg", "TryOmabend.dmg"])
+        for name in ["TryOmabend-v0.5.0.dmg", "TryOmabend.dmg"] {
+            let latest = try AppRelease.decode(
+                payload(tag: "try-omabend-v0.5.0", assetName: name), identity: .second)
+            #expect(latest.url.absoluteString == "https://github.com/example/try-omabend/releases/tag/try-omabend-v0.5.0")
+        }
+        for data in [
+            try payload(tag: "try-roguix-v0.5.0", assetName: "TryOmabend.dmg"),
+            try payload(tag: "try-omabend-v0.5.0", assetName: "TryOmaguix.dmg"),
+            try payload(tag: "try-omabend-v0.5.0", assetName: "TryOmaguix-v0.5.0.dmg"),
+            try payload(tag: "try-omabend-v0.5.0", assetName: "TryRoguix.dmg"),
+            try payload(tag: "try-omabend-v0.5.0", assetName: "TryRoguix-v0.5.0.dmg"),
+        ] {
+            #expect(throws: AppReleaseError.self) { try AppRelease.decode(data, identity: .second) }
+        }
+        // A Try Omaguix release tag is no release of the second app.
+        let omaguix = InstalledAppRelease(info: [
+            "CFBundleShortVersionString": "0.5.0", "TryOmarchyBuildDescribe": "try-roguix-v0.5.0",
+        ], identity: .second)
+        #expect(omaguix.version == nil)
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [ReleaseResponseProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        ReleaseResponseProtocol.status = 200
+        ReleaseResponseProtocol.body = try payload(tag: "try-omabend-v0.5.0", assetName: "TryOmabend.dmg")
+        let fetched = try await AppReleaseChecker.fetchLatest(identity: .second, session: session)
+        #expect(fetched.version == version)
+        #expect(ReleaseResponseProtocol.requestedURL?.absoluteString ==
+            "https://api.github.com/repos/example/try-omabend/releases/latest")
+
+        await withPreferences(identity: .second) { preferences in
+            let checker = AppReleaseChecker(
+                identity: .second, preferences: preferences, fetch: { throw AppReleaseError.response(404) })
+            await checker.check().value
+            #expect(checker.releaseURL.absoluteString == "https://github.com/example/try-omabend/releases")
+        }
     }
 
     @Test("current and newer installed builds are not offered a downgrade")
@@ -103,7 +161,7 @@ struct AppReleaseTests {
         #expect(AppReleaseCheckState.result(installed: installed("0.4.1"), latest: latest) == .available(latest))
         #expect(AppReleaseCheckState.result(installed: installed("0.5.0"), latest: latest) == .current)
         #expect(AppReleaseCheckState.result(installed: installed("0.6.0"), latest: latest) == .current)
-        #expect(AppReleaseCheckState.result(installed: InstalledAppRelease(info: [:]), latest: latest) == .unknownInstalledVersion(latest))
+        #expect(AppReleaseCheckState.result(installed: InstalledAppRelease(info: [:], identity: .tryOmaguix), latest: latest) == .unknownInstalledVersion(latest))
     }
 
     @Test("automatic checks default on, preserve opt-out, and rate limit all attempts")
@@ -126,12 +184,12 @@ struct AppReleaseTests {
         let suite = "AppReleaseTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
-        let preferences = AppReleasePreferences(defaults: defaults)
+        let preferences = AppReleasePreferences(defaults: defaults, identity: .tryOmaguix)
         #expect(preferences.automaticChecks)
         preferences.automaticChecks = false
-        #expect(!AppReleasePreferences(defaults: defaults).automaticChecks)
+        #expect(!AppReleasePreferences(defaults: defaults, identity: .tryOmaguix).automaticChecks)
         preferences.automaticChecks = true
-        #expect(AppReleasePreferences(defaults: defaults).automaticChecks)
+        #expect(AppReleasePreferences(defaults: defaults, identity: .tryOmaguix).automaticChecks)
     }
 
     @Test("update prompts wait for the launcher and remind only once per newer release")
@@ -140,14 +198,14 @@ struct AppReleaseTests {
         let next = try release("0.6.0")
         await withPreferences { preferences in
             preferences.latestRelease = latest
-            let checker = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences)
+            let checker = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences)
             // Background guest use, launching, and other dialogs defer the prompt.
             #expect(checker.automaticPromptRelease(presentationReady: false) == nil)
             #expect(checker.automaticPromptRelease(presentationReady: true) == latest)
             checker.acknowledgeRelease(latest)
             #expect(checker.automaticPromptRelease(presentationReady: true) == nil)
             #expect(checker.menuTitle == "Update Available…")
-            let reopened = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences)
+            let reopened = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences)
             #expect(reopened.automaticPromptRelease(presentationReady: true) == nil)
             preferences.latestRelease = next
             #expect(reopened.automaticPromptRelease(presentationReady: true) == next)
@@ -163,7 +221,7 @@ struct AppReleaseTests {
     func automaticPromptEligibility() async throws {
         let latest = try release()
         await withPreferences { preferences in
-            let checker = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences, fetch: {
+            let checker = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences, fetch: {
                 throw URLError(.notConnectedToInternet)
             })
             await checker.check().value
@@ -174,8 +232,8 @@ struct AppReleaseTests {
             preferences.automaticChecks = false
             #expect(checker.automaticPromptRelease(presentationReady: true) == nil)
             preferences.automaticChecks = true
-            for identity in [installed("0.5.0"), installed("0.6.0"), InstalledAppRelease(info: [:])] {
-                let other = AppReleaseChecker(installed: identity, preferences: preferences)
+            for identity in [installed("0.5.0"), installed("0.6.0"), InstalledAppRelease(info: [:], identity: .tryOmaguix)] {
+                let other = AppReleaseChecker(identity: .tryOmaguix, installed: identity, preferences: preferences)
                 #expect(other.automaticPromptRelease(presentationReady: true) == nil)
             }
         }
@@ -187,7 +245,7 @@ struct AppReleaseTests {
         await withPreferences { preferences in
             preferences.automaticChecks = false
             var requests = 0
-            let checker = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences, fetch: {
+            let checker = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences, fetch: {
                 requests += 1
                 return latest
             })
@@ -204,7 +262,7 @@ struct AppReleaseTests {
             #expect(checker.menuTitle == "Update Available…")
             #expect(!preferences.automaticChecks)
             // Keep the notification on subsequent launches within the daily interval.
-            let reopened = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences)
+            let reopened = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences)
             #expect(reopened.state == .available(latest))
         }
     }
@@ -212,13 +270,13 @@ struct AppReleaseTests {
     @Test("a repository without releases reports none published, not a failure")
     func noPublishedRelease() async throws {
         await withPreferences { preferences in
-            let checker = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences, fetch: {
+            let checker = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences, fetch: {
                 throw AppReleaseError.response(404)
             })
             await checker.check().value
             #expect(checker.state == .noRelease)
             #expect(checker.state.message == "No stable Try Omaguix release has been published yet.")
-            #expect(checker.state.releaseURL == AppRelease.releasesURL)
+            #expect(checker.releaseURL == AppIdentity.tryOmaguix.releasesURL)
         }
     }
 
@@ -227,7 +285,7 @@ struct AppReleaseTests {
         let latest = try release()
         await withPreferences { preferences in
             var offline = true
-            let checker = AppReleaseChecker(installed: installed("0.4.1"), preferences: preferences, fetch: {
+            let checker = AppReleaseChecker(identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences, fetch: {
                 if offline { throw URLError(.notConnectedToInternet) }
                 return latest
             })
@@ -236,7 +294,7 @@ struct AppReleaseTests {
                 Issue.record("Expected an offline failure")
                 return
             }
-            #expect(checker.state.releaseURL == AppRelease.releasesURL)
+            #expect(checker.releaseURL == AppIdentity.tryOmaguix.releasesURL)
             #expect(checker.menuTitle == "Check for Updates…")
             offline = false
             await checker.check().value
@@ -255,7 +313,7 @@ struct AppReleaseTests {
             var offline = true
             var requests = 0
             let checker = AppReleaseChecker(
-                installed: installed("0.4.1"), preferences: preferences, now: { now },
+                identity: .tryOmaguix, installed: installed("0.4.1"), preferences: preferences, now: { now },
                 fetch: {
                     requests += 1
                     if offline { throw URLError(.notConnectedToInternet) }
@@ -294,8 +352,8 @@ struct AppReleaseTests {
         let cached = try release()
         await withPreferences { preferences in
             preferences.latestRelease = cached
-            for identity in [installed("0.5.0"), installed("0.6.0"), InstalledAppRelease(info: [:])] {
-                let checker = AppReleaseChecker(installed: identity, preferences: preferences, fetch: {
+            for identity in [installed("0.5.0"), installed("0.6.0"), InstalledAppRelease(info: [:], identity: .tryOmaguix)] {
+                let checker = AppReleaseChecker(identity: .tryOmaguix, installed: identity, preferences: preferences, fetch: {
                     throw URLError(.notConnectedToInternet)
                 })
                 #expect(checker.menuTitle == "Check for Updates…")
@@ -313,17 +371,19 @@ struct AppReleaseTests {
         defer { session.invalidateAndCancel() }
         ReleaseResponseProtocol.body = try payload()
         ReleaseResponseProtocol.status = 200
-        #expect(try await AppReleaseChecker.fetchLatest(session: session) == release())
+        #expect(try await AppReleaseChecker.fetchLatest(identity: .tryOmaguix, session: session) == release())
+        #expect(ReleaseResponseProtocol.requestedURL?.absoluteString ==
+            "https://api.github.com/repos/omaguix/try-omaguix/releases/latest")
         for status in [403, 429, 500] {
             ReleaseResponseProtocol.status = status
             await #expect(throws: AppReleaseError.self) {
-                try await AppReleaseChecker.fetchLatest(session: session)
+                try await AppReleaseChecker.fetchLatest(identity: .tryOmaguix, session: session)
             }
         }
         ReleaseResponseProtocol.status = 200
         ReleaseResponseProtocol.body = Data("not JSON".utf8)
         await #expect(throws: DecodingError.self) {
-            try await AppReleaseChecker.fetchLatest(session: session)
+            try await AppReleaseChecker.fetchLatest(identity: .tryOmaguix, session: session)
         }
     }
 }
@@ -332,10 +392,12 @@ struct AppReleaseTests {
 private final class ReleaseResponseProtocol: URLProtocol {
     static var status = 200
     static var body = Data()
+    static var requestedURL: URL?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
+        Self.requestedURL = request.url
         let response = HTTPURLResponse(url: request.url!, statusCode: Self.status, httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Self.body)

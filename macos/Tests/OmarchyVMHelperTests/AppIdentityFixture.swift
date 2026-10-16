@@ -8,7 +8,11 @@ extension AppIdentity {
         developmentApplicationName: "Try Omaguix Dev",
         applicationSupportDirectory: "Try Roguix",
         logsDirectory: "Try Roguix",
-        networkHelperService: "dev.tryroguix.network"
+        networkHelperService: "dev.tryroguix.network",
+        releaseRepository: "omaguix/try-omaguix",
+        releaseTagPrefix: "try-roguix-v",
+        releaseDMG: "TryOmaguix.dmg",
+        legacyReleaseDMGs: ["TryRoguix.dmg"]
     )
 
     /// A second app built from the same sources.
@@ -17,6 +21,10 @@ extension AppIdentity {
         developmentApplicationName: "Try Omabend Dev",
         applicationSupportDirectory: "Try Omabend Data",
         logsDirectory: "Try Omabend Logs",
-        networkHelperService: nil
+        networkHelperService: nil,
+        releaseRepository: "example/try-omabend",
+        releaseTagPrefix: "try-omabend-v",
+        releaseDMG: "TryOmabend.dmg",
+        legacyReleaseDMGs: []
     )
 }

@@ -30,7 +30,11 @@ struct AppIdentity: Equatable, Sendable {
         developmentApplicationName: String,
         applicationSupportDirectory: String,
         logsDirectory: String,
-        networkHelperService: String?
+        networkHelperService: String?,
+        releaseRepository: String,
+        releaseTagPrefix: String,
+        releaseDMG: String,
+        legacyReleaseDMGs: [String]
     ) {
         self.init(values: [
             "RoguixApplicationName": applicationName,
@@ -38,6 +42,10 @@ struct AppIdentity: Equatable, Sendable {
             "RoguixApplicationSupportDirectory": applicationSupportDirectory,
             "RoguixLogsDirectory": logsDirectory,
             "RoguixNetworkHelperService": networkHelperService ?? "",
+            "RoguixReleaseRepository": releaseRepository,
+            "RoguixReleaseTagPrefix": releaseTagPrefix,
+            "RoguixReleaseDMG": releaseDMG,
+            "RoguixLegacyReleaseDMGs": legacyReleaseDMGs.joined(separator: ","),
         ])
     }
 
@@ -55,6 +63,17 @@ struct AppIdentity: Equatable, Sendable {
     var networkHelperService: String? {
         let service = value("RoguixNetworkHelperService", mayBeEmpty: true)
         return service.isEmpty ? nil : service
+    }
+    /// The GitHub repository (`owner/name`) whose releases the update check reads.
+    var releaseRepository: String { value("RoguixReleaseRepository") }
+    /// Release tags are this prefix and X.Y.Z (docs/releasing.md).
+    var releaseTagPrefix: String { value("RoguixReleaseTagPrefix") }
+    /// The release's disk image asset, `NAME.dmg`.
+    var releaseDMG: String { value("RoguixReleaseDMG") }
+    /// The disk image names older releases of this app published; often none.
+    var legacyReleaseDMGs: [String] {
+        value("RoguixLegacyReleaseDMGs", mayBeEmpty: true)
+            .split(separator: ",").map(String.init)
     }
 
     private func value(_ key: String, mayBeEmpty: Bool = false) -> String {
