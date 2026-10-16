@@ -295,21 +295,6 @@
   there (and pass `--credentials`). Python and Make: a headless worker.
   Decided by the user 2026-10-16 (d-6spz6nsu): approved.
 
-- [ ] Free disk space on the Mac: move what is needed to the 2010 MacBook [t-3w5klpka]
-  Asked by the user 2026-10-16: "move the ones needed for now to the 2010
-  MacBook because space is short; delete what can be recreated relatively
-  quickly; ask the models". The Mac had 12 GiB free; the MacBook has 391 GiB.
-  Candidates found:
-  - the user's own VM disk `~/Library/Application Support/Try Roguix/.../disk.raw`
-    (21 GiB used; user data that cannot be recreated, and orphaned by the
-    rename [t-xzufmvj7] anyway);
-  - the builder disk `.build/guix-validation/builder.qcow2` (26 GiB, an
-    overlay on the 1.2 GiB official image; it can be recreated, but its
-    `/gnu/store` takes hours to rebuild, and it is in use);
-  - `build/dev.noindex` (2.9 GiB, `make app`); `build/guix` (2.8 GiB, the
-    packaged guest; recreating it needs an image build).
-  Consult round in progress.
-
 ## Proposed
 
 - [ ] Accept Guix's Ungoogled Chromium on the Metal path [t-wgeohswx]
@@ -534,6 +519,30 @@
   `-Dvideo-codecs=all`) over virgl's video protocol to a virglrenderer
   patched to encode with VideoToolbox, as OmacVM does (#48). Needs
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
+
+- [ ] Free disk space on the Mac: move what is needed to the 2010 MacBook [t-3w5klpka]
+  Asked by the user 2026-10-16: "move the ones needed for now to the 2010
+  MacBook because space is short; delete what can be recreated relatively
+  quickly; ask the models". The Mac had 12 GiB free; the MacBook has 391 GiB.
+  Candidates found:
+  - the user's own VM disk `~/Library/Application Support/Try Roguix/.../disk.raw`
+    (21 GiB used; user data that cannot be recreated, and orphaned by the
+    rename [t-xzufmvj7] anyway);
+  - the builder disk `.build/guix-validation/builder.qcow2` (26 GiB, an
+    overlay on the 1.2 GiB official image; it can be recreated, but its
+    `/gnu/store` takes hours to rebuild, and it is in use);
+  - `build/dev.noindex` (2.9 GiB, `make app`); `build/guix` (2.8 GiB, the
+    packaged guest; recreating it needs an image build).
+  Consult round in progress.
+  Consult round 20261016-181137-1d2e (all five models): delete
+  `build/dev.noindex`; copy the stopped VM disk with `rsync -aS --partial`
+  under mb-run, compare sha256 and logical size on both ends, sync, rename,
+  then delete the Mac copy (the MacBook copy is then the only one); keep the
+  builder and `build/guix`; no APFS snapshots (checked). Rsync is 3.5 on both
+  ends; disk.raw was not open.
+  Decided by the user 2026-10-16 (d-q55wvgua): not now, there is space for
+  now. Redo the plan when space runs short (the `macbook-2010` skill covers
+  the move).
 
 ## Needs a decision
 
