@@ -11,7 +11,7 @@ import textwrap
 import unittest
 
 
-HELPER = Path(__file__).resolve().parent / "modules/roguix/audio-input-set-default"
+HELPER = Path(__file__).resolve().parent / "modules/omaguix/audio-input-set-default"
 
 
 class AudioInputHelperTests(unittest.TestCase):

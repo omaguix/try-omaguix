@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release Roguix: the signed channel commit, CI's builds of it and a manifest.
+"""Release Omaguix: the signed channel commit, CI's builds of it and a manifest.
 
 docs/decisions/0006-one-roguix-release-step.md: publish-channel pushes the
 channel commit C to release/C, omaguix/omaguix's CI builds C for every
@@ -42,7 +42,7 @@ ARTIFACT_LISTS = ("publish.txt", "vps-fetch.txt", "vps-has.txt",
                   "package-closure.txt")
 # The patch CI applies to the pinned Guix before building the Guix that VMs
 # move to another pin with (docs/decisions/0007): its path in the channel.
-GUIX_PATCH = "modules/roguix/guix-skip-forward-check.patch"
+GUIX_PATCH = "modules/omaguix/guix-skip-forward-check.patch"
 COMMIT_ID = re.compile(r"[0-9a-f]{40}")
 # A direct store item, as Guix names one (nix-base32 hash).
 STORE_ITEM = re.compile(r"/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+")
@@ -55,15 +55,15 @@ class ReleaseError(Exception):
     pass
 
 
-def roguix_server():
-    """The substitute URL of %roguix-trust, its only definition."""
-    source = (HERE / "modules" / "roguix" / "trust.scm").read_text()
-    body = source[source.index("(define %roguix-trust"):]
+def omaguix_server():
+    """The substitute URL of %omaguix-trust, its only definition."""
+    source = (HERE / "modules" / "omaguix" / "trust.scm").read_text()
+    body = source[source.index("(define %omaguix-trust"):]
     return re.findall(r'"([^"]*)"', body)[0]
 
 
 def guix_pin():
-    return (HERE / "modules" / "roguix" / "guix-commit").read_text().strip()
+    return (HERE / "modules" / "omaguix" / "guix-commit").read_text().strip()
 
 
 def guix_patch_sha256():
@@ -224,14 +224,14 @@ def narinfo_status(server, item):
         return error.code
 
 
-def coverage(builds, roguix, status=narinfo_status):
+def coverage(builds, omaguix, status=narinfo_status):
     """Per architecture, how many package items each server serves.
     roguix.frolow.dev is asked only about items bordeaux lacks, as
     desktop-split does. Raises when an item is served nowhere."""
     def where(item):
         if status(BORDEAUX, item) == 200:
             return "bordeaux"
-        return "roguix" if status(roguix, item) == 200 else None
+        return "omaguix" if status(omaguix, item) == 200 else None
 
     result = {}
     with concurrent.futures.ThreadPoolExecutor(16) as pool:
@@ -243,14 +243,14 @@ def coverage(builds, roguix, status=narinfo_status):
                 raise ReleaseError(f"{system}: served nowhere: "
                                    + " ".join(missing))
             result[system] = {"bordeaux": places.count("bordeaux"),
-                              "roguix": places.count("roguix")}
+                              "omaguix": places.count("omaguix")}
     return result
 
 
-def manifest(commit, try_roguix, pin, patch_sha256, ci_run, builds, served):
+def manifest(commit, try_omaguix, pin, patch_sha256, ci_run, builds, served):
     return {
         "channel-commit": commit,
-        "try-roguix-commit": try_roguix,
+        "try-omaguix-commit": try_omaguix,
         "guix-commit": pin,
         "guix-patch": {"file": GUIX_PATCH, "sha256": patch_sha256},
         "guix-patched-commit": next(iter(builds.values()))["guix-patched-commit"],
@@ -261,7 +261,7 @@ def manifest(commit, try_roguix, pin, patch_sha256, ci_run, builds, served):
                      "release": build["release"],
                      "published": len(build["publish.txt"]),
                      "served-by-bordeaux": served[system]["bordeaux"],
-                     "served-by-roguix": served[system]["roguix"]}
+                     "served-by-omaguix": served[system]["omaguix"]}
             for system, build in builds.items()},
     }
 
@@ -310,42 +310,42 @@ def publish_manifest(channel, commit, document):
     return head
 
 
-def plan(try_roguix, pin, channel, env, roguix):
+def plan(try_omaguix, pin, channel, env, omaguix):
     ssh = (f"ssh {env['SSH_USER']}@{env['SSH_HOST']} {env['VPS_IMPORT']} TAG"
            if all(env.get(k) for k in ("SSH_USER", "SSH_HOST", "VPS_IMPORT"))
            else "ssh: .env lacks SSH_USER, SSH_HOST or VPS_IMPORT")
     return "\n".join([
-        f"try-roguix {try_roguix}, Guix {pin}, channel checkout {channel}",
+        f"try-omaguix {try_omaguix}, Guix {pin}, channel checkout {channel}",
         "1. guest/guix/publish-channel: signed commit C, pushed to release/C;"
         " a changed Guix pin must descend from the previous release's"
         " (GUIX_CHECKOUT)",
         f"2. gh workflow run {WORKFLOW} -R {CI_REPO} -f channel_commit=C,"
         " gh run watch RUN --exit-status, gh run download RUN",
         f"3. for each architecture's CI release: {ssh};"
-        f" every package item served by {BORDEAUX} or {roguix}",
+        f" every package item served by {BORDEAUX} or {omaguix}",
         f"4. {MANIFEST} signed on C, pushed to main; release/C deleted",
     ])
 
 
 def release(args):
     channel = args.channel.resolve()
-    roguix = roguix_server()
+    omaguix = omaguix_server()
     pin = guix_pin()
     patch_sha256 = guix_patch_sha256()
     if run(["git", "-C", str(ROOT), "status", "--porcelain", "--",
             "guest/guix"]).strip():
-        raise ReleaseError("commit guest/guix in try-roguix first")
-    try_roguix = run(["git", "-C", str(ROOT), "rev-parse", "HEAD"]).strip()
+        raise ReleaseError("commit guest/guix in try-omaguix first")
+    try_omaguix = run(["git", "-C", str(ROOT), "rev-parse", "HEAD"]).strip()
     env = read_env(ROOT / ".env") if (ROOT / ".env").is_file() else {}
     if args.dry_run:
-        print(plan(try_roguix, pin, channel, env, roguix))
+        print(plan(try_omaguix, pin, channel, env, omaguix))
         return
 
     output = run([str(HERE / "publish-channel")],
-                 env={**os.environ, "ROGUIX_CHANNEL_DIR": str(channel)})
+                 env={**os.environ, "OMAGUIX_CHANNEL_DIR": str(channel)})
     commit = channel_commit(output)
     if commit is None:
-        print("release: the channel already matches try-roguix")
+        print("release: the channel already matches try-omaguix")
         return
     check_guix_moves_forward(previous_pin(channel, commit), pin,
                              env.get("GUIX_CHECKOUT"))
@@ -359,16 +359,16 @@ def release(args):
                              "--json", "databaseId,url,headSha,conclusion"]))
     if ci_run["conclusion"] != "success":
         raise ReleaseError(f"CI run {number} ended {ci_run['conclusion']}")
-    with tempfile.TemporaryDirectory(prefix="roguix-release-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="omaguix-release-") as tmp:
         run(["gh", "run", "download", number, "-R", CI_REPO, "-D", tmp])
         builds = read_builds(Path(tmp), commit, pin, patch_sha256)
     for build in builds.values():
         if build["release"]:
             vps_import(env, build["release"])
-    served = coverage(builds, roguix)
+    served = coverage(builds, omaguix)
     head = publish_manifest(
         channel, commit,
-        manifest(commit, try_roguix, pin, patch_sha256, ci_run, builds, served))
+        manifest(commit, try_omaguix, pin, patch_sha256, ci_run, builds, served))
     print(f"release: channel main is {head}, built by {ci_run['url']}")
 
 
@@ -376,9 +376,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--channel", type=Path,
-        default=Path(os.environ.get("ROGUIX_CHANNEL_DIR",
-                                    ROOT.parent / "roguix-channel")),
-        help="the roguix channel checkout (ROGUIX_CHANNEL_DIR)")
+        default=Path(os.environ.get("OMAGUIX_CHANNEL_DIR",
+                                    ROOT.parent / "omaguix-channel")),
+        help="the omaguix channel checkout (OMAGUIX_CHANNEL_DIR)")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the steps and change nothing")
     args = parser.parse_args()

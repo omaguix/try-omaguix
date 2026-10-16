@@ -56,11 +56,11 @@ input must be rebuilt; do not work around the cache by editing generated state.
 
 ## Updating Omarchy
 
-Omarchy is the `omarchy` package in `guest/guix/modules/roguix/omarchy.scm`,
+Omarchy is the `omarchy` package in `guest/guix/modules/omaguix/omarchy.scm`,
 pinned to an upstream commit and its `guix hash -rx` digest. To update it,
 change both, then review the upstream diff against what Omaguix rewrites at
 build time: the menu (`omarchy-menu.py`, which drops Arch-only entries), the
-package helpers replaced with `roguix-pkg`, the two `MenuModel.js`
+package helpers replaced with `omaguix-pkg`, the two `MenuModel.js`
 substitutions and the `Menu.qml` one that rebuilds rows only when a guard
 result changed (`test_omarchy_menu.py` pins that each still matches exactly
 once; drop the `Menu.qml` one when Omarchy carries the fix). Omarchy's own names (`omarchy-*`, `OMARCHY_PATH`) are never renamed, so

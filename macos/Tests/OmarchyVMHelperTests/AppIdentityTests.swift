@@ -7,21 +7,21 @@ struct AppIdentityTests {
     @Test("reads the keys build-app.sh writes; an empty service means NAT only")
     func readsInfoPlistKeys() {
         let values = [
-            "RoguixApplicationName": "Try Omabend",
-            "RoguixDevelopmentApplicationName": "Try Omabend Dev",
-            "RoguixApplicationSupportDirectory": "Try Omabend Data",
-            "RoguixLogsDirectory": "Try Omabend Logs",
-            "RoguixNetworkHelperService": "",
-            "RoguixReleaseRepository": "example/try-omabend",
-            "RoguixReleaseTagPrefix": "try-omabend-v",
-            "RoguixReleaseDMG": "TryOmabend.dmg",
-            "RoguixLegacyReleaseDMGs": "",
+            "OmaguixApplicationName": "Try Omabend",
+            "OmaguixDevelopmentApplicationName": "Try Omabend Dev",
+            "OmaguixApplicationSupportDirectory": "Try Omabend Data",
+            "OmaguixLogsDirectory": "Try Omabend Logs",
+            "OmaguixNetworkHelperService": "",
+            "OmaguixReleaseRepository": "example/try-omabend",
+            "OmaguixReleaseTagPrefix": "try-omabend-v",
+            "OmaguixReleaseDMG": "TryOmabend.dmg",
+            "OmaguixLegacyReleaseDMGs": "OldOmabend.dmg",
         ]
         #expect(AppIdentity(values: values) == .second)
         #expect(AppIdentity.second.networkHelperService == nil)
-        #expect(AppIdentity.second.legacyReleaseDMGs == [])
-        #expect(AppIdentity.tryOmaguix.legacyReleaseDMGs == ["TryRoguix.dmg"])
-        #expect(AppIdentity.tryOmaguix.networkHelperService == "dev.tryroguix.network")
+        #expect(AppIdentity.second.legacyReleaseDMGs == ["OldOmabend.dmg"])
+        #expect(AppIdentity.tryOmaguix.legacyReleaseDMGs == [])
+        #expect(AppIdentity.tryOmaguix.networkHelperService == "dev.tryomaguix.network")
     }
 
     @Test("the launcher and the app read the same Info.plist keys")
@@ -32,14 +32,14 @@ struct AppIdentityTests {
             contentsOf: macos.appendingPathComponent("run-qemu-gpu.sh"), encoding: .utf8)
         let build = try String(
             contentsOf: macos.appendingPathComponent("build-app.sh"), encoding: .utf8)
-        for key in ["RoguixApplicationName", "RoguixApplicationSupportDirectory",
-                    "RoguixNetworkHelperService"] {
+        for key in ["OmaguixApplicationName", "OmaguixApplicationSupportDirectory",
+                    "OmaguixNetworkHelperService"] {
             #expect(launcher.contains("app_identity \(key)"))
         }
-        for key in ["RoguixApplicationName", "RoguixDevelopmentApplicationName",
-                    "RoguixApplicationSupportDirectory", "RoguixLogsDirectory",
-                    "RoguixNetworkHelperService", "RoguixReleaseRepository",
-                    "RoguixReleaseTagPrefix", "RoguixReleaseDMG", "RoguixLegacyReleaseDMGs"] {
+        for key in ["OmaguixApplicationName", "OmaguixDevelopmentApplicationName",
+                    "OmaguixApplicationSupportDirectory", "OmaguixLogsDirectory",
+                    "OmaguixNetworkHelperService", "OmaguixReleaseRepository",
+                    "OmaguixReleaseTagPrefix", "OmaguixReleaseDMG", "OmaguixLegacyReleaseDMGs"] {
             #expect(build.contains("value[\"\(key)\"]"))
         }
         #expect(launcher.contains(

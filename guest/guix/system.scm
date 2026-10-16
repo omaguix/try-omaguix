@@ -1,5 +1,5 @@
-;; The Roguix image: the base system with no extra packages. In the guest,
+;; The Omaguix image: the base system with no extra packages. In the guest,
 ;; /etc/config.scm calls the same procedure with the owner's packages.
-(use-modules (roguix system))
+(use-modules (omaguix system))
 
-(roguix-operating-system)
+(omaguix-operating-system)

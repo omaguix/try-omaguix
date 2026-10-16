@@ -182,8 +182,8 @@ class BuildInputsTests(unittest.TestCase):
                           **{"modules/" + name: HERE / "modules" / name
                              for name in sorted(tracked) if name}})
         # Files in subdirectories, which modules read with local-file, count.
-        self.assertIn("modules/roguix/settings/roguix-settings", package.builder.inputs())
-        self.assertIn("modules/roguix/battery-module/Makefile", package.builder.inputs())
+        self.assertIn("modules/omaguix/settings/omaguix-settings", package.builder.inputs())
+        self.assertIn("modules/omaguix/battery-module/Makefile", package.builder.inputs())
 
     def test_digest_follows_every_input_of_the_image_being_packaged(self):
         digest = self.digest()

@@ -1,7 +1,7 @@
-"""roguix-update: release checks, the descendant check and its cursor,
+"""omaguix-update: release checks, the descendant check and its cursor,
 same-pin updates and moves to another Guix.
 
-The script is the `roguix-update' shim in modules/roguix/omarchy.scm; it is
+The script is the `omaguix-update' shim in modules/omaguix/omarchy.scm; it is
 extracted from there and run against a local Git channel, with stand-ins for
 guix, df and uname.
 """
@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import unittest
 
-OMARCHY = Path(__file__).with_name("modules") / "roguix" / "omarchy.scm"
+OMARCHY = Path(__file__).with_name("modules") / "omaguix" / "omarchy.scm"
 OLD_PIN = "7e74121a40a8308166e328a23647cf6f3768e6c8"
 NEW_PIN = "84ff1865b81d8a56eec5b4015faa5787d024f9f1"
 # The commit CI made of NEW_PIN plus guix-skip-forward-check.patch, which the
@@ -58,10 +58,10 @@ def definition(source, name):
     return scheme_string(source, start)[0]
 
 
-def roguix_update_script(substitutions):
+def omaguix_update_script(substitutions):
     """Return the shim's shell text, each #$ expression from SUBSTITUTIONS."""
     source = OMARCHY.read_text()
-    marker = '(shim "roguix-update" (string-append '
+    marker = '(shim "omaguix-update" (string-append '
     i = source.index(marker) + len(marker)
     parts = []
     while True:
@@ -79,7 +79,7 @@ def roguix_update_script(substitutions):
             i = end
 
 
-class RoguixUpdateTests(unittest.TestCase):
+class OmaguixUpdateTests(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -90,9 +90,9 @@ class RoguixUpdateTests(unittest.TestCase):
         self.store.mkdir()
         self.gcroots = root / "gcroots"
         self.gcroots.mkdir()
-        self.installed = root / "etc-roguix"
-        (self.installed / "modules" / "roguix").mkdir(parents=True)
-        (self.installed / "modules" / "roguix" / "guix-commit").write_text(OLD_PIN + "\n")
+        self.installed = root / "etc-omaguix"
+        (self.installed / "modules" / "omaguix").mkdir(parents=True)
+        (self.installed / "modules" / "omaguix" / "guix-commit").write_text(OLD_PIN + "\n")
         self.git_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         self.git_env.update(GIT_CONFIG_GLOBAL=str(root / "gitconfig"),
                             GIT_CONFIG_NOSYSTEM="1", GIT_AUTHOR_NAME="t",
@@ -152,9 +152,9 @@ echo "/dev/vda2 0 0 $(cat "{self.root}/free") 0% /\"""")
         # as a Guix that describes itself as the patched commit.
         self.stub(self.root / "guix", f"""\
 case "$1" in
-  repl) echo "guix ROGUIX_GUIX=${{ROGUIX_GUIX:-}} repl $2 SCRIPT $4" >> "{self.log}"
+  repl) echo "guix OMAGUIX_GUIX=${{OMAGUIX_GUIX:-}} repl $2 SCRIPT $4" >> "{self.log}"
         echo "script: $(cat "$3")" >> "{self.log}" ;;
-  *) echo "guix ROGUIX_GUIX=${{ROGUIX_GUIX:-}} $*" >> "{self.log}" ;;
+  *) echo "guix OMAGUIX_GUIX=${{OMAGUIX_GUIX:-}} $*" >> "{self.log}" ;;
 esac
 case "$1" in
   repl)
@@ -162,46 +162,46 @@ case "$1" in
     mkdir -p "$4/bin"
     printf '%s\\n' '#!/bin/bash' \\
       'case "$1" in describe) echo "    commit: $(cat "{self.root}/describes")";;' \\
-      '  *) echo "new-guix ROGUIX_GUIX=$ROGUIX_GUIX $*" >> "{self.log}"' \\
-      '     echo "channel commit: $ROGUIX_CHANNEL_COMMIT" >> "{self.log}"' \\
+      '  *) echo "new-guix OMAGUIX_GUIX=$OMAGUIX_GUIX $*" >> "{self.log}"' \\
+      '     echo "channel commit: $OMAGUIX_CHANNEL_COMMIT" >> "{self.log}"' \\
       '     [ ! -e "{self.root}/reconfigure-fails" ];; esac' > "$4/bin/guix"
     chmod 755 "$4/bin/guix"
-    echo "root during repl: $(readlink "{self.gcroots}/roguix-guix-next")" >> "{self.log}" ;;
+    echo "root during repl: $(readlink "{self.gcroots}/omaguix-guix-next")" >> "{self.log}" ;;
   system)
-    echo "channel commit: $ROGUIX_CHANNEL_COMMIT" >> "{self.log}"
+    echo "channel commit: $OMAGUIX_CHANNEL_COMMIT" >> "{self.log}"
     [ ! -e "{self.root}/reconfigure-fails" ] ;;
 esac""")
         self.env = dict(self.git_env, PATH=f"{bin_dir}:{os.environ['PATH']}")
 
     def make_script(self):
         source = OMARCHY.read_text()
-        script = roguix_update_script({
+        script = omaguix_update_script({
             "%build-gate": definition(source, "%build-gate"),
             "%guix-move-free-gib": definition(source, "%guix-move-free-gib"),
             '(file-append git "/bin/git")': "git",
             '(file-append jq "/bin/jq")': "jq",
             '(file-append util-linux "/bin/flock")': str(self.root / "bin" / "flock"),
-            "(roguix-trust-channel-url %roguix-trust)": str(self.work),
-            "(roguix-trust-channel-introduction %roguix-trust)": "2222",
-            "(roguix-trust-channel-signer %roguix-trust)": "AAAA BBBB",
+            "(omaguix-trust-channel-url %omaguix-trust)": str(self.work),
+            "(omaguix-trust-channel-introduction %omaguix-trust)": "2222",
+            "(omaguix-trust-channel-signer %omaguix-trust)": "AAAA BBBB",
         })
         for path, replacement in (
-                ("state=/var/lib/roguix", f"state={self.state}"),
-                ("/etc/roguix/channel-commit", str(self.record)),
-                ("/var/guix/gcroots/roguix-guix/bin/guix", str(self.root / "guix")),
-                ("/var/guix/gcroots/roguix-guix-next", str(self.gcroots / "roguix-guix-next")),
-                ("/etc/roguix/modules/roguix", str(self.installed / "modules" / "roguix")),
+                ("state=/var/lib/omaguix", f"state={self.state}"),
+                ("/etc/omaguix/channel-commit", str(self.record)),
+                ("/var/guix/gcroots/omaguix-guix/bin/guix", str(self.root / "guix")),
+                ("/var/guix/gcroots/omaguix-guix-next", str(self.gcroots / "omaguix-guix-next")),
+                ("/etc/omaguix/modules/omaguix", str(self.installed / "modules" / "omaguix")),
                 ("/gnu/store", str(self.store))):
             self.assertIn(path, script)
             script = script.replace(path, replacement)
-        self.script = self.root / "roguix-update"
+        self.script = self.root / "omaguix-update"
         self.script.write_text("#!/bin/bash\n" + script)
 
     def release(self, pin, guix=None, manifest_pin=None, extra=None,
                 patched=PATCHED):
         """Commit modules at PIN (C), then release.json on top (M) as main;
         return M."""
-        modules = self.work / "modules" / "roguix"
+        modules = self.work / "modules" / "omaguix"
         modules.mkdir(parents=True, exist_ok=True)
         (modules / "guix-commit").write_text(pin + "\n")
         self.git("add", "-A")
@@ -236,7 +236,7 @@ esac""")
         log = self.log.read_text().splitlines()
         return result, [line for line in log if " authenticate " not in line]
 
-    def reconfigure(self, head, guix="guix ROGUIX_GUIX=", flag=""):
+    def reconfigure(self, head, guix="guix OMAGUIX_GUIX=", flag=""):
         return [f"{guix} system reconfigure {flag}--max-jobs=0 --no-offload "
                 f"-L {self.channel}/modules /etc/config.scm",
                 f"channel commit: {head}"]
@@ -264,15 +264,15 @@ esac""")
         self.assertEqual(log, [
             # The VM's Guix only substitutes the release's Guix: ensure-path
             # fails on an item no server has, where a build would start.
-            f"guix ROGUIX_GUIX= repl -- SCRIPT {self.store}/{HASH}-profile",
+            f"guix OMAGUIX_GUIX= repl -- SCRIPT {self.store}/{HASH}-profile",
             "script: (use-modules (guix store)) "
             "(with-store store (ensure-path store (cadr (command-line))))",
             f"root during repl: {self.store}/{HASH}-profile",
             # Only then, and only on a pin move, the check is skipped.
-            *self.reconfigure(head, f"new-guix ROGUIX_GUIX={self.store}/{HASH}-profile",
+            *self.reconfigure(head, f"new-guix OMAGUIX_GUIX={self.store}/{HASH}-profile",
                               "--no-check-forward-update ")])
         # The new system pins the new Guix; the temporary root is gone.
-        self.assertFalse((self.gcroots / "roguix-guix-next").is_symlink())
+        self.assertFalse((self.gcroots / "omaguix-guix-next").is_symlink())
         self.assertEqual(self.cursor_commit(), head + "\n")
 
     def test_the_cursor_is_flushed_under_a_unique_name_before_it_moves(self):
@@ -330,7 +330,7 @@ esac""")
 
     def test_the_cursor_keeps_main_from_going_back_after_a_roll_back(self):
         # After `guix system roll-back' the running system's record is older
-        # than what roguix-update applied; main may not go back to it.
+        # than what omaguix-update applied; main may not go back to it.
         older = self.release(NEW_PIN)
         newer = self.release(NEW_PIN)
         self.record.write_text(older + "\n")
@@ -398,7 +398,7 @@ esac""")
     def test_a_system_without_a_guix_pin_changes_nothing(self):
         # Never counted as a move to another pin.
         self.release(OLD_PIN)
-        pin = self.installed / "modules" / "roguix" / "guix-commit"
+        pin = self.installed / "modules" / "omaguix" / "guix-commit"
         for content in (None, "", "HEAD\n"):
             with self.subTest(content=content):
                 if content is None:
@@ -413,7 +413,7 @@ esac""")
         self.release(OLD_PIN)
         self.locked = True
         result, log = self.run_update()
-        self.assert_refused(result, log, "another roguix-update is running")
+        self.assert_refused(result, log, "another omaguix-update is running")
         self.assertFalse(self.channel.exists())
         self.assertIsNone(self.cursor_commit())
 
@@ -439,7 +439,7 @@ esac""")
         self.assertIsNone(self.cursor_commit())
 
     def test_a_commit_that_is_not_a_release_changes_nothing(self):
-        for name, kwargs in (("another file", {"extra": "modules/roguix/x.scm"}),
+        for name, kwargs in (("another file", {"extra": "modules/omaguix/x.scm"}),
                              ("another pin", {"manifest_pin": OLD_PIN})):
             with self.subTest(name):
                 self.release(NEW_PIN, **kwargs)
@@ -482,8 +482,8 @@ esac""")
         self.assertEqual(result.returncode, 1)
         self.assertIn("/dev/vda2", result.stderr)
         self.assertEqual(len(log), 2, log)
-        self.assertTrue(log[0].startswith("guix ROGUIX_GUIX= repl"), log)
-        self.assertFalse((self.gcroots / "roguix-guix-next").is_symlink())
+        self.assertTrue(log[0].startswith("guix OMAGUIX_GUIX= repl"), log)
+        self.assertFalse((self.gcroots / "omaguix-guix-next").is_symlink())
 
 
 class GuixPatchTests(unittest.TestCase):

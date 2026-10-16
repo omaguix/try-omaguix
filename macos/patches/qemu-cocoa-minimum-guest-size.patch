@@ -1,7 +1,7 @@
-From: Try Roguix contributors
+From: Try Omaguix contributors
 Subject: [PATCH] cocoa: offer the guest at least 800x600 pixels
 
-Applies after the other Try Roguix Cocoa patches.
+Applies after the other Try Omaguix Cocoa patches.
 
 The dynamic-display patch makes the guest's preferred mode follow the
 window, and virtio-gpu keeps offering that mode after a guest reboot. In a

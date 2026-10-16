@@ -1,4 +1,4 @@
-# Roguix substitutes: guix publish on localhost, behind nginx at
+# Omaguix substitutes: guix publish on localhost, behind nginx at
 # https://roguix.frolow.dev. Nars are compressed once into the cache, one at
 # a time and at a light zstd level: at zstd:19 with several baking at once,
 # this 2-CPU, 2.4 GB host stopped responding (2026-09-24). The limits below

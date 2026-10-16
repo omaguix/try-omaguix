@@ -1623,7 +1623,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
                 // initialize a brand-new VM there.
                 guard storageLocationStatus().isDefault else {
                     throw NSError(
-                        domain: "TryRoguix.StorageLocation",
+                        domain: "TryOmaguix.StorageLocation",
                         code: 2,
                         userInfo: [
                             NSLocalizedDescriptionKey:
@@ -1639,7 +1639,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
             }
             guard NSWorkspace.shared.open(storageLocationURL) else {
                 throw NSError(
-                    domain: "TryRoguix.StorageLocation",
+                    domain: "TryOmaguix.StorageLocation",
                     code: 1,
                     userInfo: [NSLocalizedDescriptionKey: "Finder could not open the data directory."]
                 )

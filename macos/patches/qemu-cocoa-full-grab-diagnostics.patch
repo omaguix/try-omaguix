@@ -1,7 +1,7 @@
-From: Try Roguix contributors
+From: Try Omaguix contributors
 Subject: [PATCH] cocoa: log the full grab tap's state
 
-Applies after the other Try Roguix Cocoa patches.
+Applies after the other Try Omaguix Cocoa patches.
 
 Command chords reach the guest as Super only through the full-grab
 CGEventTap, and every way it fails is silent: without the Accessibility

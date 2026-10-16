@@ -2,8 +2,8 @@
 Type=Application
 Name=Try Omaguix Settings
 Comment=Open the Try Omaguix Mac app settings
-Exec=roguix-settings
-TryExec=roguix-settings
+Exec=omaguix-settings
+TryExec=omaguix-settings
 Icon=preferences-system
 Terminal=false
 Categories=Settings;

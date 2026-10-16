@@ -169,7 +169,7 @@ struct SharedFolderPreferenceStoreTests {
     }
 
     private final class DefaultsFixture {
-        let suiteName = "dev.tryroguix.native.tests.\(UUID().uuidString)"
+        let suiteName = "dev.tryomaguix.native.tests.\(UUID().uuidString)"
         let defaults: UserDefaults
         let store: SharedFolderPreferenceStore
 

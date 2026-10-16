@@ -7,7 +7,7 @@ old directory instead of replacing it. current/theme was left without
 foot.ini and the other generated configs, and foot reported
 "current/theme/foot.ini: no such file or directory". Make the staged copy
 the owner's, and make a current theme staged before this fix removable,
-so the next theme change repairs it (test_omarchy_theme_set.py). Roguix
+so the next theme change repairs it (test_omarchy_theme_set.py). Omaguix
 only: remove once Omarchy stages the theme without the source's modes.
 
 --- a/bin/omarchy-theme-set

@@ -21,7 +21,7 @@ from app_version import build_version
 
 
 SCHEMA_VERSION = 2
-# The packaged Roguix guest the app embeds (guest/guix/package.py writes it
+# The packaged Omaguix guest the app embeds (guest/guix/package.py writes it
 # from an image built with guest/guix/build.py; it has no cached build step).
 GUIX_GUEST_FILES = ("build/guix/guix-manifest.json", "build/guix/SHA256SUMS")
 

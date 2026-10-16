@@ -11,7 +11,7 @@ import subprocess
 import unittest
 
 HERE = Path(__file__).parent
-PATCH = HERE / "modules" / "roguix" / "omarchy-theme-bg-utf8.patch"
+PATCH = HERE / "modules" / "omaguix" / "omarchy-theme-bg-utf8.patch"
 
 
 def command(side):

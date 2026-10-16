@@ -196,11 +196,11 @@ struct QEMUStandardErrorDrainTests {
     @Test("reports the last complete disk download line as a percentage")
     func parsesDiskDownloadProgress() {
         let output = """
-            [qemu-gpu] Downloading Roguix: 0 of 400 bytes
-            noise [qemu-gpu] Downloading Roguix: 399 of 400 bytes
-            [qemu-gpu] Downloading Roguix: 100 of 400 bytes
-            [qemu-gpu] Downloading Roguix: 500 of 400 bytes
-            [qemu-gpu] Downloading Roguix: 2
+            [qemu-gpu] Downloading Omaguix: 0 of 400 bytes
+            noise [qemu-gpu] Downloading Omaguix: 399 of 400 bytes
+            [qemu-gpu] Downloading Omaguix: 100 of 400 bytes
+            [qemu-gpu] Downloading Omaguix: 500 of 400 bytes
+            [qemu-gpu] Downloading Omaguix: 2
             """
         #expect(QEMUGPUProcessSupervisor.diskDownloadPercent(in: output) == 25)
         #expect(QEMUGPUProcessSupervisor.diskDownloadPercent(in: "startup\n") == nil)
@@ -259,7 +259,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
         let defaultDirectory = try #require(QEMUGPUStorageSpaceEstimate.dataDirectoryDisplayPath(
             environment: [:], identity: .tryOmaguix
         ))
-        #expect(defaultDirectory == "~/Library/Application Support/Try Roguix")
+        #expect(defaultDirectory == "~/Library/Application Support/Try Omaguix")
         // Another app identity keeps its VM in its own directory.
         #expect(QEMUGPUStorageSpaceEstimate.dataDirectoryDisplayPath(
             environment: [:], identity: .second
@@ -434,7 +434,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             identity: identity,
             payloadBytes: 8_192,
             metadataContents: """
-            { "kind": "roguix-qemu-persistent-disk", "bundleIdentity": "\(identity)", "sourceRootfs": { "sha256": "\(sourceSHA)", "bytes": 1 }, "schemaVersion": 2 }
+            { "kind": "omaguix-qemu-persistent-disk", "bundleIdentity": "\(identity)", "sourceRootfs": { "sha256": "\(sourceSHA)", "bytes": 1 }, "schemaVersion": 2 }
             """
         )
 
@@ -464,7 +464,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
             name: identity,
             identity: identity,
             payloadBytes: 8_192,
-            metadataContents: "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"roguix-qemu-persistent-disk\",\"schemaVersion\":2.5,\"sourceRootfs\":{\"bytes\":1.5,\"sha256\":\"\(sourceSHA)\"}}\n"
+            metadataContents: "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omaguix-qemu-persistent-disk\",\"schemaVersion\":2.5,\"sourceRootfs\":{\"bytes\":1.5,\"sha256\":\"\(sourceSHA)\"}}\n"
         )
 
         let environment = ["OMARCHY_QEMU_GPU_STATE_ROOT": root.appendingPathComponent("state").path]
@@ -491,7 +491,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
         let metadata = directory.appendingPathComponent("metadata.json")
         let sourceSHA = String(repeating: "d", count: 64)
         try Data(
-            (metadataContents ?? "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"roguix-qemu-persistent-disk\",\"schemaVersion\":2,\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n").utf8
+            (metadataContents ?? "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omaguix-qemu-persistent-disk\",\"schemaVersion\":2,\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n").utf8
         ).write(to: metadata)
         #expect(Darwin.chmod(metadata.path, 0o600) == 0)
 

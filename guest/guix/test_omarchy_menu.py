@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 HERE = Path(__file__).parent
-path = HERE / "modules" / "roguix" / "omarchy-menu.py"
+path = HERE / "modules" / "omaguix" / "omarchy-menu.py"
 loader = importlib.machinery.SourceFileLoader("omarchy_menu", str(path))
 spec = importlib.util.spec_from_loader("omarchy_menu", loader)
 menu = importlib.util.module_from_spec(spec)
@@ -45,21 +45,21 @@ class OmarchyMenuTests(unittest.TestCase):
 
     def test_no_arch_is_left(self):
         for word in ("pacman", "yay", "aur", "ghostty", "update.omarchy"):
-            self.assertNotIn(word, self.text.lower().replace("roguix", ""))
+            self.assertNotIn(word, self.text.lower().replace("omaguix", ""))
 
     def test_guix_packages_and_system(self):
-        self.assertIn("roguix-pkg pick-add", self.menu["install.package"]["action"])
-        self.assertIn("roguix-pkg pick-remove", self.menu["remove.package"]["action"])
+        self.assertIn("omaguix-pkg pick-add", self.menu["install.package"]["action"])
+        self.assertIn("omaguix-pkg pick-remove", self.menu["remove.package"]["action"])
         self.assertEqual(self.menu["install.terminal.alacritty"]["checked"],
-                         "roguix-pkg present alacritty")
-        self.assertIn("sudo roguix-pkg add emacs-pgtk",
+                         "omaguix-pkg present alacritty")
+        self.assertIn("sudo omaguix-pkg add emacs-pgtk",
                       self.menu["install.editor.emacs"]["action"])
-        self.assertIn("roguix-reconfigure", self.menu["update.system.apply"]["action"])
+        self.assertIn("omaguix-reconfigure", self.menu["update.system.apply"]["action"])
         self.assertEqual(self.menu["style.theme"]["action"], "https://example.org")
 
     def test_setup_opens_mac_settings_when_the_port_exists(self):
-        entry = self.menu["setup.try-roguix"]
-        self.assertEqual(entry["action"], "roguix-settings")
+        entry = self.menu["setup.try-omaguix"]
+        self.assertEqual(entry["action"], "omaguix-settings")
         self.assertEqual(entry["when"],
                          "test -w /dev/virtio-ports/dev.tryomarchy.settings")
 
@@ -75,7 +75,7 @@ class OmarchyPackageTests(unittest.TestCase):
     def test_menu_guard_asks_guix(self):
         # MenuModel.js's installed-package guard reads pacman's database;
         # the build replaces exactly these two strings from Omarchy 4.0.4.
-        source = (HERE / "modules/roguix/omarchy.scm").read_text()
+        source = (HERE / "modules/omaguix/omarchy.scm").read_text()
         self.assertEqual(source.count('("pacman -Qq; LC_ALL=C pacman -Qi")'), 1)
         self.assertEqual(source.count('("pacman -Q \\"[$]1\\"")'), 1)
         self.assertNotIn('"pacman" "bin/"', source)
@@ -84,7 +84,7 @@ class OmarchyPackageTests(unittest.TestCase):
     def test_menu_rebuilds_rows_only_when_guards_change(self):
         # Menu.qml's guardProc.onExited from Omarchy c668141e: the build
         # replaces exactly these two lines and fails if the result is missing.
-        source = (HERE / "modules/roguix/omarchy.scm").read_text()
+        source = (HERE / "modules/omaguix/omarchy.scm").read_text()
         self.assertEqual(source.count(r'(("root\\.whenResults = nextWhen")'), 1)
         self.assertEqual(source.count(
             r'(("^      if \\(root\\.opened\\) root\\.rebuildDisplay\\(\\)")'), 1)

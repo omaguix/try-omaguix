@@ -18,7 +18,7 @@ struct LauncherLogTests {
     @Test("The log lives with the user's other app logs")
     func defaultLocation() {
         let home = URL(fileURLWithPath: "/Users/example")
-        #expect(LauncherLog.defaultURL(home: home, identity: .tryOmaguix).path == "/Users/example/Library/Logs/Try Roguix/launcher.log")
+        #expect(LauncherLog.defaultURL(home: home, identity: .tryOmaguix).path == "/Users/example/Library/Logs/Try Omaguix/launcher.log")
         #expect(LauncherLog.defaultURL(home: home, identity: .second).path == "/Users/example/Library/Logs/Try Omabend Logs/launcher.log")
     }
 
@@ -99,7 +99,7 @@ struct LauncherFailureReportTests {
         #expect(text.contains("line 13\nline 14"))
         #expect(text.contains("line 20"))
         #expect(!text.contains("line 12\n"))
-        #expect(text.hasSuffix("The full log is ~/Library/Logs/Try Roguix/launcher.log."))
+        #expect(text.hasSuffix("The full log is ~/Library/Logs/Try Omaguix/launcher.log."))
         #expect(!text.localizedCaseInsensitiveContains("reinstall"))
     }
 

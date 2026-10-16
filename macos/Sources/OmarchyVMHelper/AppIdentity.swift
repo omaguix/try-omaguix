@@ -37,42 +37,42 @@ struct AppIdentity: Equatable, Sendable {
         legacyReleaseDMGs: [String]
     ) {
         self.init(values: [
-            "RoguixApplicationName": applicationName,
-            "RoguixDevelopmentApplicationName": developmentApplicationName,
-            "RoguixApplicationSupportDirectory": applicationSupportDirectory,
-            "RoguixLogsDirectory": logsDirectory,
-            "RoguixNetworkHelperService": networkHelperService ?? "",
-            "RoguixReleaseRepository": releaseRepository,
-            "RoguixReleaseTagPrefix": releaseTagPrefix,
-            "RoguixReleaseDMG": releaseDMG,
-            "RoguixLegacyReleaseDMGs": legacyReleaseDMGs.joined(separator: ","),
+            "OmaguixApplicationName": applicationName,
+            "OmaguixDevelopmentApplicationName": developmentApplicationName,
+            "OmaguixApplicationSupportDirectory": applicationSupportDirectory,
+            "OmaguixLogsDirectory": logsDirectory,
+            "OmaguixNetworkHelperService": networkHelperService ?? "",
+            "OmaguixReleaseRepository": releaseRepository,
+            "OmaguixReleaseTagPrefix": releaseTagPrefix,
+            "OmaguixReleaseDMG": releaseDMG,
+            "OmaguixLegacyReleaseDMGs": legacyReleaseDMGs.joined(separator: ","),
         ])
     }
 
     /// The production name, which also names the VM helper app and its
     /// executable.
-    var applicationName: String { value("RoguixApplicationName") }
+    var applicationName: String { value("OmaguixApplicationName") }
     /// The name `make install` gives the development build.
-    var developmentApplicationName: String { value("RoguixDevelopmentApplicationName") }
+    var developmentApplicationName: String { value("OmaguixDevelopmentApplicationName") }
     /// The directory under ~/Library/Application Support that holds the VM.
-    var applicationSupportDirectory: String { value("RoguixApplicationSupportDirectory") }
+    var applicationSupportDirectory: String { value("OmaguixApplicationSupportDirectory") }
     /// The directory under ~/Library/Logs that holds the launcher log.
-    var logsDirectory: String { value("RoguixLogsDirectory") }
+    var logsDirectory: String { value("OmaguixLogsDirectory") }
     /// The bridged-networking helper's launchd service; nil when the app ships
     /// no helper and offers only NAT.
     var networkHelperService: String? {
-        let service = value("RoguixNetworkHelperService", mayBeEmpty: true)
+        let service = value("OmaguixNetworkHelperService", mayBeEmpty: true)
         return service.isEmpty ? nil : service
     }
     /// The GitHub repository (`owner/name`) whose releases the update check reads.
-    var releaseRepository: String { value("RoguixReleaseRepository") }
+    var releaseRepository: String { value("OmaguixReleaseRepository") }
     /// Release tags are this prefix and X.Y.Z (docs/releasing.md).
-    var releaseTagPrefix: String { value("RoguixReleaseTagPrefix") }
+    var releaseTagPrefix: String { value("OmaguixReleaseTagPrefix") }
     /// The release's disk image asset, `NAME.dmg`.
-    var releaseDMG: String { value("RoguixReleaseDMG") }
+    var releaseDMG: String { value("OmaguixReleaseDMG") }
     /// The disk image names older releases of this app published; often none.
     var legacyReleaseDMGs: [String] {
-        value("RoguixLegacyReleaseDMGs", mayBeEmpty: true)
+        value("OmaguixLegacyReleaseDMGs", mayBeEmpty: true)
             .split(separator: ",").map(String.init)
     }
 

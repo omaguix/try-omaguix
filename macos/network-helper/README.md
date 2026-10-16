@@ -8,7 +8,7 @@ existing Unix stream backend. Build with
 `bash build.sh OUTPUT_DIRECTORY SERVICE`.
 
 The app registers its service (the app identity's `NETWORK_HELPER_SERVICE`,
-`dev.tryroguix.network` for Try Omaguix; `macos/README.md`, "App identity")
+`dev.tryomaguix.network` for Try Omaguix; `macos/README.md`, "App identity")
 with `SMAppService`; an identity without one ships no helper. macOS approves
 this launch daemon once; it starts on demand for privileged XPC requests.
 The service remains registered until removed through the networking sheet.

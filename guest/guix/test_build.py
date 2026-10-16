@@ -42,7 +42,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(list(self.root.iterdir()), [])
 
     def test_a_build_needs_the_channel_release_it_comes_from(self):
-        # roguix-update in the image needs /etc/roguix/channel-commit, so no
+        # omaguix-update in the image needs /etc/omaguix/channel-commit, so no
         # build or check goes without it; a dry run only prints the plan.
         for dry_run, check in ((False, False), (False, True)):
             for commit in (None, "", "c" * 39, "C" * 40, "c" * 40 + "\n"):
@@ -67,7 +67,7 @@ class BuildTests(unittest.TestCase):
 
         def run(command, **kwargs):
             if command[0] == "guix":
-                seen.append(kwargs["env"].get("ROGUIX_CHANNEL_COMMIT"))
+                seen.append(kwargs["env"].get("OMAGUIX_CHANNEL_COMMIT"))
         with self.git(), patch.object(builder.platform, "system", return_value="Linux"), \
                 patch.object(builder.shutil, "which", return_value="/bin/guix"), \
                 patch.object(builder.subprocess, "run", side_effect=run), \
@@ -263,7 +263,7 @@ class ExportTests(unittest.TestCase):
 class ProjectModuleTests(unittest.TestCase):
     """The self-contained module directory is also installed into the guest."""
 
-    MODULES = Path(__file__).resolve().parent / "modules" / "roguix"
+    MODULES = Path(__file__).resolve().parent / "modules" / "omaguix"
 
     def test_broker_substitutions_match_exactly_once(self):
         # integrations.scm rewrites only these two /usr/bin OpenSSL references.
@@ -291,15 +291,15 @@ class ProjectModuleTests(unittest.TestCase):
 
     def test_guest_source_selection_covers_every_module_file(self):
         system = (self.MODULES / "system.scm").read_text()
-        self.assertIn('(string-contains file "/modules/roguix/")', system)
+        self.assertIn('(string-contains file "/modules/omaguix/")', system)
 
     def test_reference_system_ignores_machine_settings(self):
         # CI builds substitutes from this variable, so it must not depend on
         # the evaluating machine's first-start settings file.
         system = (self.MODULES / "system.scm").read_text()
         exports = re.search(r"#:export \(([^)]*)\)", system).group(1).split()
-        self.assertIn("%roguix-reference-system", exports)
-        self.assertIn("(define %roguix-reference-system\n"
+        self.assertIn("%omaguix-reference-system", exports)
+        self.assertIn("(define %omaguix-reference-system\n"
                       "  (settings-operating-system '()))", system)
         self.assertEqual(system.count("(read-machine-settings)"), 1)
 

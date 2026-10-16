@@ -16,7 +16,7 @@ Name=chewing
 Layout=
 
 # Korean is its own group, so the Default group above stays exactly as it was.
-# roguix-omarchy-seed puts it first for a Korean system; otherwise select it
+# omaguix-omarchy-seed puts it first for a Korean system; otherwise select it
 # once with `fcitx5-remote -g Korean`. fcitx5 saves the current group first in
 # GroupOrder, so the choice survives restarts. Inside this group Ctrl+Space
 # toggles between US and Hangul only.

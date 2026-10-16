@@ -67,15 +67,15 @@ app_identity() {
   /usr/bin/plutil -extract "$1" raw -expect string "$info_plist" 2>/dev/null || \
     fail "the app's Info.plist has no $1"
 }
-app_name=$(app_identity RoguixApplicationName)
-application_support_directory=$(app_identity RoguixApplicationSupportDirectory)
-network_helper_service=$(app_identity RoguixNetworkHelperService)
+app_name=$(app_identity OmaguixApplicationName)
+application_support_directory=$(app_identity OmaguixApplicationSupportDirectory)
+network_helper_service=$(app_identity OmaguixNetworkHelperService)
 [[ -n $app_name && -n $application_support_directory ]] || \
   fail "the app's Info.plist has an empty app identity"
 qemu_bin="$contents_dir/Helpers/$app_name.app/Contents/MacOS/$app_name"
 [[ -d $guest_input && ! -L $guest_input ]] || fail "ARM guest directory is missing or unsafe: $guest_input"
 guest_dir=$(cd "$guest_input" && pwd -P)
-# The Roguix guest (guest/guix/package.py) is a UEFI/GPT disk booted by the
+# The Omaguix guest (guest/guix/package.py) is a UEFI/GPT disk booted by the
 # runtime's EDK2 firmware.
 uefi_boot_abi=uefi-gpt-v1
 # A disposable VM (--ephemeral) or a development build's own VM
@@ -282,7 +282,7 @@ if [[ -f $launch_configuration && ! -L $launch_configuration ]]; then
   compressed_disk_sha=$(plist_read compressedDiskSHA256 || true)
 else
   [[ -e $guest_dir/guix-manifest.json && ! -L $guest_dir/guix-manifest.json ]] || {
-    fail "the guest directory is not a packaged Roguix guest: $guest_dir"
+    fail "the guest directory is not a packaged Omaguix guest: $guest_dir"
   }
   command -v python3 >/dev/null 2>&1 || {
     fail "bundled launch configuration is missing and Python is unavailable for development validation"
@@ -290,7 +290,7 @@ else
   # guix-artifact.py checks the exact file set, manifest, GPT layout record and
   # every checksum, then prints the launch record.
   bundle_validation=$(python3 "$script_dir/guix-artifact.py" launch-record "$guest_dir") || {
-    fail "the bundled Roguix guest failed validation"
+    fail "the bundled Omaguix guest failed validation"
   }
   launch_boot_abi=$uefi_boot_abi
 fi
@@ -373,8 +373,8 @@ else
   export TRYOMARCHY_KEYBOARD=$host_keyboard_geometry
 fi
 
-# First-start suggestions for roguix-setup: the Mac's time zone and keyboard
-# layout. Only layouts roguix-setup offers are named; others suggest US.
+# First-start suggestions for omaguix-setup: the Mac's time zone and keyboard
+# layout. Only layouts omaguix-setup offers are named; others suggest US.
 mac_setup_settings=''
 mac_timezone=$(readlink /etc/localtime 2>/dev/null | sed -n 's|^.*/zoneinfo/||p')
 if [[ $mac_timezone =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$ ]]; then
@@ -784,7 +784,7 @@ if (( selected_existing == 0 )); then
       "$disk_download_part_bytes" \
       "$compressed_disk_bytes" \
       "$compressed_disk_sha" \
-      "$source_disk_bytes" || fail "could not download the Roguix disk"
+      "$source_disk_bytes" || fail "could not download the Omaguix disk"
     compressed_disk=$QEMU_DOWNLOADED_COMPRESSED_DISK
     downloaded_disk=$compressed_disk
   fi
@@ -821,7 +821,7 @@ case ${OMARCHY_QEMU_GPU_DRY_RUN:-0} in
 esac
 boot_args=(-bios "$uefi_firmware")
 # Firmware boots the guest's own GRUB, so the launcher's settings travel as
-# SMBIOS OEM strings (type 11); roguix-host-settings reads them. Each is
+# SMBIOS OEM strings (type 11); omaguix-host-settings reads them. Each is
 # name=value with a base64url or literal value, so none contains a space or
 # comma.
 for launcher_setting in omarchy.qemu_virgl=1 omarchy.virgl_dual_source=1 \
@@ -1019,8 +1019,8 @@ fi
 # UEFI has no virtio keyboard driver, so GRUB's menu reads a USB keyboard.
 # QEMU sends each key to one keyboard; Linux drives both.
 qemu_args+=(
-  -device 'qemu-xhci,id=roguix-usb'
-  -device 'usb-kbd,bus=roguix-usb.0'
+  -device 'qemu-xhci,id=omaguix-usb'
+  -device 'usb-kbd,bus=omaguix-usb.0'
 )
 
 # SDL2 has one legacy process-wide override that would collapse input and

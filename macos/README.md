@@ -86,12 +86,12 @@ macos/build-app.sh \
 ```
 
 Local app builds appear as **Try Omaguix Dev**, with bundle ID
-`dev.tryroguix.native.development`. Production keeps `dev.tryroguix.native`
+`dev.tryomaguix.native.development`. Production keeps `dev.tryomaguix.native`
 and its own privacy decisions. `make build`, `make app`, and `make run` all use
 the development identity; opening the generated `.app` directly works the
 same way. `make install` copies the build to `~/Applications/Try Omaguix Dev.app`,
 so it never replaces an installed release; both still keep the VM in the
-default `~/Library/Application Support/Try Roguix` unless one is given another
+default `~/Library/Application Support/Try Omaguix` unless one is given another
 storage location. Development signing is local, with secure timestamping disabled, and
 does not notarize the app. Production keeps secure timestamping and the
 release notarization workflow.
@@ -116,33 +116,35 @@ a backslash, which Make would read as a continuation.
 | --- | --- | --- |
 | `APP_NAME` | `Try Omaguix` | the app bundle's file name (`build/*.noindex/NAME.app`), the production display name and the VM helper app's name and executable |
 | `DEVELOPMENT_APP_NAME` | `Try Omaguix Dev` | the development display name and `make install`'s `~/Applications/NAME.app` |
-| `BUNDLE_IDENTIFIER` | `dev.tryroguix.native` | the production bundle identifier (the VM helper adds `.vm`) |
-| `DEVELOPMENT_BUNDLE_IDENTIFIER` | `dev.tryroguix.native.development` | the development bundle identifier |
-| `APPLICATION_SUPPORT_DIRECTORY` | `Try Roguix` | the VM's directory under `~/Library/Application Support`, written to `Info.plist` as `RoguixApplicationSupportDirectory` |
-| `LOGS_DIRECTORY` | `Try Roguix` | the launcher log's directory under `~/Library/Logs`, written to `Info.plist` as `RoguixLogsDirectory` |
-| `LEGACY_APP_NAMES` | `Try Roguix,Try Roguix Dev` | older names of the same app, comma-separated (may be empty): `make clean-all` refuses to run while one is running, and `build-app.sh` removes stale `dist/NAME.app` bundles |
-| `DEVELOPMENT_CERTIFICATE` | `Try Roguix Development` | the local signing identity's name (below) |
-| `DEVELOPMENT_KEYCHAIN` | `try-roguix-development.keychain-db` | its keychain under `~/Library/Keychains` |
-| `DEVELOPMENT_KEYCHAIN_PASSWORD` | `try-roguix/development-keychain-password` | the keychain's password file under `~/.config` |
-| `RELEASE_TAG_PREFIX` | `try-roguix-v` | release tags, the prefix plus `X.Y.Z` (`docs/releasing.md`) |
+| `BUNDLE_IDENTIFIER` | `dev.tryomaguix.native` | the production bundle identifier (the VM helper adds `.vm`) |
+| `DEVELOPMENT_BUNDLE_IDENTIFIER` | `dev.tryomaguix.native.development` | the development bundle identifier |
+| `APPLICATION_SUPPORT_DIRECTORY` | `Try Omaguix` | the VM's directory under `~/Library/Application Support`, written to `Info.plist` as `OmaguixApplicationSupportDirectory` |
+| `LOGS_DIRECTORY` | `Try Omaguix` | the launcher log's directory under `~/Library/Logs`, written to `Info.plist` as `OmaguixLogsDirectory` |
+| `LEGACY_APP_NAMES` | (empty) | older names of the same app, comma-separated (may be empty): `make clean-all` refuses to run while one is running, and `build-app.sh` removes stale `dist/NAME.app` bundles |
+| `DEVELOPMENT_CERTIFICATE` | `Try Omaguix Development` | the local signing identity's name (below) |
+| `DEVELOPMENT_KEYCHAIN` | `try-omaguix-development.keychain-db` | its keychain under `~/Library/Keychains` |
+| `DEVELOPMENT_KEYCHAIN_PASSWORD` | `try-omaguix/development-keychain-password` | the keychain's password file under `~/.config` |
+| `RELEASE_TAG_PREFIX` | `try-omaguix-v` | release tags, the prefix plus `X.Y.Z` (`docs/releasing.md`) |
 | `RELEASE_DMG` | `TryOmaguix.dmg` | the release asset; local DMG builds are `STEM-vX.Y.Z.dmg` |
-| `LEGACY_RELEASE_DMGS` | `TryRoguix.dmg` | disk image names older releases published, comma-separated (may be empty); the update check accepts them like `RELEASE_DMG` |
+| `LEGACY_RELEASE_DMGS` | (empty) | disk image names older releases published, comma-separated (may be empty); the update check accepts them like `RELEASE_DMG` |
 | `RELEASE_REPOSITORY` | `omaguix/try-omaguix` | the GitHub repository whose releases host the disk parts and that the update check reads |
 | `ICON` | `TryOmaguix.svg` | the app icon's SVG source, in the identity file's directory; the bundle carries it as `NAME.icns` (`TryOmaguix.icns`) |
-| `NETWORK_HELPER_SERVICE` | `dev.tryroguix.network` | the bridged-networking helper's launchd label and Mach service, and its LaunchDaemon plist's name (`NAME.plist`); empty for an app without the helper, which then has no LaunchDaemon, networking daemon or helper binaries, offers only NAT, and whose launcher refuses bridged networking |
+| `NETWORK_HELPER_SERVICE` | `dev.tryomaguix.network` | the bridged-networking helper's launchd label and Mach service, and its LaunchDaemon plist's name (`NAME.plist`); empty for an app without the helper, which then has no LaunchDaemon, networking daemon or helper binaries, offers only NAT, and whose launcher refuses bridged networking |
 
-Try Omaguix keeps the pre-rename `Try Roguix` and `dev.tryroguix` values on
-purpose: installed apps keep their VM, logs, privacy grants and preferences
-under them. A second app needs its own value for every key, so that the two
+Try Omaguix's values replaced the Roguix ones (`Try Roguix`,
+`dev.tryroguix`, `try-roguix-v`, `TryRoguix.dmg`) in one cutover before
+anyone used the app, so it keeps no older name: an app with the old bundle
+identifiers keeps its own VM, logs, privacy grants and preferences, which the
+renamed app does not read. A second app needs its own value for every key, so that the two
 never share VM state, logs, preferences or signing keys.
 
 The build writes what the app and its launcher need at run time into the
-bundle's `Info.plist`: `RoguixApplicationName` (`APP_NAME`, which also names
-the VM helper app and the QEMU window), `RoguixDevelopmentApplicationName`,
-`RoguixApplicationSupportDirectory`, `RoguixLogsDirectory`,
-`RoguixNetworkHelperService` (empty without the helper) and, for the update
-check, `RoguixReleaseRepository`, `RoguixReleaseTagPrefix`, `RoguixReleaseDMG`
-and `RoguixLegacyReleaseDMGs` (comma-separated, may be empty), besides the bundle
+bundle's `Info.plist`: `OmaguixApplicationName` (`APP_NAME`, which also names
+the VM helper app and the QEMU window), `OmaguixDevelopmentApplicationName`,
+`OmaguixApplicationSupportDirectory`, `OmaguixLogsDirectory`,
+`OmaguixNetworkHelperService` (empty without the helper) and, for the update
+check, `OmaguixReleaseRepository`, `OmaguixReleaseTagPrefix`, `OmaguixReleaseDMG`
+and `OmaguixLegacyReleaseDMGs` (comma-separated, may be empty), besides the bundle
 identifier, display name, icon file and the privacy descriptions, whose
 `{APP_NAME}` in `macos/Info.plist` becomes `APP_NAME`. The app
 (`AppIdentity.swift`) and `run-qemu-gpu.sh` read them from there; a missing
@@ -170,16 +172,16 @@ rebuild is a new app to macOS and loses its Device Control and Data Access
 make signing-identity
 ```
 
-It creates a self-signed "Try Roguix Development" code-signing certificate
+It creates a self-signed "Try Omaguix Development" code-signing certificate
 (the app identity's `DEVELOPMENT_CERTIFICATE`; code-signing EKU, valid ten
 years) in its own keychain,
-`~/Library/Keychains/try-roguix-development.keychain-db`
+`~/Library/Keychains/try-omaguix-development.keychain-db`
 (`DEVELOPMENT_KEYCHAIN`), whose random password is in
-`~/.config/try-roguix/development-keychain-password`
+`~/.config/try-omaguix/development-keychain-password`
 (`DEVELOPMENT_KEYCHAIN_PASSWORD`, mode 600). The login keychain, its search list and trust settings are not changed,
 and running it again reuses the identity. `make app` then unlocks that
 keychain and signs with the identity, so the designated requirement becomes
-`identifier "dev.tryroguix.native.development" and certificate leaf = H"..."`
+`identifier "dev.tryomaguix.native.development" and certificate leaf = H"..."`
 and stays the same across builds; without it, `make app` signs ad hoc and says
 so. These builds use no hardened runtime: the certificate has no Team ID, so
 library validation would reject the bundled dylibs, and they are never
@@ -194,8 +196,8 @@ make run DEVELOPMENT_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
 To remove the identity, delete both files:
 
 ```sh
-security delete-keychain ~/Library/Keychains/try-roguix-development.keychain-db
-rm ~/.config/try-roguix/development-keychain-password
+security delete-keychain ~/Library/Keychains/try-omaguix-development.keychain-db
+rm ~/.config/try-omaguix/development-keychain-password
 ```
 
 Releases are unaffected (`docs/releasing.md`, "Signing").
@@ -214,7 +216,7 @@ generated app lives inside `build/dev.noindex/`, which keeps a development
 build from appearing beside the installed copy in Command-Space.
 
 Normal app launches and `make run` maintain one stable user VM disk under
-`~/Library/Application Support/Try Roguix/VM/v1/guix`, the same VM as a
+`~/Library/Application Support/Try Omaguix/VM/v1/guix`, the same VM as a
 Finder launch, reused across factory builds. Use `make reset` to replace it
 with the current factory or `make run-ephemeral` to test that factory without
 retaining its disk. Storage integration tests and specialized development runs
@@ -229,10 +231,10 @@ selected only for a new, reset, or ephemeral VM, so an existing VM launches
 without first preparing the new factory disk.
 
 The helper keeps the launcher's stderr (`run-qemu-gpu.sh` and QEMU) in
-`~/Library/Logs/Try Roguix/launcher.log` (the app identity's `LOGS_DIRECTORY`)
+`~/Library/Logs/Try Omaguix/launcher.log` (the app identity's `LOGS_DIRECTORY`)
 and in the unified log (subsystem: the running app's bundle identifier,
-`dev.tryroguix.native` or, for a development build,
-`dev.tryroguix.native.development`; category `launcher`). Each launch or reset starts a new
+`dev.tryomaguix.native` or, for a development build,
+`dev.tryomaguix.native.development`; category `launcher`). Each launch or reset starts a new
 file and keeps the previous one as `launcher.log.1`; a run that passes 1 MiB
 rotates the same way. When the VM stops during startup without a more specific
 explanation, the alert quotes the log's last lines and **Show Log** reveals it

@@ -7,14 +7,14 @@ set -euo pipefail
 
 omarchy=${OMARCHY_PATH:-/usr/share/omarchy}
 state=$HOME/.local/state/omarchy
-marker=$state/done/roguix-seed
-# Added after the first Roguix images, so they also reach seeded accounts:
+marker=$state/done/omaguix-seed
+# Added after the first Omaguix images, so they also reach seeded accounts:
 # fcitx5's input method groups (US and Chewing; US and Hangul) and the
 # Chinese and Korean glyph preferences, all inert for English sessions.
-roguix_share=/run/current-system/profile/share/roguix
+omaguix_share=/run/current-system/profile/share/omaguix
 mkdir -p "$HOME/.config/fcitx5" "$HOME/.config/fontconfig/conf.d"
 if [[ ! -e $HOME/.config/fcitx5/profile ]]; then
-  profile=$(<"$roguix_share/fcitx5-profile")
+  profile=$(<"$omaguix_share/fcitx5-profile")
   # A Korean system (LANG from the first-start setup) starts in the Korean
   # group: fcitx5 starts in the first group of GroupOrder.
   if [[ ${LANG:-} == ko_KR.* ]]; then
@@ -22,18 +22,18 @@ if [[ ! -e $HOME/.config/fcitx5/profile ]]; then
   fi
   printf '%s\n' "$profile" >"$HOME/.config/fcitx5/profile"
 fi
-[[ -e $HOME/.config/fontconfig/conf.d/30-roguix-cjk.conf ]] || \
-  cp --no-preserve=mode "$roguix_share/30-roguix-cjk.conf" \
-    "$HOME/.config/fontconfig/conf.d/30-roguix-cjk.conf"
+[[ -e $HOME/.config/fontconfig/conf.d/30-omaguix-cjk.conf ]] || \
+  cp --no-preserve=mode "$omaguix_share/30-omaguix-cjk.conf" \
+    "$HOME/.config/fontconfig/conf.d/30-omaguix-cjk.conf"
 
 # Omarchy's screensaver is opt-in here: macOS has its own screensaver and
 # lock, and an animation in the VM costs the Mac's CPU and battery. Turn
 # Omarchy's own screensaver-off toggle on once per account, seeded ones too;
 # Trigger > Toggle > Screensaver in Omarchy's menu turns it on, and that
 # choice is kept.
-if [[ ! -e $state/done/roguix-screensaver-off ]]; then
+if [[ ! -e $state/done/omaguix-screensaver-off ]]; then
   mkdir -p "$state/toggles" "$state/done"
-  touch "$state/toggles/screensaver-off" "$state/done/roguix-screensaver-off"
+  touch "$state/toggles/screensaver-off" "$state/done/omaguix-screensaver-off"
 fi
 
 # Omarchy's branding files, which the Arch package ships in /etc/skel: the
@@ -78,7 +78,7 @@ fi
 mkdir -p "$HOME/.config" "$state/done" "$state/toggles/hypr" \
   "$HOME/.local/share/applications" "$HOME/.config/fontconfig/conf.d"
 
-# The pre-Omarchy Roguix image gave every account its own small
+# The pre-Omarchy Omaguix image gave every account its own small
 # hyprland.lua; replace only that file, never one the owner wrote.
 if grep -qs "A small native Guix session" "$HOME/.config/hypr/hyprland.lua"; then
   rm -f "$HOME/.config/hypr/hyprland.lua"
@@ -95,13 +95,13 @@ copy_missing "$omarchy/default/fontconfig/conf.avail/50-omarchy.conf" \
   "$HOME/.config/fontconfig/conf.d/50-omarchy.conf"
 
 # The VM integration, where the Arch guest appends its QEMU fragment.
-include='dofile("/etc/roguix-hypr-vm.lua")'
+include='dofile("/etc/omaguix-hypr-vm.lua")'
 if ! grep -qsF "$include" "$HOME/.config/hypr/monitors.lua"; then
-  printf '\n-- Roguix: cursor, display size and host bridges for this VM.\n%s\n' \
+  printf '\n-- Omaguix: cursor, display size and host bridges for this VM.\n%s\n' \
     "$include" >>"$HOME/.config/hypr/monitors.lua"
 fi
 
-# Omarchy's browser is Chromium; Roguix's is LibreWolf.
+# Omarchy's browser is Chromium; Omaguix's is LibreWolf.
 xdg-settings set default-web-browser librewolf.desktop 2>/dev/null || true
 
 # Build ~/.local/state/omarchy/current/theme without a running session.

@@ -68,10 +68,10 @@ class OutputParsingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / ".env"
             path.write_text('# comment\nSSH_USER="user"\nSSH_PORT=22\n'
-                            "VPS_IMPORT='/srv/roguix/scripts/vps-import'\n")
+                            "VPS_IMPORT='/srv/omaguix/scripts/vps-import'\n")
             self.assertEqual(release.read_env(path), {
                 "SSH_USER": "user", "SSH_PORT": "22",
-                "VPS_IMPORT": "/srv/roguix/scripts/vps-import"})
+                "VPS_IMPORT": "/srv/omaguix/scripts/vps-import"})
 
 
 class ReadBuildsTests(unittest.TestCase):
@@ -111,7 +111,7 @@ class ReadBuildsTests(unittest.TestCase):
 
     def test_the_patch_is_the_one_in_the_channel(self):
         self.assertEqual(release.GUIX_PATCH,
-                         "modules/roguix/guix-skip-forward-check.patch")
+                         "modules/omaguix/guix-skip-forward-check.patch")
         self.assertTrue((HERE / release.GUIX_PATCH).is_file())
 
     def test_the_guix_profile_is_a_checked_store_item(self):
@@ -149,7 +149,7 @@ class ReadBuildsTests(unittest.TestCase):
 
 
 class CoverageTests(unittest.TestCase):
-    ROGUIX = "https://roguix.example"
+    OMAGUIX = "https://omaguix.example"
 
     def builds(self, *items):
         return {"aarch64-linux": {"package-closure.txt": list(items)}}
@@ -160,14 +160,14 @@ class CoverageTests(unittest.TestCase):
         def status(server, path):
             asked.append((server, path))
             return 200 if (server == release.BORDEAUX) == (path == item(1)) else 404
-        served = release.coverage(self.builds(item(1), item(2)), self.ROGUIX, status)
-        self.assertEqual(served, {"aarch64-linux": {"bordeaux": 1, "roguix": 1}})
+        served = release.coverage(self.builds(item(1), item(2)), self.OMAGUIX, status)
+        self.assertEqual(served, {"aarch64-linux": {"bordeaux": 1, "omaguix": 1}})
         # roguix.frolow.dev is not asked about what bordeaux serves.
-        self.assertNotIn((self.ROGUIX, item(1)), asked)
+        self.assertNotIn((self.OMAGUIX, item(1)), asked)
 
     def test_an_item_served_nowhere_stops_the_release(self):
         with self.assertRaisesRegex(release.ReleaseError, item(3)):
-            release.coverage(self.builds(item(3)), self.ROGUIX,
+            release.coverage(self.builds(item(3)), self.OMAGUIX,
                              lambda server, path: 404)
 
 
@@ -179,8 +179,8 @@ class ManifestTests(unittest.TestCase):
                   "x86_64-linux": {"release": None, "guix": GUIX,
                                    "guix-patched-commit": PATCHED,
                                    "publish.txt": []}}
-        served = {"aarch64-linux": {"bordeaux": 5, "roguix": 2},
-                  "x86_64-linux": {"bordeaux": 7, "roguix": 0}}
+        served = {"aarch64-linux": {"bordeaux": 5, "omaguix": 2},
+                  "x86_64-linux": {"bordeaux": 7, "omaguix": 0}}
         ci_run = {"databaseId": 42, "url": "https://example/runs/42",
                   "headSha": "f" * 40}
         document = release.manifest(COMMIT, "a" * 40, PIN, PATCH_SHA256, ci_run,
@@ -193,7 +193,7 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(document["ci"]["run-id"], 42)
         self.assertEqual(document["architectures"]["aarch64-linux"],
                          {"guix": GUIX, "release": "aarch64-desktop-x", "published": 1,
-                          "served-by-bordeaux": 5, "served-by-roguix": 2})
+                          "served-by-bordeaux": 5, "served-by-omaguix": 2})
         self.assertIsNone(document["architectures"]["x86_64-linux"]["release"])
         json.dumps(document)
 
@@ -333,7 +333,7 @@ class PublishManifestTests(unittest.TestCase):
         self.git("commit", "--quiet", "-m", "base")
         self.git("push", "--quiet", "origin", "HEAD:refs/heads/main")
         (self.channel / "modules" / "a.scm").write_text("new\n")
-        self.git("commit", "--quiet", "-am", "Roguix from try-roguix x")
+        self.git("commit", "--quiet", "-am", "Omaguix from try-omaguix x")
         self.commit = self.git("rev-parse", "HEAD").strip()
         self.git("push", "--quiet", "origin",
                  f"{self.commit}:refs/heads/release/{self.commit}")
@@ -382,7 +382,7 @@ class DryRunTests(unittest.TestCase):
                 self.skipTest("guest/guix has uncommitted changes")
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("channel_commit=C", result.stdout)
-            self.assertIn(release.roguix_server(), result.stdout)
+            self.assertIn(release.omaguix_server(), result.stdout)
             self.assertEqual(os.listdir(tmp), [])
 
 

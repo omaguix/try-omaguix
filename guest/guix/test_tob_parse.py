@@ -23,9 +23,9 @@ from pathlib import Path
 
 
 HERE = Path(__file__).resolve().parent
-MODULE_SOURCE = HERE / "modules/roguix/battery-module/try-omarchy-battery.c"
+MODULE_SOURCE = HERE / "modules/omaguix/battery-module/try-omarchy-battery.c"
 HARNESS = HERE / "native-module/tob_parse_harness.c"
-BRIDGE_PATH = HERE / "modules/roguix/battery-bridge"
+BRIDGE_PATH = HERE / "modules/omaguix/battery-bridge"
 
 LOADER = SourceFileLoader("omarchy_native_battery_bridge", str(BRIDGE_PATH))
 SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)

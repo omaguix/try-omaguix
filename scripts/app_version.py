@@ -54,22 +54,22 @@ def upstream_bases(root: Path, git) -> dict[str, str]:
     """The three upstreams a build carries (docs/releasing.md)."""
     bases = {}
     try:
-        # Upstream's tags live under try-omarchy/, apart from Try Roguix's.
+        # Upstream's tags live under try-omarchy/, apart from Try Omaguix's.
         fork_point = git("merge-base", "HEAD", "refs/remotes/upstream/main")
-        bases["RoguixTryOmarchyBase"] = "{} ({})".format(
+        bases["OmaguixTryOmarchyBase"] = "{} ({})".format(
             git("describe", "--tags", "--match", "try-omarchy/v[0-9]*", fork_point)
             .removeprefix("try-omarchy/"),
             fork_point,
         )
     except subprocess.CalledProcessError:
         pass
-    modules = root / "guest/guix/modules/roguix"
+    modules = root / "guest/guix/modules/omaguix"
     try:
         version = re.search(r'\(name "omarchy"\)\s*\(version "([^"]+)"\)',
                             (modules / "omarchy.scm").read_text())
         if version:
-            bases["RoguixOmarchyVersion"] = version.group(1)
-        bases["RoguixGuixCommit"] = (modules / "guix-commit").read_text().strip()
+            bases["OmaguixOmarchyVersion"] = version.group(1)
+        bases["OmaguixGuixCommit"] = (modules / "guix-commit").read_text().strip()
     except OSError:
         pass
     return bases

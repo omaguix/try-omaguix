@@ -3,13 +3,13 @@
 Omarchy 4.0.4 lists its default Arch packages in
 `install/omarchy-base.packages` (150 entries). Omaguix installs the Guix
 equivalents through `%omarchy-applications` and the system definition in
-`guest/guix/modules/roguix/`. This page lists only where Omaguix differs, and
+`guest/guix/modules/omaguix/`. This page lists only where Omaguix differs, and
 why. Everything not listed here is installed under the same or an obvious
 Guix name (for example `nvim` as `neovim`, `networkmanager` as
 `network-manager`, `noto-fonts-cjk` as `font-google-noto-sans-cjk`).
 
 Checked on 2026-09-26 against Guix commit `7e74121a`, the pin in
-`guest/guix/modules/roguix/guix-commit`.
+`guest/guix/modules/omaguix/guix-commit`.
 
 ## Not Omarchy: VLC and Qt 5
 
@@ -27,7 +27,7 @@ own applications use Qt 6 or GTK.
 | `xdg-desktop-portal-hyprland` | `xdg-desktop-portal-hyprland-0.56` | Guix builds it against its own Hyprland 0.55.4: a second Hyprland in the system, and a 0.55 `hyprctl` in the share picker talking to Omaguix's 0.56 compositor, whose dispatchers changed. Omaguix rebuilds it against its Hyprland and hypr libraries. |
 | `obs-studio` | `obs-without-vlc` | See above. |
 | `fcitx5-qt` | `fcitx5-qt6` | See above. |
-| `ttfx` | `ttfx` from `modules/roguix/ttfx.scm` | Not in Guix; built from its source with the crates Guix already has. Omarchy's screensaver is off by default in Omaguix and runs at 30 fps instead of 120 (`guest/guix/README.md`). |
+| `ttfx` | `ttfx` from `modules/omaguix/ttfx.scm` | Not in Guix; built from its source with the crates Guix already has. Omarchy's screensaver is off by default in Omaguix and runs at 30 fps instead of 120 (`guest/guix/README.md`). |
 
 ## Replaced by an Omaguix counterpart
 
@@ -36,7 +36,7 @@ own applications use Qt 6 or GTK.
 | `chromium` | LibreWolf | Owner's choice of browser; web apps open in a new LibreWolf window |
 | `sddm` | tty1 autologin into Hyprland | A single-user VM; the first-start setup sets the password |
 | `uwsm` | `uwsm` shim | Guix has no systemd user session for uwsm to manage |
-| `yay`, `expac`, `pacman-contrib`, `kernel-modules-hook` | `roguix-pkg`, `roguix-reconfigure`, `roguix-update` | Guix System replaces pacman and the AUR |
+| `yay`, `expac`, `pacman-contrib`, `kernel-modules-hook` | `omaguix-pkg`, `omaguix-reconfigure`, `omaguix-update` | Guix System replaces pacman and the AUR |
 | `xdg-terminal-exec` | Try Omarchy's `xdg-terminal-exec` | The same tool, shipped with the compatibility commands |
 | `omarchy-nvim` | Guix's `neovim` | Omarchy's Neovim configuration package is not packaged for Guix |
 | `tzupdate` | The Mac's time zone | The launcher passes it to the first-start setup |
@@ -100,7 +100,7 @@ system being tried.
 
 Omarchy can leave the keyring open because its installer encrypts the whole
 disk with LUKS. Try Omaguix does not: the VM disk is an unencrypted image in
-`~/Library/Application Support/Try Roguix`, protected only by FileVault
+`~/Library/Application Support/Try Omaguix`, protected only by FileVault
 while the Mac is off or locked, and readable by anything running as the Mac
 user. Treat the VM as a place to try Omaguix, not to keep production
 passwords, tokens or SSH keys. Optional guest disk encryption, with its key

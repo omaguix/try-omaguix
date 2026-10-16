@@ -65,10 +65,10 @@ python3 guest/guix/build.py --source /path/to/vendor/guix --channel-commit COMMI
 ```
 
 An image is built from a published channel release: check out the
-try-roguix commit whose `guest/guix/modules/roguix` a release of the roguix
+try-omaguix commit whose `guest/guix/modules/omaguix` a release of the omaguix
 channel carries, and pass that release's commit (the channel's `main` after
 `release.py`) as `--channel-commit`. The image installs it as
-`/etc/roguix/channel-commit`, the base `roguix-update` requires the
+`/etc/omaguix/channel-commit`, the base `omaguix-update` requires the
 channel's `main` to descend from (decision 0007); `build.py` refuses to
 build or check without it, and only `--dry-run` goes without.
 
@@ -141,7 +141,7 @@ shrinks the qcow2's allocated size in place; a `qemu-img convert` would only
 shorten the sparse file length, which costs no disk space (2026-10-09: gc took
 the store from 50 to 34 GB and the trim the host file from 59 to 25 GiB).
 Plain `guix gc` keeps every GC root, including the `time-machine` profiles
-and `/root/roguix-system-ungrafted`. `build.py --export` (below) does this
+and `/root/omaguix-system-ungrafted`. `build.py --export` (below) does this
 after each image.
 Run long builds under `herdr-job`, so they get their own tab and a real
 result:
@@ -154,12 +154,12 @@ herdr-job wait <id>
 The default output `build/guix/image.raw` is a Guix GC-root symlink to a raw EFI
 disk image (a 40 MiB ESP and a 16 GiB root partition), not an unpartitioned
 ext4 filesystem. The system fills about 11.7 GiB of the root; the rest is
-headroom for the closure to grow, since `roguix-grow-root` (below) grows the
+headroom for the closure to grow, since `omaguix-grow-root` (below) grows the
 root to the VM disk early in the first boot, before the desktop or the setup
 write anything large. Measured 2026-10-09 on a fresh 16 GiB image in the app:
-`roguix-grow-root` started with `file-systems`, before `guix-daemon` and the
+`omaguix-grow-root` started with `file-systems`, before `guix-daemon` and the
 first-boot setup, and grew the root to the 24 GiB VM disk; after the setup
-`df` showed 11.3 GiB used, and the first update (`roguix-pkg add hello`,
+`df` showed 11.3 GiB used, and the first update (`omaguix-pkg add hello`,
 23 minutes) added 4.9 GiB, which an ungrown 16 GiB root could not hold. A
 16 GiB build took the builder from 13 to 48 GB used before the export.
 
@@ -185,17 +185,17 @@ export path is refused. On the Mac the image is in the export directory
 
 The image carries no password. It declares one desktop account, `guest`
 (UID 1000, the shared-folder owner), with the locked password `!`, and a
-locked root. On the first start, `roguix-first-boot`
-(`modules/roguix/services.scm`) switches to tty1 and asks for the account's
+locked root. On the first start, `omaguix-first-boot`
+(`modules/omaguix/services.scm`) switches to tty1 and asks for the account's
 password twice before tty1 logs in; it sets it with `chpasswd` (SHA-512).
 Guix account activation keeps a password set this way across reboots and
 reconfigures, so the prompt appears only while the password is still locked.
 
 The same setup asks for the keyboard layout, host name and time zone. It
-applies them at once and writes them to `/var/lib/roguix/machine-settings.scm`,
+applies them at once and writes them to `/var/lib/omaguix/machine-settings.scm`,
 a data file (an alist of strings, read, never loaded) that `/etc/config.scm`
-uses for `roguix-operating-system`'s defaults; arguments in `config.scm`
-override it. It starts no reconfigure: `roguix-machine-settings`, a boot
+uses for `omaguix-operating-system`'s defaults; arguments in `config.scm`
+override it. It starts no reconfigure: `omaguix-machine-settings`, a boot
 service the tty1 session waits for, compares the file with the values the
 running system was built with and, only where they differ, sets the host
 name, `/etc/hostname`, `/etc/hosts`, `/etc/localtime`, `/etc/vconsole.conf`
@@ -208,7 +208,7 @@ When the launcher passed the Mac's zone, the setup offers **Same as macOS**
 first and preselected; the settings file then records the zone with
 `timezone-follows-mac` `"yes"`, and any other choice (even the Mac's own
 zone) records `"no"`. A settings file without the key keeps its zone fixed.
-While following, `roguix-timezone` (`modules/roguix/timezone`, a root
+While following, `omaguix-timezone` (`modules/omaguix/timezone`, a root
 Shepherd service, `test_timezone.py`) reads the zone the host writes every
 five seconds on the root-only `dev.tryomarchy.timezone` port and applies a
 change at once: it replaces `/etc/localtime`, records the zone in the
@@ -217,10 +217,10 @@ Omarchy's clock in the running session. Omarchy's time zone menu is
 Omaguix's: it lists **Same as macOS** first while the Mac's zone is known,
 which follows the Mac again from the latest zone it sent, and any zone
 fixes it. The menu runs without a terminal, so `/etc/sudoers` lets
-`wheel` run `roguix-timezone --select` with a valid zone or **Same as
+`wheel` run `omaguix-timezone --select` with a valid zone or **Same as
 macOS** without a password, as Omarchy's own `omarchy-tzupdate` rule does
 for `timedatectl set-timezone`. The service logs to
-`/var/log/roguix-timezone.log`. Replacing `/etc/localtime` by hand or
+`/var/log/omaguix-timezone.log`. Replacing `/etc/localtime` by hand or
 `#:timezone` in `/etc/config.scm` does not stop following; choose a zone in
 the menu instead.
 
@@ -236,15 +236,15 @@ The image lists Traditional Chinese (`zh_TW`), Simplified Chinese (`zh_CN`)
 and Korean (`ko_KR`); the launcher sends English and any other language as
 English. fcitx5 has two groups: Default (US, then Chewing) and Korean (US,
 then Hangul); `Ctrl + Space` switches within the current group. A Korean
-system starts in the Korean group (`roguix-omarchy-seed` puts it first when
+system starts in the Korean group (`omaguix-omarchy-seed` puts it first when
 it seeds the profile), every other language in Default; `fcitx5-remote -g
 Korean` or `-g Default` switches, and fcitx5 keeps the choice. Noto Sans CJK
-covers all three; `30-roguix-cjk.conf` prefers its TC face for `zh-TW` and
+covers all three; `30-omaguix-cjk.conf` prefers its TC face for `zh-TW` and
 its KR face for Korean text.
 
 Like the Arch guest, the VM console then logs in directly: the disk is
 protected by the Mac account. tty1 auto-logs in `guest`, and
-`/etc/profile.d/roguix-session.sh` runs `start-hyprland` there only; other
+`/etc/profile.d/omaguix-session.sh` runs `start-hyprland` there only; other
 consoles, the serial console and SSH get an ordinary shell. The password is
 what `sudo` asks for. No display manager runs and no SSH server is enabled.
 
@@ -261,7 +261,7 @@ software-rendering override or version-specific Arch Hyprland patch is carried
 over. Fonts and Mesa diagnostic tools are also installed.
 
 The pinned checkout packages Hyprland 0.55.4 with Aquamarine 0.12.1, which
-cannot follow window resizes (see below). `modules/roguix/packages.scm`
+cannot follow window resizes (see below). `modules/omaguix/packages.scm`
 therefore defines Hyprland 0.56.1 and Aquamarine 0.14.0, the known-good Arch
 guest pair, built without systemd/UWSM like the upstream package. Notes:
 
@@ -273,7 +273,7 @@ guest pair, built without systemd/UWSM like the upstream package. Notes:
   C++20 equivalent in an origin snippet.
 - The module is project code outside Guix's channel authentication; review it
   like any other source. `build.py` passes it with `--load-path`, and the image
-  installs a copy under `/etc/roguix` so an in-guest reconfigure keeps these
+  installs a copy under `/etc/omaguix` so an in-guest reconfigure keeps these
   versions instead of reverting to 0.55.4.
 
 ## Package the launcher artifact
@@ -292,7 +292,7 @@ system partition (FAT) at LBA 2048 and partition 2 an ext4 root labelled
 `Guix_image`, nothing else. It writes `build/guix/` with exactly:
 
 - `disk.raw.zst`: the disk, compressed with the runtime's pinned `zstd`;
-- `guix-manifest.json`: kind `roguix-guest-artifacts`, boot ABI
+- `guix-manifest.json`: kind `omaguix-guest-artifacts`, boot ABI
   `uefi-gpt-v1`, the recorded partition layout, raw and compressed sizes and
   SHA-256 values, the Guix commit, a digest of the image's build inputs, and
   the credentials profile;
@@ -313,7 +313,7 @@ itself is not re-derived. Both scripts default to `system.scm` and
 `--load-path` to `build.py` and the same to `package.py` (`make guix-package
 GUIX_SYSTEM=... GUIX_LOAD_PATH=...`), so its manifest digests its own inputs.
 Both read the Guix pin from the load path: its one `*/guix-commit`
-(`modules/roguix/guix-commit` here), so the build checks out and the manifest
+(`modules/omaguix/guix-commit` here), so the build checks out and the manifest
 records the commit that guest's modules build on.
 
 `--credentials` records how the guest's account gets its password:
@@ -373,7 +373,7 @@ Image `e0dc1a159133e9da30c934d1127244a0fb780c68fb68b352d68838e4f123349d`
 - `hyprctl systeminfo` reported Hyprland 0.56.1 built against hyprutils 0.14.2
   and Aquamarine 0.14.0; the guest log still showed `Renderer: virgl` and the
   host ANGLE Metal Renderer.
-- `roguix-display-sync` ran from the session. Resizing the QEMU window
+- `omaguix-display-sync` ran from the session. Resizing the QEMU window
   through the macOS accessibility API changed the guest mode each time, at
   scale 2: 1200x760 pt (clamped by macOS to 1187x700) gave `2374x1336`,
   700x450 gave `1400x788`, and growing again gave `2374x1336`. Foot followed
@@ -398,9 +398,9 @@ arguments:
   reinstalls it there.
 - `/` is declared by the label `Guix_image`, which the partition's ext4
   carries. The image mounts it by a derived UUID; an in-guest reconfigure of
-  `/etc/roguix/system.scm` mounts the same file system by label.
-- The one-shot Shepherd service `roguix-grow-root`
-  (`modules/roguix/services.scm`) runs after `file-systems` and `udev`. If
+  `/etc/omaguix/system.scm` mounts the same file system by label.
+- The one-shot Shepherd service `omaguix-grow-root`
+  (`modules/omaguix/services.scm`) runs after `file-systems` and `udev`. If
   more than 1 MiB lies after partition 2 of `/dev/vdX`, it relocates the
   backup GPT (`sfdisk --relocate gpt-bak-std`), extends partition 2 in place
   (`sfdisk -N 2`, keeping start, type, GUID and name), tells the kernel
@@ -408,7 +408,7 @@ arguments:
   boot, so a growth interrupted after `sfdisk` completes on the next boot.
 
 - Guix's `fstrim-service-type` trims the file systems in `/etc/fstab`
-  hourly (`modules/roguix/system.scm`). The launcher attaches the disk with
+  hourly (`modules/omaguix/system.scm`). The launcher attaches the disk with
   `discard=unmap`, so the trim punches holes in `disk.raw` and files deleted
   in the guest give their space back to the Mac. Hourly, not Guix's weekly
   default, because Shepherd's timer does not run a missed event later, and a
@@ -476,16 +476,16 @@ commands, build fixes) is described in the sections below, not here.
 
 | Feature | Try Omarchy | Omaguix | Why | Patch or upstream status |
 | --- | --- | --- | --- | --- |
-| Time zone | Follows the Mac until a zone is chosen in the setup or the time zone menu, or `/etc/localtime` is replaced outside the picker; **Follow Mac Time Zone** in the application launcher resumes ([`docs/host-timezone.md`](../../docs/host-timezone.md)). | Stops following only through the setup or the time zone menu; replacing `/etc/localtime` by hand or `#:timezone` in `/etc/config.scm` does not stop it. **Same as macOS** in the menu resumes; there is no launcher action. | In Guix `/etc/localtime` comes from the system configuration, which boots and reconfigures write again, so a hand edit is not a lasting choice; the policy lives in `machine-settings.scm` (the time zone paragraphs above). | Omaguix's own, for as long as the guest is Guix: [`timezone`](modules/roguix/timezone) and `omarchy-menu-timezone` in [`omarchy.scm`](modules/roguix/omarchy.scm). |
-| Menu and panel keys | Super+Space and the other menu and panel keys start a `qs ipc` client that `omarchy-shell` kills on its timeout under load; the toggle is then lost or late. | Hyprland global shortcuts: a keypress starts no process. | Lost Super+Space presses. | [`omarchy-global-shortcuts.patch`](modules/roguix/omarchy-global-shortcuts.patch), a backport of Omarchy #13418 (6762769b); remove once the pin includes it. |
-| Menu clicks | A click pressed on a row just before the menu's guard batch ends is lost. | Rows are rebuilt only when a guard result changed. | Lost clicks ([menu clicks](#the-omarchy-4-desktop)). | `Menu.qml` substitution in [`omarchy.scm`](modules/roguix/omarchy.scm); proposed in omacom/omarchy#14740. |
-| Background names | Title-cased as bytes: "02-über-städte.jpg" shows as "üBer StäDte". | Title-cased as UTF-8: "Über Städte". | Wrong capitals in non-ASCII names. | [`omarchy-theme-bg-utf8.patch`](modules/roguix/omarchy-theme-bg-utf8.patch); proposed in omacom/omarchy#14865. |
-| Low-battery warning | "Time to recharge!" is critical and never expires; it stays after the battery charges and comes back after every shell restart. | Closed once the battery is no longer low (charging, on AC or above 10%), also when restored after a restart. | A warning from a battery that was low once kept showing while the Mac charged. | [`omarchy-battery-warning-dismiss.patch`](modules/roguix/omarchy-battery-warning-dismiss.patch); reported in omacom/omarchy#14639 and #8813, with open pull requests that close it on a timer after a restart (#14218, #14739). |
-| Audio output in Chinese or Korean | Output switching, the output list and the volume OSD fail: the scripts parse `pactl`'s translated output. | They read `pactl` in the C locale and work. | `pactl` translates its output in a Chinese or Korean session; Omarchy already reads `pacman -Qi` in the C locale the same way. | [`omarchy-audio-c-locale.patch`](modules/roguix/omarchy-audio-c-locale.patch); reported in omacom/omarchy#14850. |
-| Screensaver | Omarchy's default: on, at 120 fps, through Try Omarchy's own `omarchy-screensaver`. | Off until Trigger → Toggle → Screensaver turns it on; 30 fps; `ttfx` built from source ([`ttfx.scm`](modules/roguix/ttfx.scm)). | macOS has its own screensaver and lock, and every frame costs the Mac's CPU and battery ([measurements](#the-omarchy-4-desktop)). | Omaguix's choice: the `omarchy-screensaver` substitution in [`omarchy.scm`](modules/roguix/omarchy.scm) and [`omarchy-seed`](modules/roguix/omarchy-seed). |
-| Packages and updates | pacman, the AUR and Omarchy's update channels in the menu's Install, Remove and Update; the Mac app's Update review fixes existing VMs ([`docs/integration-updates.md`](../../docs/integration-updates.md)). | Guix: `/etc/config.scm`, `roguix-pkg`, Update → Guix System, `roguix-update` from the signed channel ([packages](#packages-etcconfigscm)). | The guest is Guix System. | Omaguix's own: [`omarchy-menu.py`](modules/roguix/omarchy-menu.py) and the `use-guix-packages` phase in [`omarchy.scm`](modules/roguix/omarchy.scm). |
-| Default applications | Omarchy's list, with Chromium; web apps open as Chromium `--app` windows. | LibreWolf; web apps open in a new browser window. LibreOffice, Pinta, LocalSend, Signal and Obsidian are not installed. | Not in Guix, or no Chromium-family browser by default ([`docs/omarchy-packages.md`](../../docs/omarchy-packages.md)). | Omaguix's own: `%omarchy-applications` and `omarchy-launch-webapp` in [`omarchy.scm`](modules/roguix/omarchy.scm). |
-| Logo | OMARCHY in Omarchy's block lettering (`omarchy-show-logo`, About, the screensaver). | GUIX in the same lettering. | The guest is Guix. | Omaguix's own: [`roguix-logo.txt`](modules/roguix/roguix-logo.txt). |
+| Time zone | Follows the Mac until a zone is chosen in the setup or the time zone menu, or `/etc/localtime` is replaced outside the picker; **Follow Mac Time Zone** in the application launcher resumes ([`docs/host-timezone.md`](../../docs/host-timezone.md)). | Stops following only through the setup or the time zone menu; replacing `/etc/localtime` by hand or `#:timezone` in `/etc/config.scm` does not stop it. **Same as macOS** in the menu resumes; there is no launcher action. | In Guix `/etc/localtime` comes from the system configuration, which boots and reconfigures write again, so a hand edit is not a lasting choice; the policy lives in `machine-settings.scm` (the time zone paragraphs above). | Omaguix's own, for as long as the guest is Guix: [`timezone`](modules/omaguix/timezone) and `omarchy-menu-timezone` in [`omarchy.scm`](modules/omaguix/omarchy.scm). |
+| Menu and panel keys | Super+Space and the other menu and panel keys start a `qs ipc` client that `omarchy-shell` kills on its timeout under load; the toggle is then lost or late. | Hyprland global shortcuts: a keypress starts no process. | Lost Super+Space presses. | [`omarchy-global-shortcuts.patch`](modules/omaguix/omarchy-global-shortcuts.patch), a backport of Omarchy #13418 (6762769b); remove once the pin includes it. |
+| Menu clicks | A click pressed on a row just before the menu's guard batch ends is lost. | Rows are rebuilt only when a guard result changed. | Lost clicks ([menu clicks](#the-omarchy-4-desktop)). | `Menu.qml` substitution in [`omarchy.scm`](modules/omaguix/omarchy.scm); proposed in omacom/omarchy#14740. |
+| Background names | Title-cased as bytes: "02-über-städte.jpg" shows as "üBer StäDte". | Title-cased as UTF-8: "Über Städte". | Wrong capitals in non-ASCII names. | [`omarchy-theme-bg-utf8.patch`](modules/omaguix/omarchy-theme-bg-utf8.patch); proposed in omacom/omarchy#14865. |
+| Low-battery warning | "Time to recharge!" is critical and never expires; it stays after the battery charges and comes back after every shell restart. | Closed once the battery is no longer low (charging, on AC or above 10%), also when restored after a restart. | A warning from a battery that was low once kept showing while the Mac charged. | [`omarchy-battery-warning-dismiss.patch`](modules/omaguix/omarchy-battery-warning-dismiss.patch); reported in omacom/omarchy#14639 and #8813, with open pull requests that close it on a timer after a restart (#14218, #14739). |
+| Audio output in Chinese or Korean | Output switching, the output list and the volume OSD fail: the scripts parse `pactl`'s translated output. | They read `pactl` in the C locale and work. | `pactl` translates its output in a Chinese or Korean session; Omarchy already reads `pacman -Qi` in the C locale the same way. | [`omarchy-audio-c-locale.patch`](modules/omaguix/omarchy-audio-c-locale.patch); reported in omacom/omarchy#14850. |
+| Screensaver | Omarchy's default: on, at 120 fps, through Try Omarchy's own `omarchy-screensaver`. | Off until Trigger → Toggle → Screensaver turns it on; 30 fps; `ttfx` built from source ([`ttfx.scm`](modules/omaguix/ttfx.scm)). | macOS has its own screensaver and lock, and every frame costs the Mac's CPU and battery ([measurements](#the-omarchy-4-desktop)). | Omaguix's choice: the `omarchy-screensaver` substitution in [`omarchy.scm`](modules/omaguix/omarchy.scm) and [`omarchy-seed`](modules/omaguix/omarchy-seed). |
+| Packages and updates | pacman, the AUR and Omarchy's update channels in the menu's Install, Remove and Update; the Mac app's Update review fixes existing VMs ([`docs/integration-updates.md`](../../docs/integration-updates.md)). | Guix: `/etc/config.scm`, `omaguix-pkg`, Update → Guix System, `omaguix-update` from the signed channel ([packages](#packages-etcconfigscm)). | The guest is Guix System. | Omaguix's own: [`omarchy-menu.py`](modules/omaguix/omarchy-menu.py) and the `use-guix-packages` phase in [`omarchy.scm`](modules/omaguix/omarchy.scm). |
+| Default applications | Omarchy's list, with Chromium; web apps open as Chromium `--app` windows. | LibreWolf; web apps open in a new browser window. LibreOffice, Pinta, LocalSend, Signal and Obsidian are not installed. | Not in Guix, or no Chromium-family browser by default ([`docs/omarchy-packages.md`](../../docs/omarchy-packages.md)). | Omaguix's own: `%omarchy-applications` and `omarchy-launch-webapp` in [`omarchy.scm`](modules/omaguix/omarchy.scm). |
+| Logo | OMARCHY in Omarchy's block lettering (`omarchy-show-logo`, About, the screensaver). | GUIX in the same lettering. | The guest is Guix. | Omaguix's own: [`omaguix-logo.txt`](modules/omaguix/omaguix-logo.txt). |
 | Documents in `docs/` | Describe its Arch guest. | [`ghostty.md`](../../docs/ghostty.md), [`alacritty-migration.md`](../../docs/alacritty-migration.md), [`integration-updates.md`](../../docs/integration-updates.md), the guest side of [`host-timezone.md`](../../docs/host-timezone.md) and [`legacy-try-omarchy.md`](../../docs/legacy-try-omarchy.md) apply only to Try Omarchy; [`host-battery.md`](../../docs/host-battery.md), `integration-updates.md` and [`performance.md`](../../docs/performance.md) say so in a note at the top. | They are Try Omarchy's, kept as they are so rebases stay clean. | Omaguix's own; this README describes the Guix guest. |
 
 Not differences: the language is taken from the Mac once, at the first start,
@@ -494,7 +494,7 @@ power panel's charge state and the microphone helper are Try Omarchy's.
 
 ## The Omarchy 4 desktop
 
-`modules/roguix/omarchy.scm` gives the desktop account the Omarchy 4
+`modules/omaguix/omarchy.scm` gives the desktop account the Omarchy 4
 ("Quattro") desktop from the pinned upstream release 4.0.4 (`c668141e`, tree
 `1d48adc1`):
 
@@ -503,7 +503,7 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   default `OMARCHY_PATH`) linked to it. Quickshell 0.3.1 (the Arch guest's
   version, `packages.scm`) runs its shell; JetBrainsMono Nerd Font 3.5.1, the
   `omarchy` glyph font, Liberation and Yaru provide its fonts and icons.
-- **Arch assumptions** are replaced by `roguix-omarchy-compat`: `uwsm-app`
+- **Arch assumptions** are replaced by `omaguix-omarchy-compat`: `uwsm-app`
   and `systemd-cat` run the command directly; `systemd-run` runs it detached
   after `--on-active`'s delay; `systemctl` sends `poweroff`, `reboot`,
   `suspend` and `hibernate` to elogind's `loginctl` and accepts everything
@@ -511,16 +511,16 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   logs in again; `busctl` covers Omarchy's notification and UPower calls
   through gdbus (`test_busctl.py`); `xdg-terminal-exec` is Try Omarchy's.
 - **The account** is seeded once, at the first desktop login, by
-  `roguix-omarchy-seed`: Omarchy's `config/` into `~/.config` (never
+  `omaguix-omarchy-seed`: Omarchy's `config/` into `~/.config` (never
   overwriting), its applications, Hyprland toggles and fontconfig aliases;
   `OMARCHY_THEME_HEADLESS=1 omarchy-theme-set "Tokyo Night"`; first-run,
   user provisioning and shipped migrations marked done, since they install
   Arch packages and systemd units. An account from the pre-Omarchy image gets
   its old Omaguix `hyprland.lua` replaced.
-- **The VM additions** live in `/etc/roguix-hypr-vm.lua`, which the seed
+- **The VM additions** live in `/etc/omaguix-hypr-vm.lua`, which the seed
   appends to `~/.config/hypr/monitors.lua` as the Arch guest appends its QEMU
   fragment: Hyprland's cursor is hidden when the launcher reports VirGL (Cocoa
-  draws the Mac's cursor), `roguix-display-sync` follows the window, and the
+  draws the Mac's cursor), `omaguix-display-sync` follows the window, and the
   host bridges and PipeWire start with the session.
 - **Lock screen:** the shell authenticates with the PAM service
   `omarchy-lock-password`, defined with `pam_unix`.
@@ -550,10 +550,10 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   `LC_ALL=C`. Remove it once the pinned Omarchy does the same.
 
 - **Screensaver:** Omarchy's screensaver animates its logo with `ttfx`
-  (Omarchy 4e31b61a), which `modules/roguix/ttfx.scm` builds from source:
+  (Omarchy 4e31b61a), which `modules/omaguix/ttfx.scm` builds from source:
   v0.5.0, whose 28 crates are all in the pinned Guix at the same versions.
   It is opt-in, since macOS has its own screensaver and lock and every frame
-  costs the Mac's CPU: `roguix-omarchy-seed` turns Omarchy's own
+  costs the Mac's CPU: `omaguix-omarchy-seed` turns Omarchy's own
   `screensaver-off` toggle on once per account, and Omarchy's menu (Trigger →
   Toggle → Screensaver) turns it on again. It runs at 30 fps instead of
   Omarchy's 120. **System → Screensaver** in the menu starts it at once
@@ -584,7 +584,7 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   moved the new theme inside it: the theme's generated configs were
   missing, and foot reported that `current/theme/foot.ini` does not exist.
   `omarchy-theme-set-store-modes.patch` makes the staged copy the owner's
-  and the current theme removable, and `roguix-omarchy-seed` rebuilds the
+  and the current theme removable, and `omaguix-omarchy-seed` rebuilds the
   current theme on login when `current/theme/foot.ini` is missing, so
   logging in or choosing a theme repairs an account that hit this
   (`test_omarchy_theme_set.py`). Remove the patch once Omarchy stages the
@@ -604,66 +604,66 @@ There is no pacman, AUR or Arch update channel. Every program comes from Guix
 and is part of the system configuration:
 
 - **`/etc/config.scm`** is written on the first boot and is the owner's to
-  edit. It calls `roguix-operating-system` (`modules/roguix/system.scm`,
+  edit. It calls `omaguix-operating-system` (`modules/omaguix/system.scm`,
   the same procedure `system.scm` builds the image from) with a list of Guix
-  package names between `;; BEGIN roguix packages` and `;; END roguix
+  package names between `;; BEGIN omaguix packages` and `;; END omaguix
   packages`.
-- **`roguix-pkg`** (`modules/roguix/roguix-pkg`, `test_roguix_pkg.py`) edits
+- **`omaguix-pkg`** (`modules/omaguix/omaguix-pkg`, `test_omaguix_pkg.py`) edits
   that list and applies it: `add` and `remove` (root; the list is restored if
   the reconfigure fails), `present` and `list` (the running system's
   profile), `pick-add` and `pick-remove` (fzf pickers).
 - **Omarchy's menu** is rewritten when the `omarchy` package is built
-  (`modules/roguix/omarchy-menu.py`, `test_omarchy_menu.py`): Arch-only
+  (`modules/omaguix/omarchy-menu.py`, `test_omarchy_menu.py`): Arch-only
   entries are dropped; Install and Remove offer any Guix package and curated
   Guix programs; Update → Guix System applies, edits or rolls back the
-  configuration. Omarchy's `omarchy-pkg-*` helpers call `roguix-pkg`, and
+  configuration. Omarchy's `omarchy-pkg-*` helpers call `omaguix-pkg`, and
   the menu's installed-package check asks it instead of pacman.
-- **`roguix-reconfigure`** runs `guix system reconfigure -L
-  /etc/roguix/modules /etc/config.scm` with the Guix that built the image,
-  kept as the GC root `/var/guix/gcroots/roguix-guix`, so it computes the
+- **`omaguix-reconfigure`** runs `guix system reconfigure -L
+  /etc/omaguix/modules /etc/config.scm` with the Guix that built the image,
+  kept as the GC root `/var/guix/gcroots/omaguix-guix`, so it computes the
   image's own derivations. The image also keeps its whole system *without
-  grafts* as `/var/guix/gcroots/roguix-ungrafted`: a reconfigure grafts
+  grafts* as `/var/guix/gcroots/omaguix-ungrafted`: a reconfigure grafts
   again from those builds, and without them it would rebuild Hyprland and
   Quickshell, which have no substitutes, for hours.
-- **`roguix-update`** (`test_roguix_update.py`) applies the newest
+- **`omaguix-update`** (`test_omaguix_update.py`) applies the newest
   release of the signed channel (decisions 0004 and 0006) after checking
   that the channel's `main` is a release commit that descends from the
-  running system's record `/etc/roguix/channel-commit` (the release the
+  running system's record `/etc/omaguix/channel-commit` (the release the
   image, or the update that made this system, was built from) and from
-  `/var/lib/roguix/channel-commit`, the newest release it applied, which it
+  `/var/lib/omaguix/channel-commit`, the newest release it applied, which it
   moves forward after each successful update and ignores when garbled.
   Without the system's record, or for an older or diverged `main`, it
-  changes nothing; one run at a time holds `/var/lib/roguix/update.lock`. A release on another Guix pin is applied with the Guix its
+  changes nothing; one run at a time holds `/var/lib/omaguix/update.lock`. A release on another Guix pin is applied with the Guix its
   `release.json` names (the pin plus
-  `modules/roguix/guix-skip-forward-check.patch`, built by CI), substituted
+  `modules/omaguix/guix-skip-forward-check.patch`, built by CI), substituted
   after a free-space check, checked with `guix describe`, run with
   `--no-check-forward-update` so that it clones no Guix, and pinned as the
   new root; `guix system roll-back` (the menu's Roll back) and a reboot
   return to the old generation and its Guix (decision 0007).
 - **Substitutes for Omaguix's own packages** come from
   `https://roguix.frolow.dev` (decisions 0002 and 0005), after Guix's servers;
-  the guest authorizes `modules/roguix/roguix.frolow.dev.pub`. This server,
-  its key and the signed channel `roguix-update` follows are named in one
-  record, `%roguix-trust` in `modules/roguix/trust.scm`. Verified
+  the guest authorizes `modules/omaguix/roguix.frolow.dev.pub`. This server,
+  its key and the signed channel `omaguix-update` follows are named in one
+  record, `%omaguix-trust` in `modules/omaguix/trust.scm`. Verified
   2026-09-24 in a b12 guest: `guix weather --substitute-urls=https://roguix.frolow.dev`
   finds Quickshell, Hyprland and Omarchy (3 of 3).
 
-For CI that builds these substitutes, `(roguix system)` exports
-`%roguix-reference-system`: the image's system with no extra packages and the
+For CI that builds these substitutes, `(omaguix system)` exports
+`%omaguix-reference-system`: the image's system with no extra packages and the
 default host settings, which never reads the first-start settings file, so its
 derivation is the same on any machine (`test_build.py`). From `guest/guix`,
 evaluate it with the pinned Guix and an absolute load path, which `local-file`
 needs:
-`guix time-machine --commit=$(cat modules/roguix/guix-commit) -- system build
--L $PWD/modules -e '(@ (roguix system) %roguix-reference-system)'
+`guix time-machine --commit=$(cat modules/omaguix/guix-commit) -- system build
+-L $PWD/modules -e '(@ (omaguix system) %omaguix-reference-system)'
 --system=aarch64-linux -d`, or `--system=x86_64-linux` for x86_64: the
-`(roguix apps)` binaries it installs (lazygit, lazydocker, gum, dua, cliamp)
+`(omaguix apps)` binaries it installs (lazygit, lazydocker, gum, dua, cliamp)
 list an upstream release for each of the two systems and pick theirs in the
 thunked `arguments` field, which sees the requested system (`source`, read
 once when the module loads, would not).
 
 Measured 2026-09-24 on a fresh image with the Mac's network: the first
-`roguix-pkg add alacritty` took 20 minutes, mostly downloading about 900 MB
+`omaguix-pkg add alacritty` took 20 minutes, mostly downloading about 900 MB
 of other outputs (`debug`, `doc`, `jdk`) of grafted packages that grafting
 needs; the next, `add helix`, took 3 minutes and 5.3 MB. Shutdown and Logout
 from the menu work.
@@ -687,13 +687,13 @@ same image.
 
 ## macOS integrations
 
-`modules/roguix/integrations.scm` ports the guest side of the launcher's
+`modules/omaguix/integrations.scm` ports the guest side of the launcher's
 integrations. The host side, the wire protocols and the guest programs come
 from Try Omarchy's Arch guest, unchanged; only their startup differs.
 
 - **Launcher settings.** The launcher passes its arguments as SMBIOS OEM
-  strings (see ADR 0001); `roguix-host-settings` writes them to
-  `/run/roguix/host-settings` in kernel command-line format. The shared
+  strings (see ADR 0001); `omaguix-host-settings` writes them to
+  `/run/omaguix/host-settings` in kernel command-line format. The shared
   folder script reads it through its `OMARCHY_MAC_SHARE_CMDLINE` override, the
   SSH gate directly. A
   missing or unreadable table yields an empty file, never a failed boot.
@@ -701,13 +701,13 @@ from Try Omarchy's Arch guest, unchanged; only their startup differs.
   the `mac` 9p tag at `/mnt/mac` from a Shepherd service that tty1's session
   waits for, and `/etc/profile.d` links `~/<Mac folder name>` at each login of
   the desktop account. Mount failures are logged and never block the session.
-- **Clipboard.** `clipboard-bridge` runs under `roguix-agent`, which Hyprland
+- **Clipboard.** `clipboard-bridge` runs under `omaguix-agent`, which Hyprland
   starts: it keeps the bridge running while the session's Wayland socket and
   the `dev.tryomarchy.clipboard` port exist and restarts it 2 s after it
   exits, as the Arch unit's `Restart=` does. A udev rule gives the port to the
   `users` group, mode 0660. `wl-clipboard` is installed system-wide.
 - **Audio.** Sound itself flows through QEMU's intel-hda. Hyprland starts
-  PipeWire, WirePlumber and pipewire-pulse under `roguix-agent`, then
+  PipeWire, WirePlumber and pipewire-pulse under `omaguix-agent`, then
   `audio-bridge`, which mirrors the Mac's devices as `omarchy_host_*` remap
   endpoints through `pactl` and relays the selection. The Arch guest's graph
   quantum file is installed as `/etc/pipewire/pipewire.conf.d/`
@@ -719,17 +719,17 @@ from Try Omarchy's Arch guest, unchanged; only their startup differs.
   itself), and reads `pactl` in the C locale (`test_audio_input_helper.py`).
 - **Camera.** `v4l2loopback-linux-module` is a loadable module, loaded at boot
   with the Arch guest's options (`/dev/video42`, "Mac Camera",
-  `exclusive_caps`); `camera-bridge` runs under `roguix-agent`. udev gives
+  `exclusive_caps`); `camera-bridge` runs under `omaguix-agent`. udev gives
   the port and `video42` to the `video` group.
 - **Touch ID for sudo.** `authentication-broker` is Try Omarchy's broker,
   with only its two `/usr/bin` OpenSSL references rewritten to the store at
   build time (`test_build.py` pins both). `/etc/pam.d/sudo` always starts with
   a `sufficient` `pam_exec` rule whose gate fails at once until
-  `roguix-touch-id enable` (which runs `roguix-touch-id-control` through
+  `omaguix-touch-id enable` (which runs `omaguix-touch-id-control` through
   sudo) has enrolled with the Mac and written
-  `/var/lib/roguix/touch-id-enabled`; see ADR 0001. The port is root-only,
+  `/var/lib/omaguix/touch-id-enabled`; see ADR 0001. The port is root-only,
   mode 0600, as the broker requires.
-- **SSH.** `sshd` is installed with auto-start off; `roguix-ssh-access`
+- **SSH.** `sshd` is installed with auto-start off; `omaguix-ssh-access`
   starts it for the current boot only when the settings contain exactly
   `tryomarchy.ssh_access=1`. Root login is refused; host keys live on the
   guest disk.
@@ -759,7 +759,7 @@ was off. Enrollment needs the owner's finger on the Mac and was not run.
 1. Cursor handling in the display contract.
 2. The Swift app still shows Omarchy names and reads Arch workspace metrics
    for its free-space guard; `resize-vm-disk.sh` handles only the Arch disk.
-3. Enroll Touch ID once by hand (`roguix-touch-id enable` in the guest,
+3. Enroll Touch ID once by hand (`omaguix-touch-id enable` in the guest,
    with the VM window in front) to confirm the host approval path.
 4. Switch the default build to Guix and remove the Arch builder once the
    above covers the required behavior.

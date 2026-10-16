@@ -11,7 +11,7 @@ struct SavedVMChoiceTests {
         var text = "qemu-persistent-storage: initialized persistent workspace aaaaaaaaaaaa\n"
         text += lines.map { "[qemu-gpu] Saved VM: \($0)\n" }.joined()
         if let count { text += "[qemu-gpu] Saved VMs: \(count)\n" }
-        return text + "qemu-persistent-storage: multiple saved VMs were found; choose the one to keep, or use Reset Roguix\n"
+        return text + "qemu-persistent-storage: multiple saved VMs were found; choose the one to keep, or use Reset Omaguix\n"
     }
 
     @Test("the launcher's complete list becomes the choice")
@@ -85,16 +85,16 @@ struct SavedVMChoiceTests {
 
     @Test("keeping a VM reports where the others went")
     func reportsArchive() {
-        let standardError = "[qemu-gpu] Archived saved VMs: /Users/me/Library/Application Support/Try Roguix/VM/v1/guix/archive/saved-vms-20261007-120000\n"
+        let standardError = "[qemu-gpu] Archived saved VMs: /Users/me/Library/Application Support/Try Omaguix/VM/v1/guix/archive/saved-vms-20261007-120000\n"
         let path = SavedVMChoice.archivePath(standardError: standardError)
-        #expect(path == "/Users/me/Library/Application Support/Try Roguix/VM/v1/guix/archive/saved-vms-20261007-120000")
+        #expect(path == "/Users/me/Library/Application Support/Try Omaguix/VM/v1/guix/archive/saved-vms-20261007-120000")
         #expect(SavedVMChoice.archivePath(standardError: "nothing moved\n") == nil)
         let candidate = SavedVMCandidate(
             name: "current", factoryIdentity: identityA, schemaVersion: 2,
             capacityBytes: 1, allocatedBytes: 1, lastUsed: Date()
         )
         let message = SavedVMChoice.keptMessage(for: candidate, archivePath: path, homeDirectory: "/Users/me")
-        #expect(message.contains("~/Library/Application Support/Try Roguix/VM/v1/guix/archive/saved-vms-20261007-120000"))
+        #expect(message.contains("~/Library/Application Support/Try Omaguix/VM/v1/guix/archive/saved-vms-20261007-120000"))
         #expect(message.contains("unchanged"))
     }
 

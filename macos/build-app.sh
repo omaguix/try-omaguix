@@ -290,15 +290,15 @@ if "{APP_NAME}" in plistlib.dumps(value).decode():
 # logs, the app's names (the VM helper app is named after the production
 # name), the bridged-networking helper's service, empty without one, and
 # where the update check finds this app's releases.
-value["RoguixApplicationSupportDirectory"] = sys.argv[4]
-value["RoguixLogsDirectory"] = sys.argv[5]
-value["RoguixApplicationName"] = sys.argv[6]
-value["RoguixDevelopmentApplicationName"] = sys.argv[7]
-value["RoguixNetworkHelperService"] = sys.argv[8]
-value["RoguixReleaseRepository"] = sys.argv[10]
-value["RoguixReleaseTagPrefix"] = sys.argv[11]
-value["RoguixReleaseDMG"] = sys.argv[12]
-value["RoguixLegacyReleaseDMGs"] = sys.argv[13]
+value["OmaguixApplicationSupportDirectory"] = sys.argv[4]
+value["OmaguixLogsDirectory"] = sys.argv[5]
+value["OmaguixApplicationName"] = sys.argv[6]
+value["OmaguixDevelopmentApplicationName"] = sys.argv[7]
+value["OmaguixNetworkHelperService"] = sys.argv[8]
+value["OmaguixReleaseRepository"] = sys.argv[10]
+value["OmaguixReleaseTagPrefix"] = sys.argv[11]
+value["OmaguixReleaseDMG"] = sys.argv[12]
+value["OmaguixLegacyReleaseDMGs"] = sys.argv[13]
 path.write_bytes(plistlib.dumps(value))
 PYTHON
 python3 "$repo_dir/scripts/app_version.py" \
@@ -330,7 +330,7 @@ install -m 0644 "$macos_dir/qemu-port-forwarding.sh" \
   "$contents/Resources/scripts/qemu-port-forwarding.sh"
 install -m 0644 "$macos_dir/qemu-networking.sh" "$contents/Resources/scripts/qemu-networking.sh"
 install -m 0644 "$macos_dir/network-identity.py" "$contents/Resources/scripts/network-identity.py"
-# The Roguix guest directory (guest/guix/package.py) holds exactly its
+# The Omaguix guest directory (guest/guix/package.py) holds exactly its
 # manifest, checksums and compressed UEFI disk.
 guest_resources=(SHA256SUMS disk.raw.zst guix-manifest.json)
 install -m 0644 "$repo_dir/guest/guix/artifact.py" \

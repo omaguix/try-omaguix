@@ -6,13 +6,13 @@ extension AppIdentity {
     static let tryOmaguix = AppIdentity(
         applicationName: "Try Omaguix",
         developmentApplicationName: "Try Omaguix Dev",
-        applicationSupportDirectory: "Try Roguix",
-        logsDirectory: "Try Roguix",
-        networkHelperService: "dev.tryroguix.network",
+        applicationSupportDirectory: "Try Omaguix",
+        logsDirectory: "Try Omaguix",
+        networkHelperService: "dev.tryomaguix.network",
         releaseRepository: "omaguix/try-omaguix",
-        releaseTagPrefix: "try-roguix-v",
+        releaseTagPrefix: "try-omaguix-v",
         releaseDMG: "TryOmaguix.dmg",
-        legacyReleaseDMGs: ["TryRoguix.dmg"]
+        legacyReleaseDMGs: []
     )
 
     /// A second app built from the same sources.
@@ -25,6 +25,6 @@ extension AppIdentity {
         releaseRepository: "example/try-omabend",
         releaseTagPrefix: "try-omabend-v",
         releaseDMG: "TryOmabend.dmg",
-        legacyReleaseDMGs: []
+        legacyReleaseDMGs: ["OldOmabend.dmg"]
     )
 }

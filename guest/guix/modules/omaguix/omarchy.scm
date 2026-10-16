@@ -12,7 +12,7 @@
 ;;; commands, busctl's notification calls go through gdbus, and nothing from
 ;;; its installer, package manager or systemd units runs. Menus that manage
 ;;; Arch packages or systemd timers therefore do nothing here.
-(define-module (roguix omarchy)
+(define-module (omaguix omarchy)
   #:use-module (guix packages)
   #:use-module (guix gexp)
   #:use-module (guix download)
@@ -48,14 +48,14 @@
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu services)
   #:use-module (gnu system pam)
-  #:use-module (roguix apps)
-  #:use-module (roguix packages)
-  #:use-module (roguix trust)
-  #:use-module (roguix ttfx)
+  #:use-module (omaguix apps)
+  #:use-module (omaguix packages)
+  #:use-module (omaguix trust)
+  #:use-module (omaguix ttfx)
   #:export (omarchy
             font-jetbrains-mono-nerd
-            roguix-omarchy-compat
-            roguix-omarchy-service-type))
+            omaguix-omarchy-compat
+            omaguix-omarchy-service-type))
 
 ;; Upstream basecamp/omarchy 4.0.4, tree 1d48adc1.
 (define omarchy
@@ -107,7 +107,7 @@
             ;; Programs come from Guix and /etc/config.scm, never pacman or
             ;; the AUR: the menu's Install, Remove and Update entries are
             ;; Guix's (omarchy-menu.py), Omarchy's package helpers call
-            ;; roguix-pkg, and its Arch-only package commands are gone.
+            ;; omaguix-pkg, and its Arch-only package commands are gone.
             ;; See guest/guix/README.md, "Differences from Try Omarchy".
             (lambda* (#:key native-inputs inputs #:allow-other-keys)
               (let* ((omarchy (string-append #$output "/share/omarchy"))
@@ -132,17 +132,17 @@
                                  bash (cadr helper) (caddr helper))))
                      (chmod file #o555)))
                  '(("omarchy-pkg-add" "add Guix packages to /etc/config.scm"
-                    "exec sudo roguix-pkg add \"$@\"")
+                    "exec sudo omaguix-pkg add \"$@\"")
                    ("omarchy-pkg-drop" "remove Guix packages from /etc/config.scm"
-                    "exec sudo roguix-pkg remove \"$@\"")
+                    "exec sudo omaguix-pkg remove \"$@\"")
                    ("omarchy-pkg-present" "all of these Guix packages are installed"
-                    "exec roguix-pkg present \"$@\"")
+                    "exec omaguix-pkg present \"$@\"")
                    ("omarchy-pkg-missing" "some of these Guix packages are missing"
-                    "! roguix-pkg present \"$@\"")
+                    "! omaguix-pkg present \"$@\"")
                    ("omarchy-pkg-install" "choose Guix packages to install"
-                    "exec roguix-pkg pick-add")
+                    "exec omaguix-pkg pick-add")
                    ("omarchy-pkg-remove" "choose Guix packages to remove"
-                    "exec roguix-pkg pick-remove")))
+                    "exec omaguix-pkg pick-remove")))
 ;; Try Omarchy's microphone helper: Omarchy's moves every
                 ;; recording to the chosen source, including the audio
                 ;; bridge's own module-remap-source stream, which then
@@ -173,9 +173,9 @@
                       (format port "#!~a
 # Omaguix: choose a fixed time zone, or follow the Mac's.
 set -e
-helper=/run/current-system/profile/bin/roguix-timezone
+helper=/run/current-system/profile/bin/omaguix-timezone
 timezone=$({ $helper --mirror-label 2>/dev/null || true; $helper --list; } | omarchy-menu-select \"Set timezone\" -- --width 520 --maxheight 520) || exit 1
-sudo -n /run/current-system/profile/bin/roguix-timezone --select \"$timezone\"
+sudo -n /run/current-system/profile/bin/omaguix-timezone --select \"$timezone\"
 omarchy-shell -q omarchy.clock refresh
 omarchy-notification-send \"Timezone is now set to $timezone\"
 " bash)))
@@ -186,8 +186,8 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
                    "{~/.local,~/.guix-profile,/run/current-system/profile}"))
                 ;; The menu decides what is installed from pacman's database.
                 (substitute* (string-append omarchy "/shell/plugins/menu/MenuModel.js")
-                  (("pacman -Qq; LC_ALL=C pacman -Qi") "roguix-pkg list; true")
-                  (("pacman -Q \"[$]1\"") "roguix-pkg present \"$1\""))
+                  (("pacman -Qq; LC_ALL=C pacman -Qi") "omaguix-pkg list; true")
+                  (("pacman -Q \"[$]1\"") "omaguix-pkg present \"$1\""))
                 ;; When the guard script ends, Menu.qml's guardProc.onExited
                 ;; recreates every row even if no `when:'/`checked:' result
                 ;; changed, and a click pressed on a row just before is lost
@@ -231,7 +231,7 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
                   (("\\{ transient = ") "{ isTransient = ")
                   (("^( *)transient = !!" _ indent) (string-append indent "isTransient = !!"))
                   (("return transient [|][|]") "return isTransient ||"))
-                ;; The screensaver is opt-in (roguix-omarchy-seed turns
+                ;; The screensaver is opt-in (omaguix-omarchy-seed turns
                 ;; Omarchy's screensaver-off toggle on) and runs at 30 fps,
                 ;; not 120: every frame is redrawn by the terminal, copied
                 ;; through virtio-gpu and composited by macOS, all on the
@@ -242,12 +242,12 @@ omarchy-notification-send \"Timezone is now set to $timezone\"
                   (substitute* screensaver
                     (("--frame-rate 120 ") "--frame-rate 30 "))
                   (invoke "grep" "-q" "-e" "--frame-rate 30 " screensaver)))))
-          (add-after 'install 'use-roguix-logo
+          (add-after 'install 'use-omaguix-logo
             ;; omarchy-show-logo and friends print logo.txt: say GUIX, in
             ;; Omarchy's own block lettering, instead of OMARCHY.
             ;; See guest/guix/README.md, "Differences from Try Omarchy".
             (lambda _
-              (copy-file #$(local-file "roguix-logo.txt")
+              (copy-file #$(local-file "omaguix-logo.txt")
                          (string-append #$output "/share/omarchy/logo.txt"))))
           (add-after 'use-guix-packages 'link-commands
             ;; The Arch package installs each command in /usr/bin.
@@ -290,7 +290,7 @@ configuration, Quickshell desktop shell, themes and helper commands.")
     (license license:silofl1.1)))
 
 ;; Omarchy's default applications (install/omarchy-base.packages): Guix's
-;; packages, LibreWolf standing in for Chromium, and (roguix apps) for those
+;; packages, LibreWolf standing in for Chromium, and (omaguix apps) for those
 ;; Guix lacks. Not provided: LibreOffice, Pinta, LocalSend, Signal, Obsidian;
 ;; docs/omarchy-packages.md lists every difference from Omarchy's list.
 ;; See guest/guix/README.md, "Differences from Try Omarchy".
@@ -321,48 +321,48 @@ configuration, Quickshell desktop shell, themes and helper commands.")
 ;; roguix.frolow.dev and Guix's servers, and --max-jobs=0 still lets Guix
 ;; build its local derivations (configuration, profiles, grafts) but refuses
 ;; any other build at once instead of compiling for hours.
-;; ROGUIX_ALLOW_BUILD=1 lifts it.
+;; OMAGUIX_ALLOW_BUILD=1 lifts it.
 (define %build-gate "\
 gate='--max-jobs=0 --no-offload'
-[ \"${ROGUIX_ALLOW_BUILD:-0}\" = 1 ] && gate=
+[ \"${OMAGUIX_ALLOW_BUILD:-0}\" = 1 ] && gate=
 gate_failed() {
   if [ -n \"$gate\" ]; then
-    echo 'roguix: if Guix said \"unable to start any build\", this change needs' >&2
+    echo 'omaguix: if Guix said \"unable to start any build\", this change needs' >&2
     echo 'packages no server has binaries for yet. Try again later, or build' >&2
-    echo 'them here with ROGUIX_ALLOW_BUILD=1 (this can take hours).' >&2
+    echo 'them here with OMAGUIX_ALLOW_BUILD=1 (this can take hours).' >&2
   fi
   exit \"$1\"
 }")
 
-;; Free space roguix-update requires before it moves to another Guix pin
+;; Free space omaguix-update requires before it moves to another Guix pin
 ;; (GiB): the new Guix took 0.5 GiB in a test VM on 2026-10-12. The new
 ;; system's own packages come on top; Guix fetches them before it switches,
 ;; so running short there fails without a change.
 (define %guix-move-free-gib "2")
 
-(define roguix-omarchy-compat
+(define omaguix-omarchy-compat
   (package
-    (name "roguix-omarchy-compat")
+    (name "omaguix-omarchy-compat")
     (version "1")
-    (source (local-file "." "roguix-omarchy-compat-source"
+    (source (local-file "." "omaguix-omarchy-compat-source"
                         #:recursive? #t
                         #:select? (lambda (file stat)
                                     (or (eq? 'directory (stat:type stat))
                                         (member (basename file)
                                                 '("busctl" "xdg-terminal-exec"
-                                                  "omarchy-seed" "roguix-pkg"
+                                                  "omarchy-seed" "omaguix-pkg"
                                                   "fcitx5-profile"
-                                                  "30-roguix-cjk.conf"))))))
+                                                  "30-omaguix-cjk.conf"))))))
     (build-system copy-build-system)
     (arguments
      (list
       #:install-plan
       #~'(("busctl" "bin/")
-          ("roguix-pkg" "bin/roguix-pkg")
+          ("omaguix-pkg" "bin/omaguix-pkg")
           ("xdg-terminal-exec" "bin/")
-          ("omarchy-seed" "bin/roguix-omarchy-seed")
-          ("fcitx5-profile" "share/roguix/")
-          ("30-roguix-cjk.conf" "share/roguix/"))
+          ("omarchy-seed" "bin/omaguix-omarchy-seed")
+          ("fcitx5-profile" "share/omaguix/")
+          ("30-omaguix-cjk.conf" "share/omaguix/"))
       #:phases
       #~(modify-phases %standard-phases
           (add-after 'install 'install-shims
@@ -451,67 +451,67 @@ setsid sh -c 'sleep \"$0\"; exec \"$@\"' \"$delay\" \"$@\" </dev/null >/dev/null
 exit 0
 ")
               ;; Apply /etc/config.scm with the Guix that built this system
-              ;; (see (roguix system)), which only fetches what was added.
-              (shim "roguix-reconfigure" (string-append "\
+              ;; (see (omaguix system)), which only fetches what was added.
+              (shim "omaguix-reconfigure" (string-append "\
 [ \"$(id -u)\" = 0 ] || \\
-  exec sudo ROGUIX_ALLOW_BUILD=\"${ROGUIX_ALLOW_BUILD:-0}\" \"$0\" \"$@\"
+  exec sudo OMAGUIX_ALLOW_BUILD=\"${OMAGUIX_ALLOW_BUILD:-0}\" \"$0\" \"$@\"
 " #$%build-gate "
-/var/guix/gcroots/roguix-guix/bin/guix system reconfigure $gate \\
-  -L /etc/roguix/modules /etc/config.scm \"$@\" || gate_failed $?
+/var/guix/gcroots/omaguix-guix/bin/guix system reconfigure $gate \\
+  -L /etc/omaguix/modules /etc/config.scm \"$@\" || gate_failed $?
 "))
               ;; Update Omaguix from its signed channel (docs/decisions/0004):
               ;; fetch it, authenticate every new commit from the channel
               ;; introduction, check that main is a release (0006) that
               ;; descends from the last one this system applied (0007), then
               ;; reconfigure /etc/config.scm with the channel's modules. The
-              ;; applied modules become /etc/roguix, so roguix-reconfigure
+              ;; applied modules become /etc/omaguix, so omaguix-reconfigure
               ;; keeps using them offline. A release on another Guix pin is
               ;; applied by the Guix it names, which the new system pins
               ;; (0007); Guix builds everything before it switches, so a
               ;; failed move leaves the system as it was, and `guix system
               ;; roll-back' returns to the old Guix.
-              (shim "roguix-update" (string-append "\
+              (shim "omaguix-update" (string-append "\
 [ \"$(id -u)\" = 0 ] || \\
-  exec sudo ROGUIX_ALLOW_BUILD=\"${ROGUIX_ALLOW_BUILD:-0}\" \"$0\" \"$@\"
+  exec sudo OMAGUIX_ALLOW_BUILD=\"${OMAGUIX_ALLOW_BUILD:-0}\" \"$0\" \"$@\"
 " #$%build-gate "
 set -e
 git=" #$(file-append git "/bin/git") "
 jq=" #$(file-append jq "/bin/jq") "
-guix=/var/guix/gcroots/roguix-guix/bin/guix
-state=/var/lib/roguix
+guix=/var/guix/gcroots/omaguix-guix/bin/guix
+state=/var/lib/omaguix
 dir=$state/channel
-url=" #$(roguix-trust-channel-url %roguix-trust) "
+url=" #$(omaguix-trust-channel-url %omaguix-trust) "
 # One run at a time: two would race on the checkout and the cursor.
 mkdir -p \"$state\"
 exec 9> \"$state/update.lock\"
 if ! " #$(file-append util-linux "/bin/flock") " -n 9; then
-  echo 'roguix-update: another roguix-update is running; nothing changed.' >&2
+  echo 'omaguix-update: another omaguix-update is running; nothing changed.' >&2
   exit 1
 fi
 # main must descend from the channel commit the running system was built
 # from, since the move to another Guix skips Guix's own downgrade check
-# (docs/decisions/0007). The image and every system roguix-update applies
+# (docs/decisions/0007). The image and every system omaguix-update applies
 # record it; it is the authority. The cursor, the newest commit
-# roguix-update applied, only moves forward and keeps main from going back
+# omaguix-update applied, only moves forward and keeps main from going back
 # to an older generation `guix system roll-back' returned to.
 commit_id() { echo \"$1\" | grep -Eqx '[0-9a-f]{40}'; }
-base=$(cat /etc/roguix/channel-commit 2>/dev/null) || base=
+base=$(cat /etc/omaguix/channel-commit 2>/dev/null) || base=
 if ! commit_id \"$base\"; then
-  echo 'roguix-update: this system records no channel commit it was built from' >&2
-  echo '(/etc/roguix/channel-commit); nothing changed.' >&2
+  echo 'omaguix-update: this system records no channel commit it was built from' >&2
+  echo '(/etc/omaguix/channel-commit); nothing changed.' >&2
   exit 1
 fi
 cursor=$state/channel-commit
 applied=$(cat \"$cursor\" 2>/dev/null) || applied=
 if [ -e \"$cursor\" ] && ! commit_id \"$applied\"; then
-  echo \"roguix-update: ignoring $cursor, which holds no commit;\" >&2
+  echo \"omaguix-update: ignoring $cursor, which holds no commit;\" >&2
   echo \"the system's record $base stands.\" >&2
   applied=
 fi
-current=$(cat /etc/roguix/modules/roguix/guix-commit 2>/dev/null) || current=
+current=$(cat /etc/omaguix/modules/omaguix/guix-commit 2>/dev/null) || current=
 if ! commit_id \"$current\"; then
-  echo 'roguix-update: this system records no Guix pin' >&2
-  echo '(/etc/roguix/modules/roguix/guix-commit); nothing changed.' >&2
+  echo 'omaguix-update: this system records no Guix pin' >&2
+  echo '(/etc/omaguix/modules/omaguix/guix-commit); nothing changed.' >&2
   exit 1
 fi
 [ -d \"$dir/.git\" ] || $git clone --quiet --no-checkout \"$url\" \"$dir\"
@@ -521,8 +521,8 @@ $git -C \"$dir\" fetch --quiet origin main keyring
 # --end takes a commit, not a branch name.
 head=$($git -C \"$dir\" rev-parse origin/main)
 ( cd \"$dir\" && $guix git authenticate --keyring=origin/keyring --end=\"$head\" \\
-    " #$(roguix-trust-channel-introduction %roguix-trust) " \\
-    '" #$(roguix-trust-channel-signer %roguix-trust) "' )
+    " #$(omaguix-trust-channel-introduction %omaguix-trust) " \\
+    '" #$(omaguix-trust-channel-signer %omaguix-trust) "' )
 # main is a release commit (docs/decisions/0006): its one parent is the
 # released commit that release.json names, and it changes only that file.
 released=$($git -C \"$dir\" rev-list --parents -n 1 \"$head\" | cut -d ' ' -f 2-)
@@ -531,13 +531,13 @@ manifest=$($git -C \"$dir\" show \"$head:release.json\")
 if [ \"$changed\" != release.json ] || [ \"${released#* }\" != \"$released\" ] \\
    || [ \"$(echo \"$manifest\" | $jq -r '.\"channel-commit\"')\" != \"$released\" ] \\
    || [ \"$(echo \"$manifest\" | $jq -r '.\"guix-commit\"')\" != \\
-        \"$($git -C \"$dir\" show \"$released:modules/roguix/guix-commit\")\" ]; then
-  echo \"roguix-update: the channel's main ($head) is not a release; nothing changed.\" >&2
+        \"$($git -C \"$dir\" show \"$released:modules/omaguix/guix-commit\")\" ]; then
+  echo \"omaguix-update: the channel's main ($head) is not a release; nothing changed.\" >&2
   exit 1
 fi
 for from in $base $applied; do
   if ! $git -C \"$dir\" merge-base --is-ancestor \"$from\" \"$head\" 2>/dev/null; then
-    echo \"roguix-update: the channel's main ($head) does not descend from $from,\" >&2
+    echo \"omaguix-update: the channel's main ($head) does not descend from $from,\" >&2
     echo 'a release this system applied; nothing changed.' >&2
     exit 1
   fi
@@ -554,8 +554,8 @@ advance() {
   mv -f \"$new\" \"$cursor\"
   sync \"$state\"
 }
-export ROGUIX_CHANNEL_COMMIT=\"$head\"
-pin=$(cat \"$dir/modules/roguix/guix-commit\")
+export OMAGUIX_CHANNEL_COMMIT=\"$head\"
+pin=$(cat \"$dir/modules/omaguix/guix-commit\")
 if [ \"$pin\" = \"$current\" ]; then
   $guix system reconfigure $gate -L \"$dir/modules\" /etc/config.scm \"$@\" \\
     || gate_failed $?
@@ -572,24 +572,24 @@ echo \"$next\" | grep -Eqx '/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-
 patched=$(echo \"$manifest\" | $jq -r '.\"guix-patched-commit\" // \"\"')
 echo \"$patched\" | grep -Eqx '[0-9a-f]{40}' || next=
 if [ -z \"$next\" ]; then
-  echo \"roguix-update: this release names no Guix for $system; nothing changed.\" >&2
+  echo \"omaguix-update: this release names no Guix for $system; nothing changed.\" >&2
   exit 1
 fi
 free=$(df -Pk /gnu/store | awk 'NR == 2 && $4 ~ /^[0-9]+$/ { print int($4 / 1048576) }')
 case $free in
   ''|*[!0-9]*)
-    echo \"roguix-update: cannot tell the free space in /gnu/store ($free); nothing changed.\" >&2
+    echo \"omaguix-update: cannot tell the free space in /gnu/store ($free); nothing changed.\" >&2
     exit 1 ;;
 esac
 if [ \"$free\" -lt " #$%guix-move-free-gib " ]; then
-  echo \"roguix-update: this release moves to Guix $pin, which needs at least\" >&2
+  echo \"omaguix-update: this release moves to Guix $pin, which needs at least\" >&2
   echo \"" #$%guix-move-free-gib " GiB free; $free GiB are. Delete old system generations\" >&2
   echo '(sudo guix system delete-generations) and run sudo guix gc first.' >&2
   exit 1
 fi
-echo \"roguix-update: moving to Guix $pin; the current system stays as the roll-back.\"
+echo \"omaguix-update: moving to Guix $pin; the current system stays as the roll-back.\"
 # Keep the new Guix from the garbage collector until the new system pins it.
-root=/var/guix/gcroots/roguix-guix-next
+root=/var/guix/gcroots/omaguix-guix-next
 ln -sfn \"$next\" \"$root\"
 trap 'rm -f \"$root\"' EXIT
 script=$(mktemp)
@@ -598,21 +598,21 @@ echo '(use-modules (guix store)) (with-store store (ensure-path store (cadr (com
 $guix repl -- \"$script\" \"$next\" || { rc=$?; rm -f \"$script\"; df -h /gnu/store >&2; exit $rc; }
 rm -f \"$script\"
 if ! \"$next/bin/guix\" describe | grep -q \"commit: $patched\\$\"; then
-  echo \"roguix-update: $next is not the patched Guix $patched; nothing changed.\" >&2
+  echo \"omaguix-update: $next is not the patched Guix $patched; nothing changed.\" >&2
   exit 1
 fi
 # Guix's check-forward-update would clone Guix from its channel URL to
 # compare commits; the descendant check above stands in for it, and the
 # patched Guix skips it only when asked.
-ROGUIX_GUIX=\"$next\" \"$next/bin/guix\" system reconfigure --no-check-forward-update \\
+OMAGUIX_GUIX=\"$next\" \"$next/bin/guix\" system reconfigure --no-check-forward-update \\
   $gate -L \"$dir/modules\" /etc/config.scm \"$@\" \\
   || { rc=$?; df -h /gnu/store >&2; gate_failed $rc; }
 advance
 "))
               (for-each (lambda (program)
                           (chmod (string-append #$output "/bin/" program) #o555))
-                        '("busctl" "roguix-pkg" "xdg-terminal-exec"
-                          "roguix-omarchy-seed"))
+                        '("busctl" "omaguix-pkg" "xdg-terminal-exec"
+                          "omaguix-omarchy-seed"))
               (wrap-program (string-append #$output "/bin/busctl")
                 `("PATH" ":" prefix
                   (,(dirname (search-input-file inputs "bin/gdbus"))))))))))
@@ -632,7 +632,7 @@ calls, a busctl subset over gdbus, and the Omarchy per-user seed.")
   (plain-file "hypr-vm.lua" "\
 -- Omaguix VM integration, loaded from ~/.config/hypr/monitors.lua.
 local function host_setting(expected)
-  local file = io.open(\"/run/roguix/host-settings\", \"r\")
+  local file = io.open(\"/run/omaguix/host-settings\", \"r\")
   if not file then return false end
   local settings = file:read(\"*a\") or \"\"
   file:close()
@@ -647,15 +647,15 @@ if host_setting(\"omarchy.qemu_virgl=1\") then
 end
 
 hl.on(\"hyprland.start\", function()
-  hl.exec_cmd(\"roguix-display-sync\")
-  hl.exec_cmd(\"roguix-agent /dev/snd/controlC0 pipewire\")
-  hl.exec_cmd(\"roguix-agent /dev/snd/controlC0 wireplumber\")
-  hl.exec_cmd(\"roguix-agent /dev/snd/controlC0 pipewire-pulse\")
-  hl.exec_cmd(\"roguix-agent /dev/virtio-ports/dev.tryomarchy.clipboard roguix-clipboard-bridge\")
-  hl.exec_cmd(\"roguix-agent /dev/virtio-ports/dev.tryomarchy.audio roguix-audio-bridge\")
-  hl.exec_cmd(\"roguix-agent /dev/virtio-ports/dev.tryomarchy.camera roguix-camera-bridge\")
+  hl.exec_cmd(\"omaguix-display-sync\")
+  hl.exec_cmd(\"omaguix-agent /dev/snd/controlC0 pipewire\")
+  hl.exec_cmd(\"omaguix-agent /dev/snd/controlC0 wireplumber\")
+  hl.exec_cmd(\"omaguix-agent /dev/snd/controlC0 pipewire-pulse\")
+  hl.exec_cmd(\"omaguix-agent /dev/virtio-ports/dev.tryomarchy.clipboard omaguix-clipboard-bridge\")
+  hl.exec_cmd(\"omaguix-agent /dev/virtio-ports/dev.tryomarchy.audio omaguix-audio-bridge\")
+  hl.exec_cmd(\"omaguix-agent /dev/virtio-ports/dev.tryomarchy.camera omaguix-camera-bridge\")
   -- Omarchy's omarchy-fcitx5 user unit: compose sequences and Chewing.
-  hl.exec_cmd(\"roguix-agent /run/current-system fcitx5 --disable notificationitem\")
+  hl.exec_cmd(\"omaguix-agent /run/current-system fcitx5 --disable notificationitem\")
 end)
 "))
 
@@ -664,20 +664,20 @@ end)
 (define (omarchy-pam-services _)
   (list (unix-pam-service "omarchy-lock-password")))
 
-(define roguix-omarchy-service-type
+(define omaguix-omarchy-service-type
   (service-type
-   (name 'roguix-omarchy)
+   (name 'omaguix-omarchy)
    (extensions
     (list (service-extension special-files-service-type
                              (const `(("/usr/share/omarchy"
                                        ,(file-append omarchy "/share/omarchy")))))
           (service-extension etc-service-type
-                             (const `(("roguix-hypr-vm.lua" ,hypr-vm-lua))))
+                             (const `(("omaguix-hypr-vm.lua" ,hypr-vm-lua))))
           (service-extension pam-root-service-type omarchy-pam-services)
           (service-extension profile-service-type
                              (const
                               (append
-                               (list omarchy roguix-omarchy-compat quickshell-0.3
+                               (list omarchy omaguix-omarchy-compat quickshell-0.3
                                     foot jq socat inotify-tools hyprsunset ncurses
                                     fzf imv mpv
                                     ;; Omarchy's menus, clipboard capture and

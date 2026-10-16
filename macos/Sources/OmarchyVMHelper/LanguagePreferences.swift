@@ -14,7 +14,7 @@ enum GuestLocaleCatalog {
 
     static let initialLocales = ["en_US.UTF-8", "zh_TW.UTF-8", "zh_CN.UTF-8", "ko_KR.UTF-8"]
 
-    /// A Roguix image lists the languages it can switch to in `launch.plist`'s
+    /// An Omaguix image lists the languages it can switch to in `launch.plist`'s
     /// comma-separated `guestLocales` ("-" for none); English is its default.
     static func supportsSelection(guestLocales: String, requiresKorean: Bool = false) -> Bool {
         let offered = guestLocales.split(separator: ",").map(String.init)

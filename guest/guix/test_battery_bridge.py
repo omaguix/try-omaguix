@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 
-BRIDGE_PATH = Path(__file__).resolve().parent / "modules/roguix/battery-bridge"
+BRIDGE_PATH = Path(__file__).resolve().parent / "modules/omaguix/battery-bridge"
 LOADER = SourceFileLoader("omarchy_native_battery_bridge", str(BRIDGE_PATH))
 SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)
 if SPEC is None or SPEC.loader is None:

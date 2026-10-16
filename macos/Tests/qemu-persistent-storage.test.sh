@@ -182,7 +182,7 @@ assert test ! -e "$OMARCHY_QEMU_GPU_STATE_ROOT/guix/disks/current"
 qemu_persistent_storage_select \
   persistent "$identity_a" "$source_disk" "$source_sha" "$source_bytes" ''
 assert_eq "$QEMU_SELECTED_DISK" "$OMARCHY_QEMU_GPU_STATE_ROOT/guix/disks/current/disk.raw"
-assert grep -Fq '"kind":"roguix-qemu-persistent-disk"' \
+assert grep -Fq '"kind":"omaguix-qemu-persistent-disk"' \
   "$OMARCHY_QEMU_GPU_STATE_ROOT/guix/disks/current/metadata.json"
 qemu_persistent_storage_release_lock
 export OMARCHY_QEMU_GPU_STATE_ROOT="$test_root/state"
@@ -403,7 +403,7 @@ schema_one_disk=$QEMU_SELECTED_DISK
 printf 'schema-one-user-data' | dd of="$schema_one_disk" bs=1 seek=896 conv=notrunc >/dev/null 2>&1
 qemu_persistent_storage_release_lock
 printf \
-  '{"bundleIdentity":"%s","kind":"roguix-qemu-persistent-disk","schemaVersion":1,"sourceRootfs":{"bytes":%s,"sha256":"%s"}}\n' \
+  '{"bundleIdentity":"%s","kind":"omaguix-qemu-persistent-disk","schemaVersion":1,"sourceRootfs":{"bytes":%s,"sha256":"%s"}}\n' \
   "$identity_b" "$source_bytes_b" "$source_sha_b" \
   >"${schema_one_disk%/*}/metadata.json"
 chmod 600 "${schema_one_disk%/*}/metadata.json"
@@ -431,7 +431,7 @@ chmod 700 "$interrupted_old_reset"
 /bin/cp "$source_disk" "$interrupted_old_reset/disk.raw"
 chmod 600 "$interrupted_old_reset/disk.raw"
 printf \
-  '{"bundleIdentity":"%s","kind":"roguix-qemu-persistent-disk","schemaVersion":1,"sourceRootfs":{"bytes":%s,"sha256":"%s"}}\n' \
+  '{"bundleIdentity":"%s","kind":"omaguix-qemu-persistent-disk","schemaVersion":1,"sourceRootfs":{"bytes":%s,"sha256":"%s"}}\n' \
   "$identity_a" "$source_bytes" "$source_sha" \
   >"$interrupted_old_reset/metadata.json"
 chmod 600 "$interrupted_old_reset/metadata.json"
@@ -824,7 +824,7 @@ assert test -f "$newline_stage/$newline_entry"
 qemu_persistent_storage_release_lock
 
 # The production default lives in the app identity's Application Support
-# directory (Try Omaguix's is still "Try Roguix") and never recreates the
+# directory (Try Omaguix's is still "Try Omaguix") and never recreates the
 # former Omarchy-only Application Support path.
 saved_state_root=$OMARCHY_QEMU_GPU_STATE_ROOT
 saved_home=$HOME
@@ -832,13 +832,13 @@ saved_multi_disk=$OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK
 default_home="$test_root/default-home"
 mkdir "$default_home"
 chmod 700 "$default_home"
-old_branded_root="$default_home/Library/Application Support/Try Roguix/QEMU/v1"
+old_branded_root="$default_home/Library/Application Support/Try Omaguix/QEMU/v1"
 mkdir -p "$old_branded_root"
 chmod 700 \
   "$default_home/Library" \
   "$default_home/Library/Application Support" \
-  "$default_home/Library/Application Support/Try Roguix" \
-  "$default_home/Library/Application Support/Try Roguix/QEMU" \
+  "$default_home/Library/Application Support/Try Omaguix" \
+  "$default_home/Library/Application Support/Try Omaguix/QEMU" \
   "$old_branded_root"
 printf 'leave old storage untouched\n' >"$old_branded_root/sentinel"
 chmod 600 "$old_branded_root/sentinel"
@@ -850,12 +850,12 @@ QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY=''
 assert_fails qemu_persistent_storage_select \
   persistent "$identity_a" "$source_disk" "$source_sha" "$source_bytes" ''
 assert test ! -e "$default_home/Library/Application Support/VM"
-QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY='Try Roguix'
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY='Try Omaguix'
 qemu_persistent_storage_select \
   persistent "$identity_a" "$source_disk" "$source_sha" "$source_bytes" ''
 assert_eq \
   "$QEMU_SELECTED_DISK" \
-  "$default_home/Library/Application Support/Try Roguix/VM/v1/guix/disks/current/disk.raw"
+  "$default_home/Library/Application Support/Try Omaguix/VM/v1/guix/disks/current/disk.raw"
 assert test -f "$old_branded_root/sentinel"
 assert test ! -e "$default_home/Library/Application Support/Omarchy"
 qemu_persistent_storage_release_lock
@@ -1030,7 +1030,7 @@ qemu_persistent_storage_fetch_compressed_source \
   "$identity_download" "file://$download_server/" 4096 \
   "$download_bytes" "$download_sha" "$source_bytes" 2>"$test_root/download.log"
 assert cmp -s "$QEMU_DOWNLOADED_COMPRESSED_DISK" "$download_payload"
-assert grep -Fq "[qemu-gpu] Downloading Roguix: $download_bytes of $download_bytes bytes" \
+assert grep -Fq "[qemu-gpu] Downloading Omaguix: $download_bytes of $download_bytes bytes" \
   "$test_root/download.log"
 assert test ! -e "$(dirname "$QEMU_DOWNLOADED_COMPRESSED_DISK")/.$identity_download.download.parts"
 downloaded=$QEMU_DOWNLOADED_COMPRESSED_DISK

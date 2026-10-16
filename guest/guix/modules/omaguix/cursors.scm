@@ -1,4 +1,4 @@
-;;; Roguix — a macOS-style Xcursor theme.
+;;; Omaguix — a macOS-style Xcursor theme.
 ;;;
 ;;; ful1e5/apple_cursor commits only SVG sources; its own build renders them
 ;;; with cbmp (Node and a headless browser), recolouring them as render.json
@@ -8,7 +8,7 @@
 ;;; rsvg-convert renders each SVG at every cursor size and xcursorgen packs
 ;;; them. Only the black "macOS" variant is built; its theme directory keeps
 ;;; upstream's name.
-(define-module (roguix cursors)
+(define-module (omaguix cursors)
   #:use-module (guix packages)
   #:use-module (guix gexp)
   #:use-module (guix git-download)

@@ -75,7 +75,7 @@ help:
 	  '' \
 	  'Component builds:' \
 	  '  make guix-package GUIX_IMAGE=/path/image.raw' \
-	  '                      Package a Roguix image (guest/guix/build.py) into build/guix;' \
+	  '                      Package an Omaguix image (guest/guix/build.py) into build/guix;' \
 	  '                      GUIX_SYSTEM and GUIX_LOAD_PATH name its sources' \
 	  '  make runtime        Ensure macos/.build/qemu-gpu-runtime is current' \
 	  '  make app            Ensure the runtime and the app (with build/guix) are current' \
@@ -125,8 +125,8 @@ test-contracts:
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_builder_vm.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_artifact.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_busctl.py"
-	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_roguix_pkg.py"
-	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_roguix_update.py"
+	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omaguix_pkg.py"
+	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omaguix_update.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omarchy_menu.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omarchy_theme_bg.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omarchy_theme_set.py"
@@ -134,7 +134,7 @@ test-contracts:
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_battery_bridge.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_tob_parse.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_clipboard_bridge.py"
-	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_roguix_setup.py"
+	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_omaguix_setup.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_timezone.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_trust.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/test_release.py"
@@ -196,16 +196,16 @@ install: app
 	@printf 'Pin this copy in the Dock, not one under build/: builds are disposable.\n'
 
 run: install
-	@TRY_ROGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh
+	@TRY_OMAGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh
 
 run-isolated: app
-	@TRY_ROGUIX_APP="$(APP)" OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1 $(ROOT)/macos/open-qemu-gpu.sh
+	@TRY_OMAGUIX_APP="$(APP)" OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1 $(ROOT)/macos/open-qemu-gpu.sh
 
 run-ephemeral: install
-	@TRY_ROGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh --ephemeral
+	@TRY_OMAGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh --ephemeral
 
 reset: install
-	@TRY_ROGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh --reset-storage
+	@TRY_OMAGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh --reset-storage
 
 version-preflight:
 	@python3 "$(ROOT)/scripts/app_version.py" --root "$(ROOT)" --require-release

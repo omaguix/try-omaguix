@@ -110,7 +110,7 @@ struct StartupPreferenceStoreTests {
             preference: preference)?.path == "/private/tmp/override-vm/\(GuestStateLayout.subdirectory)")
         #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(environment: [:], identity: .tryOmaguix)?.path
                 == FileManager.default.homeDirectoryForCurrentUser
-                    .appendingPathComponent("Library/Application Support/Try Roguix/VM/v1")
+                    .appendingPathComponent("Library/Application Support/Try Omaguix/VM/v1")
                     .appendingPathComponent(GuestStateLayout.subdirectory).path)
     }
 

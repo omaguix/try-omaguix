@@ -53,14 +53,14 @@ struct InstalledAppRelease: Equatable {
     /// reports: Try Omarchy's base, Omarchy and the pinned Guix.
     static func upstreams(info: [String: Any]) -> String? {
         var parts: [String] = []
-        if let base = info["RoguixTryOmarchyBase"] as? String,
+        if let base = info["OmaguixTryOmarchyBase"] as? String,
            let describe = base.split(separator: " ").first {
             parts.append("Try Omarchy \(describe)")
         }
-        if let omarchy = info["RoguixOmarchyVersion"] as? String {
+        if let omarchy = info["OmaguixOmarchyVersion"] as? String {
             parts.append("Omarchy \(omarchy)")
         }
-        if let guix = info["RoguixGuixCommit"] as? String {
+        if let guix = info["OmaguixGuixCommit"] as? String {
             parts.append("Guix \(guix.prefix(8))")
         }
         return parts.isEmpty ? nil : "Based on " + parts.joined(separator: ", ")

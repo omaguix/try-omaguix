@@ -100,7 +100,7 @@ private func writeRecordedPersistentDisk(
     let sourceSHA = String(repeating: "d", count: 64)
     let metadata = directory.appendingPathComponent("metadata.json", isDirectory: false)
     try Data(
-        "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"roguix-qemu-persistent-disk\",\"schemaVersion\":\(schemaVersion),\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n".utf8
+        "{\"bundleIdentity\":\"\(identity)\",\"kind\":\"omaguix-qemu-persistent-disk\",\"schemaVersion\":\(schemaVersion),\"sourceRootfs\":{\"bytes\":1,\"sha256\":\"\(sourceSHA)\"}}\n".utf8
     ).write(to: metadata)
     try FileManager.default.setAttributes(
         [.posixPermissions: 0o600],

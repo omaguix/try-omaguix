@@ -1,4 +1,4 @@
-;;; Roguix — ttfx, the terminal text effects behind Omarchy's screensaver.
+;;; Omaguix — ttfx, the terminal text effects behind Omarchy's screensaver.
 ;;;
 ;;; Omarchy 4 runs its screensaver with ttfx (Omarchy 4e31b61a), a Rust port
 ;;; of terminaltexteffects, which the pinned Guix does not package. Unlike
@@ -8,7 +8,7 @@
 ;;; the same version and hash as the pinned Guix's (gnu packages
 ;;; rust-crates), so they are the same store items. Re-import them when the
 ;;; version changes.
-(define-module (roguix ttfx)
+(define-module (omaguix ttfx)
   #:use-module (guix packages)
   #:use-module (guix gexp)
   #:use-module (guix git-download)
@@ -50,7 +50,7 @@
               (substitute* "tests/easing_goldens.rs"
                 (("if cfg!\\(all\\(target_os = \"linux\", target_env = \"gnu\"\\)\\)")
                  "if false")))))))
-    (inputs (cargo-inputs 'ttfx #:module '(roguix ttfx)))
+    (inputs (cargo-inputs 'ttfx #:module '(omaguix ttfx)))
     (home-page "https://github.com/omacom/ttfx")
     (synopsis "Terminal text effects, a Rust port of terminaltexteffects")
     (description "ttfx animates text in a terminal with the effects of

@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""roguix-timezone: follow the Mac's time zone, or keep a fixed one.
+"""omaguix-timezone: follow the Mac's time zone, or keep a fixed one.
 
 Try Omarchy's try-omarchy-timezone (5cebb9b, docs/host-timezone.md) for a
 guest without systemd: the policy and the zone live in the machine settings
-file that roguix-setup writes (/var/lib/roguix/machine-settings.scm), as
+file that omaguix-setup writes (/var/lib/omaguix/machine-settings.scm), as
 `timezone-follows-mac' ("yes" or "no") and `timezone'. A file without the
 first key, from before this existed, keeps its zone fixed.
 
-  roguix-timezone            (root) read the Mac's zone from the root-only
+  omaguix-timezone            (root) read the Mac's zone from the root-only
                              dev.tryomarchy.timezone port, which the host
                              writes every five seconds; while following,
                              apply each change at once
-  roguix-timezone --select ZONE
+  omaguix-timezone --select ZONE
                              (root) fix the zone at ZONE and stop following,
                              or with "Same as macOS" follow again, starting
                              from the latest zone the Mac sent
-  roguix-timezone --mirror-label
+  omaguix-timezone --mirror-label
                              print "Same as macOS" when the Mac's zone is
                              known, for the setup and the menu
-  roguix-timezone --list     print the zones a user may choose
+  omaguix-timezone --list     print the zones a user may choose
 
-Applying a zone replaces /etc/localtime, as roguix-setup does, and records
-it in the settings file, so that the next boot (roguix-machine-settings)
+Applying a zone replaces /etc/localtime, as omaguix-setup does, and records
+it in the settings file, so that the next boot (omaguix-machine-settings)
 and the next reconfigure (/etc/config.scm) keep it.
 """
 
@@ -37,10 +37,10 @@ import sys
 import tempfile
 
 PORT = "/dev/virtio-ports/dev.tryomarchy.timezone"
-MACHINE_SETTINGS = "/var/lib/roguix/machine-settings.scm"
-LOCK = "/var/lib/roguix/timezone.lock"
-HOST_SETTINGS = "/run/roguix/host-settings"
-HOST_ZONE = "/run/roguix/host-timezone"
+MACHINE_SETTINGS = "/var/lib/omaguix/machine-settings.scm"
+LOCK = "/var/lib/omaguix/timezone.lock"
+HOST_SETTINGS = "/run/omaguix/host-settings"
+HOST_ZONE = "/run/omaguix/host-timezone"
 LOCALTIME = "/etc/localtime"
 FOLLOW_MAC_LABEL = "Same as macOS"
 ZONE = re.compile(r"^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$")
@@ -49,7 +49,7 @@ SETTING = re.compile(r'\(([a-z-]+) \. "([A-Za-z0-9_+./-]*)"\)')
 
 def system_zoneinfo():
     """The zoneinfo directory of the running system's tzdata (as in
-    roguix-setup: Guix keeps tzdata out of the system profile)."""
+    omaguix-setup: Guix keeps tzdata out of the system profile)."""
     tzdir = os.environ.get("TZDIR", "")
     if os.path.isdir(tzdir):
         return tzdir
@@ -98,8 +98,8 @@ def read_settings(path=MACHINE_SETTINGS):
 
 
 def settings_text(settings):
-    """The settings file's text, in roguix-setup's format."""
-    return (";; Written by roguix-setup; read by /etc/config.scm and at boot.\n("
+    """The settings file's text, in omaguix-setup's format."""
+    return (";; Written by omaguix-setup; read by /etc/config.scm and at boot.\n("
             + "\n ".join(f'({key} . "{value}")' for key, value in settings)
             + ")\n")
 
@@ -114,7 +114,7 @@ def with_values(settings, **values):
 
 def replace_file(path, text, mode=0o644):
     """Write PATH atomically: a reader sees the old or the new text."""
-    descriptor, staging = tempfile.mkstemp(prefix=".roguix-timezone-",
+    descriptor, staging = tempfile.mkstemp(prefix=".omaguix-timezone-",
                                            dir=os.path.dirname(path))
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
@@ -133,7 +133,7 @@ def link_localtime(zone, localtime=LOCALTIME, zoneinfo=None):
     target = zone_path(zone, zoneinfo)
     if os.path.islink(localtime) and os.readlink(localtime) == target:
         return False
-    staging = localtime + ".roguix-timezone"
+    staging = localtime + ".omaguix-timezone"
     if os.path.lexists(staging):
         os.remove(staging)
     os.symlink(target, staging)
@@ -316,17 +316,17 @@ def main(arguments):
         print("\n".join(zones()))
         return 0
     if os.geteuid() != 0:
-        print("roguix-timezone: run as root", file=sys.stderr)
+        print("omaguix-timezone: run as root", file=sys.stderr)
         return 1
     if len(arguments) == 2 and arguments[0] == "--select":
         try:
             locked(lambda: select(arguments[1]))
         except ValueError as error:
-            print(f"roguix-timezone: {error}", file=sys.stderr)
+            print(f"omaguix-timezone: {error}", file=sys.stderr)
             return 1
         return 0
     if arguments:
-        print("Usage: roguix-timezone [--select ZONE | --mirror-label | --list]",
+        print("Usage: omaguix-timezone [--select ZONE | --mirror-label | --list]",
               file=sys.stderr)
         return 64
     # Until the first message, follow the zone the Mac had at launch.

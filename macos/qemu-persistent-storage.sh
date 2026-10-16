@@ -10,7 +10,7 @@
 # the launcher is killed while QEMU is still writing the disk.
 
 QEMU_PERSISTENT_STORAGE_SCHEMA=2
-QEMU_PERSISTENT_STORAGE_KIND='roguix-qemu-persistent-disk'
+QEMU_PERSISTENT_STORAGE_KIND='omaguix-qemu-persistent-disk'
 QEMU_PERSISTENT_STORAGE_ROOT_MARKER='omarchy-qemu-storage-root-v1'
 QEMU_PERSISTENT_STORAGE_LOCK_FD=9
 QEMU_PERSISTENT_STORAGE_QEMU_ADD_FD='fd=9,set=77,opaque=omarchy-persistent-lock'
@@ -41,7 +41,7 @@ QPS_SAVED_VM_NAMES=()
 QPS_SAVED_VM_FIRST_FD=200
 QPS_SAVED_VM_NEXT_FD=$QPS_SAVED_VM_FIRST_FD
 # The guest is a GPT disk booted by the runtime's UEFI firmware. Its state
-# lives in a `guix` subdirectory of the state root, where Try Roguix has always
+# lives in a `guix` subdirectory of the state root, where Try Omaguix has always
 # kept it (the root itself once held Try Omarchy's Arch VM).
 QPS_DISK_NAME=disk.raw
 QPS_STATE_SUBDIRECTORY=guix
@@ -181,7 +181,7 @@ _qps_assert_source_disk() {
 # `df -P` names the device in its first field and `mount` keys its listing on
 # the same device, so matching on the device avoids parsing mount points. Those
 # routinely contain spaces, both for the default location under "Application
-# Support/Try Roguix" (the app identity's directory) and for anything under
+# Support/Try Omaguix" (the app identity's directory) and for anything under
 # /Volumes.
 _qps_volume_filesystem() {
   local qps_path=$1
@@ -837,23 +837,23 @@ qemu_persistent_storage_fetch_compressed_source() {
         qps_curl_pid=$!
         while kill -0 "$qps_curl_pid" 2>/dev/null; do
           qps_have=$(_qps_size "$qps_part" 2>/dev/null || echo 0)
-          printf '[qemu-gpu] Downloading Roguix: %s of %s bytes\n' \
+          printf '[qemu-gpu] Downloading Omaguix: %s of %s bytes\n' \
             "$((qps_done + ${qps_have:-0}))" "$qps_compressed_bytes" >&2
           sleep 2
         done
         if ! wait "$qps_curl_pid"; then
-          _qps_fail "could not download part $((qps_index + 1)) of the Roguix disk"
+          _qps_fail "could not download part $((qps_index + 1)) of the Omaguix disk"
           return 1
         fi
       fi
       [[ $(_qps_size "$qps_part") == "$qps_expected" ]] || {
         /bin/rm -f -- "$qps_part"
-        _qps_fail "part $((qps_index + 1)) of the Roguix disk has the wrong size"
+        _qps_fail "part $((qps_index + 1)) of the Omaguix disk has the wrong size"
         return 1
       }
       qps_done=$((qps_done + qps_expected))
     done
-    printf '[qemu-gpu] Downloading Roguix: %s of %s bytes\n' \
+    printf '[qemu-gpu] Downloading Omaguix: %s of %s bytes\n' \
       "$qps_compressed_bytes" "$qps_compressed_bytes" >&2
     ( umask 077 && : > "$qps_download" ) || return 1
     for ((qps_index = 0; qps_index < qps_count; qps_index++)); do
@@ -866,13 +866,13 @@ qemu_persistent_storage_fetch_compressed_source() {
 
   [[ $(_qps_size "$qps_download") == "$qps_compressed_bytes" ]] || {
     /bin/rm -f -- "$qps_download"
-    _qps_fail 'the downloaded Roguix disk has the wrong size'
+    _qps_fail 'the downloaded Omaguix disk has the wrong size'
     return 1
   }
   qps_actual=$(_qps_sha256 "$qps_download") || return 1
   if [[ $qps_actual != "$qps_compressed_sha" ]]; then
     /bin/rm -f -- "$qps_download"
-    _qps_fail 'the downloaded Roguix disk does not match its signed digest'
+    _qps_fail 'the downloaded Omaguix disk does not match its signed digest'
     return 1
   fi
   QEMU_DOWNLOADED_COMPRESSED_DISK=$qps_download
@@ -1147,7 +1147,7 @@ _qps_require_compatible_workspace() {
 
   if [[ $QPS_METADATA_SCHEMA != "$QEMU_PERSISTENT_STORAGE_SCHEMA" ]]; then
     _qps_incompatible \
-      'the saved VM uses an unsupported storage format; use Reset Roguix to continue'
+      'the saved VM uses an unsupported storage format; use Reset Omaguix to continue'
     return $?
   fi
   if [[ $QPS_METADATA_IDENTITY != "$qps_identity" ]]; then
@@ -1293,7 +1293,7 @@ _qps_migrate_legacy_single_workspace() {
   [[ -n $qps_selected ]] || {
     if [[ $qps_mode == persistent && $qps_valid_count -gt 0 ]]; then
       _qps_incompatible \
-        'the saved VM uses an unsupported storage format; use Reset Roguix to continue'
+        'the saved VM uses an unsupported storage format; use Reset Omaguix to continue'
       return $?
     fi
     _qps_fail 'legacy Omarchy disks were found, but none are safe to migrate or reset'
@@ -1376,7 +1376,7 @@ _qps_report_saved_vm_candidates() {
 _qps_multiple_saved_vms() {
   _qps_report_saved_vm_candidates || true
   _qps_incompatible \
-    'multiple saved VMs were found; choose the one to keep, or use Reset Roguix'
+    'multiple saved VMs were found; choose the one to keep, or use Reset Omaguix'
 }
 
 # Locks an identity-keyed saved VM on descriptor FD, as a launch of that disk
@@ -1571,7 +1571,7 @@ _qps_publish_recorded_selection() {
   _qps_validate_recorded_workspace "$qps_final" || return 1
   if [[ $QPS_METADATA_SCHEMA != "$QEMU_PERSISTENT_STORAGE_SCHEMA" ]]; then
     _qps_incompatible \
-      'the saved VM uses an unsupported storage format; use Reset Roguix to continue'
+      'the saved VM uses an unsupported storage format; use Reset Omaguix to continue'
     return $?
   fi
   if [[ -n $qps_source ]] && \

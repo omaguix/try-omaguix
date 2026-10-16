@@ -5,7 +5,7 @@ it needs:
 
 - **Channel release** (`guest/guix/release.py`; see `server/README.md` and
   docs/decisions/0006-one-roguix-release-step.md): anything a running
-  VM can pick up with `roguix-update`, such as guest packages, services,
+  VM can pick up with `omaguix-update`, such as guest packages, services,
   Omarchy's desktop and Omaguix's own guest commands. Existing VMs get it
   without a new app.
 - **App release** (this page): the Mac app, its QEMU runtime, the launcher
@@ -17,21 +17,19 @@ meets a guest without its half.
 
 ## Versions and tags
 
-Try Omaguix releases are tagged `try-roguix-vX.Y.Z`, independently of the
+Try Omaguix releases are tagged `try-omaguix-vX.Y.Z`, independently of the
 three upstreams it carries; the prefix names the Mac app, as opposed to the
 Omaguix guest and its channel. The Mac app's `CFBundleShortVersionString`
 comes from that tag (`scripts/app_version.py`) and must be three integers,
 and the update checker (`AppRelease.swift`) only accepts such tags with a
-`TryOmaguix.dmg` asset (or the published historical `TryRoguix.dmg`), on a
-published release that is not marked as a prerelease; it reads the prefix,
-repository and names from the app identity (`macos/README.md`, "App
+`TryOmaguix.dmg` asset, on a published release that is not marked as a
+prerelease; it reads the prefix, repository and names from the app identity (`macos/README.md`, "App
 identity"). The first Try Roguix release, 0.5.0, was tagged `v0.5.0` before
-this scheme; that tag stays, and releases from 0.5.1 on use the prefix.
-`v0.1.0` to `v0.4.1` were Try Omarchy's.
-
-The historical `try-roguix-v` tag prefix remains the release-version
-contract after the product rename; existing tags and assets are never
-renamed or moved.
+this scheme, and 0.5.1 `try-roguix-v0.5.1` with `TryRoguix.dmg`; those tags
+and assets stay as history and are never renamed or moved. The rename to
+Omaguix started the `try-omaguix-v` series, whose first release must be newer
+than 0.5.1; apps built before it look only for `try-roguix-v` tags and do not
+see it. `v0.1.0` to `v0.4.1` were Try Omarchy's.
 
 Upstream's tags are kept locally under `try-omarchy/`, apart from Try
 Omaguix's:
@@ -41,11 +39,12 @@ git config remote.upstream.tagOpt --no-tags
 git config --add remote.upstream.fetch '+refs/tags/*:refs/tags/try-omarchy/*'
 ```
 
-Each build records its upstreams in `Info.plist` (`RoguixTryOmarchyBase`,
-`RoguixOmarchyVersion`, `RoguixGuixCommit`), and the updates window shows
+Each build records its upstreams in `Info.plist` (`OmaguixTryOmarchyBase`,
+`OmaguixOmarchyVersion`, `OmaguixGuixCommit`), and the updates window shows
 them. Release titles name them too, for example
 "Try Roguix 0.5.0 (Try Omarchy v0.4.1+33, Omarchy 4.0.4, Guix 7e74121a)";
-releases after the rename say Try Omaguix.
+releases after the rename say Try Omaguix. Builds before the rename recorded
+the same upstreams under `Roguix`-prefixed keys.
 
 ## The factory image
 
@@ -70,10 +69,10 @@ after the first attempt; never to turn Gatekeeper off.
 2. Build and package the factory image (`guest/guix/README.md`,
    `make guix-package GUIX_IMAGE=...`) from the commit being released,
    passing `build.py` the channel release of step 1 as `--channel-commit`:
-   `roguix-update` in the image updates only from that release on
+   `omaguix-update` in the image updates only from that release on
    (docs/decisions/0007-move-vms-across-guix-pins.md).
 3. `make test`.
-4. Tag the release commit: `git tag -a try-roguix-vX.Y.Z -m "Try Omaguix X.Y.Z"`.
+4. Tag the release commit: `git tag -a try-omaguix-vX.Y.Z -m "Try Omaguix X.Y.Z"`.
 5. `macos/release.sh`: `TryOmaguix.dmg`, the disk parts and `SHA256SUMS` in
    `dist/TAG`. It builds the release app in `build/release.noindex`, so a
    development app running from `~/Applications` is never touched, and stops

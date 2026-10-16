@@ -1,4 +1,4 @@
-From: Try Roguix contributors
+From: Try Omaguix contributors
 Subject: [PATCH] cocoa: leave Command-Tab to the macOS application switcher
 
 Applies after the immersive-mode, full-grab-focus and full-grab-reenable

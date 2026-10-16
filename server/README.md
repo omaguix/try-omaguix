@@ -12,7 +12,7 @@ is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 - `guix-publish.service`: `/etc/systemd/system/guix-publish.service`.
 - `roguix.frolow.dev.conf`: `/etc/nginx/conf.d/roguix.frolow.dev.conf`, as
   certbot left it.
-- `roguix-prebake.sh`: bakes the publish cache one item at a time, so no
+- `omaguix-prebake.sh`: bakes the publish cache one item at a time, so no
   guest request starts compression.
 
 ## Setup
@@ -20,7 +20,7 @@ is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 1. `apt-get install uidmap`, then Guix with `guix-install.sh`
    (`https://guix.gnu.org/guix-install.sh`; it checks the release's signature).
 2. `guix archive --generate-key`. The public key is
-   `guest/guix/modules/roguix/roguix.frolow.dev.pub`; the secret key never
+   `guest/guix/modules/omaguix/roguix.frolow.dev.pub`; the secret key never
    leaves `/etc/guix/signing-key.sec`.
 3. Install the unit and the nginx site, `nginx -t && systemctl reload nginx`,
    `systemctl enable --now guix-publish`, then
@@ -33,7 +33,7 @@ is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 A release is one step from the Mac, `guest/guix/release.py`
 (docs/decisions/0006-one-roguix-release-step.md): `publish-channel` pushes the
 signed channel commit to `release/<commit>`, `omaguix/omaguix`'s CI builds that
-commit for aarch64 and x86_64, the VPS imports CI's releases with roguix's
+commit for aarch64 and x86_64, the VPS imports CI's releases with omaguix's
 `scripts/vps-import` over SSH (`VPS_IMPORT` in `.env`), every package item is
 checked on bordeaux or roguix.frolow.dev, and a signed `release.json` on top
 of the commit moves the channel's `main`. `--dry-run` prints the steps.
@@ -43,10 +43,10 @@ Only ungrafted items are published: grafts are built with
 them and grafts locally, which copies without compiling.
 
 When CI cannot build, `publish-system.sh` does CI's aarch64 half in the
-builder VM: it builds the reference system with the pinned Guix, runs roguix's
+builder VM: it builds the reference system with the pinned Guix, runs omaguix's
 licence collector and `scripts/desktop-split` (fetched at the commit it pins)
 on its closure, exports `publish.txt` and has `publish.sh` import it.
 `publish.sh` has the VPS substitute `vps-fetch.txt` from bordeaux (an import
 needs every reference valid), import the archive, and bake the cache with
-`roguix-prebake.sh`, all under `nice` and idle I/O. A release made this way
+`omaguix-prebake.sh`, all under `nice` and idle I/O. A release made this way
 still moves the channel with `release.py` once CI builds again.

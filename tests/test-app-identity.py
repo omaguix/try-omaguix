@@ -25,20 +25,20 @@ spec.loader.exec_module(identity)
 DEFAULT = {
     "APP_NAME": "Try Omaguix",
     "DEVELOPMENT_APP_NAME": "Try Omaguix Dev",
-    "BUNDLE_IDENTIFIER": "dev.tryroguix.native",
-    "DEVELOPMENT_BUNDLE_IDENTIFIER": "dev.tryroguix.native.development",
-    "APPLICATION_SUPPORT_DIRECTORY": "Try Roguix",
-    "LOGS_DIRECTORY": "Try Roguix",
-    "LEGACY_APP_NAMES": "Try Roguix,Try Roguix Dev",
-    "DEVELOPMENT_CERTIFICATE": "Try Roguix Development",
-    "DEVELOPMENT_KEYCHAIN": "try-roguix-development.keychain-db",
-    "DEVELOPMENT_KEYCHAIN_PASSWORD": "try-roguix/development-keychain-password",
-    "RELEASE_TAG_PREFIX": "try-roguix-v",
+    "BUNDLE_IDENTIFIER": "dev.tryomaguix.native",
+    "DEVELOPMENT_BUNDLE_IDENTIFIER": "dev.tryomaguix.native.development",
+    "APPLICATION_SUPPORT_DIRECTORY": "Try Omaguix",
+    "LOGS_DIRECTORY": "Try Omaguix",
+    "LEGACY_APP_NAMES": "",
+    "DEVELOPMENT_CERTIFICATE": "Try Omaguix Development",
+    "DEVELOPMENT_KEYCHAIN": "try-omaguix-development.keychain-db",
+    "DEVELOPMENT_KEYCHAIN_PASSWORD": "try-omaguix/development-keychain-password",
+    "RELEASE_TAG_PREFIX": "try-omaguix-v",
     "RELEASE_DMG": "TryOmaguix.dmg",
-    "LEGACY_RELEASE_DMGS": "TryRoguix.dmg",
+    "LEGACY_RELEASE_DMGS": "",
     "RELEASE_REPOSITORY": "omaguix/try-omaguix",
     "ICON": "TryOmaguix.svg",
-    "NETWORK_HELPER_SERVICE": "dev.tryroguix.network",
+    "NETWORK_HELPER_SERVICE": "dev.tryomaguix.network",
 }
 
 SECOND = {
@@ -48,14 +48,14 @@ SECOND = {
     "DEVELOPMENT_BUNDLE_IDENTIFIER": "dev.example.omabend.development",
     "APPLICATION_SUPPORT_DIRECTORY": "Try Omabend Data",
     "LOGS_DIRECTORY": "Try Omabend Logs",
-    "LEGACY_APP_NAMES": "",
+    # Older names, so the legacy paths stay covered: Try Omaguix has none.
+    "LEGACY_APP_NAMES": "Try Omabend Old",
     "DEVELOPMENT_CERTIFICATE": "Try Omabend Development",
     "DEVELOPMENT_KEYCHAIN": "try-omabend-development.keychain-db",
     "DEVELOPMENT_KEYCHAIN_PASSWORD": "try-omabend/development-keychain-password",
     "RELEASE_TAG_PREFIX": "try-omabend-v",
     "RELEASE_DMG": "TryOmabend.dmg",
-    # No older releases.
-    "LEGACY_RELEASE_DMGS": "",
+    "LEGACY_RELEASE_DMGS": "OldOmabend.dmg",
     "RELEASE_REPOSITORY": "example/try-omabend",
     "ICON": "TryOmabend.svg",
     # No bridged-networking helper: NAT only.
@@ -125,22 +125,22 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual(identity.DEFAULT, ROOT / "macos/apps/try-omaguix.env")
         self.assertEqual(identity.load(identity.DEFAULT), DEFAULT)
         self.assertEqual(self.shell(None), DEFAULT)
-        self.assertEqual(self.tag_prefix(None), "try-roguix-v")
+        self.assertEqual(self.tag_prefix(None), "try-omaguix-v")
         home = os.environ["HOME"]
         install = self.make(None, "install")
         self.assertIn(f'"{ROOT}/build/dev.noindex/Try Omaguix.app" '
                       f'"{home}/Applications/Try Omaguix Dev.app"', install)
         clean = self.make(None, "clean-all")
-        self.assertIn("(Try Roguix|Try Roguix Dev|Try Omaguix|Try Omaguix Dev)[.]app/Contents/",
+        self.assertIn("(Try Omaguix|Try Omaguix Dev)[.]app/Contents/",
                       clean)
         for path in (
-            "Library/Application Support/Try Roguix\"",
-            "Library/Caches/dev.tryroguix.native\"",
-            "Library/Preferences/dev.tryroguix.native.plist\"",
-            "Library/Saved Application State/dev.tryroguix.native.savedState\"",
-            "Library/Caches/dev.tryroguix.native.development\"",
-            "Library/Preferences/dev.tryroguix.native.development.plist\"",
-            "Library/Saved Application State/dev.tryroguix.native.development.savedState\"",
+            "Library/Application Support/Try Omaguix\"",
+            "Library/Caches/dev.tryomaguix.native\"",
+            "Library/Preferences/dev.tryomaguix.native.plist\"",
+            "Library/Saved Application State/dev.tryomaguix.native.savedState\"",
+            "Library/Caches/dev.tryomaguix.native.development\"",
+            "Library/Preferences/dev.tryomaguix.native.development.plist\"",
+            "Library/Saved Application State/dev.tryomaguix.native.development.savedState\"",
         ):
             self.assertIn(path, clean)
 
@@ -155,7 +155,7 @@ class IdentityTests(unittest.TestCase):
         self.assertIn(f'"{ROOT}/build/dev.noindex/Try Omabend.app" '
                       f'"{home}/Applications/Try Omabend Dev.app"', install)
         clean = self.make(self.second, "clean-all")
-        self.assertIn("(Try Omabend|Try Omabend Dev)[.]app/Contents/", clean)
+        self.assertIn("(Try Omabend Old|Try Omabend|Try Omabend Dev)[.]app/Contents/", clean)
         self.assertIn("Library/Application Support/Try Omabend Data\"", clean)
         self.assertIn("Library/Caches/dev.example.omabend.development\"", clean)
         help_text = self.make(self.second, "help")
@@ -173,22 +173,22 @@ class IdentityTests(unittest.TestCase):
                         self.assertNotIn(value, code, f"{name}:{number}")
         build = (ROOT / "macos/build-app.sh").read_text()
         # The identity reaches the bundle for the app and the launcher to read.
-        self.assertIn('value["RoguixApplicationSupportDirectory"] = sys.argv[4]', build)
-        self.assertIn('value["RoguixLogsDirectory"] = sys.argv[5]', build)
-        self.assertIn('value["RoguixApplicationName"] = sys.argv[6]', build)
-        self.assertIn('value["RoguixDevelopmentApplicationName"] = sys.argv[7]', build)
-        self.assertIn('value["RoguixNetworkHelperService"] = sys.argv[8]', build)
-        self.assertIn('value["RoguixReleaseRepository"] = sys.argv[10]', build)
-        self.assertIn('value["RoguixReleaseTagPrefix"] = sys.argv[11]', build)
-        self.assertIn('value["RoguixReleaseDMG"] = sys.argv[12]', build)
-        self.assertIn('value["RoguixLegacyReleaseDMGs"] = sys.argv[13]', build)
+        self.assertIn('value["OmaguixApplicationSupportDirectory"] = sys.argv[4]', build)
+        self.assertIn('value["OmaguixLogsDirectory"] = sys.argv[5]', build)
+        self.assertIn('value["OmaguixApplicationName"] = sys.argv[6]', build)
+        self.assertIn('value["OmaguixDevelopmentApplicationName"] = sys.argv[7]', build)
+        self.assertIn('value["OmaguixNetworkHelperService"] = sys.argv[8]', build)
+        self.assertIn('value["OmaguixReleaseRepository"] = sys.argv[10]', build)
+        self.assertIn('value["OmaguixReleaseTagPrefix"] = sys.argv[11]', build)
+        self.assertIn('value["OmaguixReleaseDMG"] = sys.argv[12]', build)
+        self.assertIn('value["OmaguixLegacyReleaseDMGs"] = sys.argv[13]', build)
         self.assertIn('"$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" "$APP_NAME" \\\n'
                       '  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" \\\n'
                       '  "$RELEASE_REPOSITORY" "$RELEASE_TAG_PREFIX" "$RELEASE_DMG" "$LEGACY_RELEASE_DMGS"',
                       build)
 
     def test_legacy_release_disk_images_may_be_one_several_or_none(self):
-        for value in ("", "TryRoguix.dmg", "TryRoguix.dmg,Try.Old-1.dmg"):
+        for value in ("", "TryOmaguix.dmg", "TryOmaguix.dmg,Try.Old-1.dmg"):
             with self.subTest(value=value):
                 path = write_identity(self.directory / "legacy.env",
                                       {**SECOND, "LEGACY_RELEASE_DMGS": value})

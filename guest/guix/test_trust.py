@@ -1,19 +1,19 @@
-"""Roguix's substitute server and channel are named in (roguix trust) only."""
+"""Omaguix's substitute server and channel are named in (omaguix trust) only."""
 
 from pathlib import Path
 import re
 import unittest
 
 HERE = Path(__file__).parent
-TRUST = HERE / "modules" / "roguix" / "trust.scm"
+TRUST = HERE / "modules" / "omaguix" / "trust.scm"
 ROOT = HERE.parent.parent
 
 
 def record_values():
-    """The string literals of %roguix-trust: substitute URL, key file,
+    """The string literals of %omaguix-trust: substitute URL, key file,
     channel URL, introduction and signer, in that order."""
     source = TRUST.read_text()
-    body = source[source.index("(define %roguix-trust"):]
+    body = source[source.index("(define %omaguix-trust"):]
     return re.findall(r'"([^"]*)"', body)
 
 
@@ -41,16 +41,16 @@ class TrustRecordTests(unittest.TestCase):
                 self.assertFalse(value in text, f"{path}: {value}")
 
     def test_system_and_update_use_the_record(self):
-        modules = HERE / "modules" / "roguix"
+        modules = HERE / "modules" / "omaguix"
         system = (modules / "system.scm").read_text()
         omarchy = (modules / "omarchy.scm").read_text()
-        for accessor in ("roguix-trust-substitute-url",
-                         "roguix-trust-substitute-key"):
-            self.assertIn(f"({accessor} %roguix-trust)", system)
-        for accessor in ("roguix-trust-channel-url",
-                         "roguix-trust-channel-introduction",
-                         "roguix-trust-channel-signer"):
-            self.assertIn(f"({accessor} %roguix-trust)", omarchy)
+        for accessor in ("omaguix-trust-substitute-url",
+                         "omaguix-trust-substitute-key"):
+            self.assertIn(f"({accessor} %omaguix-trust)", system)
+        for accessor in ("omaguix-trust-channel-url",
+                         "omaguix-trust-channel-introduction",
+                         "omaguix-trust-channel-signer"):
+            self.assertIn(f"({accessor} %omaguix-trust)", omarchy)
 
     def test_channel_decision_states_the_same_channel(self):
         _, _, channel, introduction, signer = record_values()

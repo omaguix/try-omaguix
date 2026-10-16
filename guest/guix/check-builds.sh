@@ -1,6 +1,6 @@
 #!/bin/bash
 # Read a Guix dry run (`guix ... -n`) on stdin and fail if it would build
-# anything besides Roguix's own packages and derivations Guix marks as local
+# anything besides Omaguix's own packages and derivations Guix marks as local
 # builds (preferLocalBuild: configuration files, profile hooks, grafts,
 # GRUB's image). Anything else is a package bordeaux has no substitute for.
 # Run in the builder VM, where the listed .drv files exist, with GUIX set to
@@ -9,9 +9,9 @@
 #   $GUIX system build -n --no-grafts -L guest/guix/modules \
 #     guest/guix/system.scm 2>&1 | guest/guix/check-builds.sh
 set -euo pipefail
-modules=$(cd "$(dirname "$0")/modules/roguix" && pwd)
+modules=$(cd "$(dirname "$0")/modules/omaguix" && pwd)
 
-# NAME-VERSION of each package Roguix's modules define, unexported ones too.
+# NAME-VERSION of each package Omaguix's modules define, unexported ones too.
 names=$(mktemp)
 trap 'rm -f "$names"' EXIT
 ${GUIX:-guix} repl -L "$modules/.." -- /dev/stdin > "$names" <<'SCHEME'
@@ -26,11 +26,11 @@ ${GUIX:-guix} repl -L "$modules/.." -- /dev/stdin > "$names" <<'SCHEME'
           (format #t "~a-~a~%" (package-name package)
                   (package-version package)))))
     (resolve-module name)))
- '((roguix packages) (roguix apps) (roguix omarchy) (roguix integrations)
-   (roguix services) (roguix system) (roguix ttfx)))
+ '((omaguix packages) (omaguix apps) (omaguix omarchy) (omaguix integrations)
+   (omaguix services) (omaguix system) (omaguix ttfx)))
 SCHEME
 ours=$(sort -u "$names")
-[[ -n $ours ]] || { echo "check-builds: found no Roguix packages" >&2; exit 2; }
+[[ -n $ours ]] || { echo "check-builds: found no Omaguix packages" >&2; exit 2; }
 
 # The dry run lists derivations to build between "would be built:" and the
 # next heading; each is an indented /gnu/store/...drv path.
@@ -57,4 +57,4 @@ if (( unexpected )); then
   echo "check-builds: $unexpected of $count derivations have no substitutes" >&2
   exit 1
 fi
-echo "check-builds: $count derivations to build, all Roguix's own or local"
+echo "check-builds: $count derivations to build, all Omaguix's own or local"

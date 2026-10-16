@@ -1,17 +1,17 @@
 # Move Omaguix VMs across Guix pins
 
-Changes [0004](0004-roguix-channel.md)'s rule that `roguix-update` refuses a
+Changes [0004](0004-roguix-channel.md)'s rule that `omaguix-update` refuses a
 release on another Guix pin, and makes the VM check
 [0006](0006-one-roguix-release-step.md)'s release commit.
 
 ## Context
 
 An Omaguix VM reconfigures with the Guix that built its image, kept as the GC
-root `/var/guix/gcroots/roguix-guix`, so it reuses the image's derivations
+root `/var/guix/gcroots/omaguix-guix`, so it reuses the image's derivations
 and never compiles Guix. Its system pins that root again on every
-reconfigure: `(roguix system)`'s `pinned-guix` reads the root's own target.
+reconfigure: `(omaguix system)`'s `pinned-guix` reads the root's own target.
 So even when a newer Guix ran the reconfigure, the new system would point
-the root back at the old Guix. `roguix-update` therefore refused a release
+the root back at the old Guix. `omaguix-update` therefore refused a release
 whose `guix-commit` differed from the VM's and told the owner to reset the
 VM, which erases it.
 
@@ -30,7 +30,7 @@ That Guix is the pinned Guix G plus one small patch, so that the move needs
 no Guix clone, and the VM's own descendant check replaces Guix's downgrade
 check, which the patch lets it skip.
 
-1. `modules/roguix/guix-skip-forward-check.patch`, which travels in the
+1. `modules/omaguix/guix-skip-forward-check.patch`, which travels in the
    channel commit, adds `--no-check-forward-update` to `guix system
    reconfigure`. Without the option nothing changes: `check-forward-update`
    runs and aborts a downgrade.
@@ -50,18 +50,18 @@ check, which the patch lets it skip.
    on the maintainer's machine (`.env`'s `GUIX_CHECKOUT`) decides it with
    `git merge-base --is-ancestor`; the release step fetches nothing.
 4. Every system records the commit of the channel's `main` it was built
-   from as `/etc/roguix/channel-commit`. Images are built from a published
+   from as `/etc/omaguix/channel-commit`. Images are built from a published
    channel release: `build.py` refuses to build without
-   `--channel-commit`, and `(roguix system)` installs it from
-   `ROGUIX_CHANNEL_COMMIT`; `roguix-update` sets that to the `main` it
+   `--channel-commit`, and `(omaguix system)` installs it from
+   `OMAGUIX_CHANNEL_COMMIT`; `omaguix-update` sets that to the `main` it
    applies, and other reconfigures keep the running system's record.
-5. `roguix-update` authenticates the channel as before, then requires its
+5. `omaguix-update` authenticates the channel as before, then requires its
    `main` to be a release commit: one parent, the commit `release.json`
    names, a change to nothing but `release.json`, and the same Guix pin in
    both. It also requires `main` to descend (`git merge-base
    --is-ancestor` in the authenticated checkout) from the running system's
-   own record, `/etc/roguix/channel-commit`, which is the authority, and,
-   when it exists, from the cursor `/var/lib/roguix/channel-commit`, the
+   own record, `/etc/omaguix/channel-commit`, which is the authority, and,
+   when it exists, from the cursor `/var/lib/omaguix/channel-commit`, the
    newest `main` it applied; the cursor keeps `main` from going back to an
    older generation that `guix system roll-back` returned to. A missing or
    invalid record, or a `main` that is older or diverged, stops it without a
@@ -71,21 +71,21 @@ check, which the patch lets it skip.
    rename). A failed run keeps the cursor, and a crash between the
    activation and the cursor is harmless, because the new system's record
    already names its `main`. A lock (`flock` from util-linux on
-   `/var/lib/roguix/update.lock`) keeps a second run from starting
-   meanwhile, and a missing `/etc/roguix/modules/roguix/guix-commit` or an
+   `/var/lib/omaguix/update.lock`) keeps a second run from starting
+   meanwhile, and a missing `/etc/omaguix/modules/omaguix/guix-commit` or an
    unreadable free space stops it rather than counting as a move.
 6. When the release's `guix-commit` differs from
-   `/etc/roguix/modules/roguix/guix-commit`, it takes P for its own
+   `/etc/omaguix/modules/omaguix/guix-commit`, it takes P for its own
    architecture (`uname -m`), checks it is a store item and that the store
    has a minimum of free space, roots it temporarily, realizes it from
    substitutes only (`ensure-path` through the VM's `guix repl`; a store
    path cannot be built, and `build-things` reports success for an item no
    server has), checks that `P/bin/guix describe` names G', and runs
    `P/bin/guix system reconfigure --no-check-forward-update` with
-   `ROGUIX_GUIX=P`. On the same pin it passes no such option.
-   `pinned-guix` pins `ROGUIX_GUIX` when it is set, and otherwise the root,
+   `OMAGUIX_GUIX=P`. On the same pin it passes no such option.
+   `pinned-guix` pins `OMAGUIX_GUIX` when it is set, and otherwise the root,
    as before. Activating the new generation points the root at P and
-   `/etc/roguix` at the release's modules.
+   `/etc/omaguix` at the release's modules.
 
 Guix substitutes or builds the whole new system before it switches the
 system profile, so a move that fails (no space, a missing substitute, a
@@ -93,12 +93,12 @@ network error) leaves the running system unchanged.
 
 Rollback is the system's previous generation: `guix system roll-back` (the
 menu's Update → Guix System → Roll back) activates it, which points the root
-back at the old Guix and `/etc/roguix` at the old modules, and makes it
+back at the old Guix and `/etc/omaguix` at the old modules, and makes it
 GRUB's default; a reboot completes it, because until then
-`/run/current-system` (and so the commands on `PATH`, `roguix-update`
+`/run/current-system` (and so the commands on `PATH`, `omaguix-update`
 among them) stays the system that booted. Each generation references the Guix it pins, so
 garbage collection keeps it while the generation exists. A later
-`roguix-update` moves again.
+`omaguix-update` moves again.
 
 ## Alternatives
 
@@ -137,12 +137,12 @@ garbage collection keeps it while the generation exists. A later
   `roguix.frolow.dev` and about 0.5 GiB for it.
 - CI must build P from G plus the patch, publish it and name it and G'; a
   release without P for an architecture cannot move that architecture's
-  VMs to its pin, and `roguix-update` says so. The patch must apply to
+  VMs to its pin, and `omaguix-update` says so. The patch must apply to
   each new pin; a pin bump that breaks it needs the patch refreshed first.
 - The channel's history is the downgrade guard: a release that rewound
   `main`, or a channel history that diverged, is refused in every VM, and
   the release step keeps G moving forward along releases.
-- An image without `/etc/roguix/channel-commit` (any built before this
+- An image without `/etc/omaguix/channel-commit` (any built before this
   decision) cannot update; nobody runs one yet.
 - The VM trusts the signed `release.json` for "G' = G plus the patch"; CI
   verifies it when it builds P, and the VM only checks that P describes

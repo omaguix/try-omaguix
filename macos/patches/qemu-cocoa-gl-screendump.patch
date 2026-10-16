@@ -1,7 +1,7 @@
-From: Try Roguix contributors
+From: Try Omaguix contributors
 Subject: [PATCH] cocoa: read the GL scanout back for screendump
 
-Applies after the texture-borrowing and the other Try Roguix Cocoa patches.
+Applies after the texture-borrowing and the other Try Omaguix Cocoa patches.
 
 A GL scanout (dpy_gl_scanout_texture) is drawn from the guest's texture and
 never fills the console's DisplaySurface, so QMP screendump saved a black

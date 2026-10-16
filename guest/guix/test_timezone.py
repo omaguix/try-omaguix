@@ -1,4 +1,4 @@
-"""roguix-timezone: following the Mac's zone, fixed choices and resuming."""
+"""omaguix-timezone: following the Mac's zone, fixed choices and resuming."""
 
 import base64
 import importlib.machinery
@@ -10,16 +10,16 @@ import tempfile
 import unittest
 
 HERE = Path(__file__).parent
-path = HERE / "modules" / "roguix" / "timezone"
-loader = importlib.machinery.SourceFileLoader("roguix_timezone", str(path))
-spec = importlib.util.spec_from_loader("roguix_timezone", loader)
+path = HERE / "modules" / "omaguix" / "timezone"
+loader = importlib.machinery.SourceFileLoader("omaguix_timezone", str(path))
+spec = importlib.util.spec_from_loader("omaguix_timezone", loader)
 timezone = importlib.util.module_from_spec(spec)
 loader.exec_module(timezone)
 
-setup_path = HERE / "modules" / "roguix" / "roguix-setup"
-setup_loader = importlib.machinery.SourceFileLoader("roguix_setup", str(setup_path))
+setup_path = HERE / "modules" / "omaguix" / "omaguix-setup"
+setup_loader = importlib.machinery.SourceFileLoader("omaguix_setup", str(setup_path))
 setup = importlib.util.module_from_spec(
-    importlib.util.spec_from_loader("roguix_setup", setup_loader))
+    importlib.util.spec_from_loader("omaguix_setup", setup_loader))
 setup_loader.exec_module(setup)
 
 
@@ -36,7 +36,7 @@ class TimezoneTests(unittest.TestCase):
         self.settings = self.root / "machine-settings.scm"
 
     def write_settings(self, zone, follows):
-        """The settings file exactly as roguix-setup writes it."""
+        """The settings file exactly as omaguix-setup writes it."""
         self.settings.write_text(setup.machine_settings(
             "studio", zone, follows, setup.LAYOUTS[0], "ko_KR.utf8"))
 
@@ -73,7 +73,7 @@ class TimezoneTests(unittest.TestCase):
         self.assertEqual({k: v for k, v in after if k != "timezone"},
                          {k: v for k, v in before if k != "timezone"})
         self.assertEqual(self.settings.read_text().splitlines()[0],
-                         ";; Written by roguix-setup; read by /etc/config.scm and at boot.")
+                         ";; Written by omaguix-setup; read by /etc/config.scm and at boot.")
 
     def test_a_fixed_zone_ignores_the_mac(self):
         self.write_settings("Europe/Warsaw", False)
@@ -82,7 +82,7 @@ class TimezoneTests(unittest.TestCase):
         self.assertEqual(self.values()["timezone"], "Europe/Warsaw")
 
     def test_settings_from_before_following_keep_their_zone(self):
-        self.settings.write_text(';; Written by roguix-setup.\n((host-name . "studio")\n'
+        self.settings.write_text(';; Written by omaguix-setup.\n((host-name . "studio")\n'
                                  ' (timezone . "Europe/Warsaw"))\n')
         self.assertFalse(self.follow("Asia/Tokyo"))
         self.assertEqual(self.values(), {"host-name": "studio", "timezone": "Europe/Warsaw"})
@@ -176,16 +176,16 @@ class TimezoneTests(unittest.TestCase):
 class MenuAndSudoTests(unittest.TestCase):
     """The pieces of omarchy.scm and system.scm that must agree."""
 
-    COMMAND = "/run/current-system/profile/bin/roguix-timezone"
+    COMMAND = "/run/current-system/profile/bin/omaguix-timezone"
 
     def sudoers_rule(self):
-        system = (HERE / "modules" / "roguix" / "system.scm").read_text()
+        system = (HERE / "modules" / "omaguix" / "system.scm").read_text()
         block = system[system.index("(sudoers-file"):]
         block = block[:block.index("\n\n")]
         return "".join(re.findall(r'"((?:[^"\\]|\\.)*)"', block)[1:])
 
     def test_menu_runs_the_command_sudoers_allows(self):
-        omarchy = (HERE / "modules" / "roguix" / "omarchy.scm").read_text()
+        omarchy = (HERE / "modules" / "omaguix" / "omarchy.scm").read_text()
         self.assertIn(f"sudo -n {self.COMMAND} --select", omarchy)
         self.assertTrue(self.sudoers_rule().startswith(
             f"%wheel ALL=(root) NOPASSWD: {self.COMMAND} ^--select "))

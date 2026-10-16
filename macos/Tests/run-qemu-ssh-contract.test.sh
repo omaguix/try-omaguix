@@ -66,9 +66,9 @@ mkdir -p \
 # The app identity build-app.sh writes into Info.plist (macos/README.md,
 # "App identity").
 /usr/bin/plutil -create xml1 "$contents/Info.plist"
-/usr/bin/plutil -insert RoguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
-/usr/bin/plutil -insert RoguixApplicationSupportDirectory -string 'Try Roguix' "$contents/Info.plist"
-/usr/bin/plutil -insert RoguixNetworkHelperService -string dev.tryroguix.network "$contents/Info.plist"
+/usr/bin/plutil -insert OmaguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
+/usr/bin/plutil -insert OmaguixApplicationSupportDirectory -string 'Try Omaguix' "$contents/Info.plist"
+/usr/bin/plutil -insert OmaguixNetworkHelperService -string dev.tryomaguix.network "$contents/Info.plist"
 
 # The copied launcher must never reap another app's live run directories.
 # Keep the unique prefix directly in /private/tmp for short Unix socket paths.
@@ -444,7 +444,7 @@ persistent_root="$test_root/persistent"
 
 # The repo-local development path has no launch.plist: the launcher asks the
 # bundled guix-artifact.py for the launch record (test_artifact.py covers its
-# validation) and only accepts a packaged Roguix guest directory.
+# validation) and only accepts a packaged Omaguix guest directory.
 development_record="$(printf 'c%.0s' {1..64})	$(printf 'd%.0s' {1..64})	8	4	16	-"
 printf '%s\n' \
   'import sys' \
@@ -458,7 +458,7 @@ if env PATH="$shim_dir:/usr/bin:/bin:/usr/sbin:/sbin" OMARCHY_QEMU_GPU_INSPECT_O
   "$launcher" "$development_guest" >/dev/null 2>"$development_stderr"; then
   fail 'a directory without guix-manifest.json passed development validation'
 fi
-assert_contains "$(<"$development_stderr")" 'not a packaged Roguix guest'
+assert_contains "$(<"$development_stderr")" 'not a packaged Omaguix guest'
 printf '{}\n' >"$development_guest/guix-manifest.json"
 if ! development_validation=$(env \
   PATH="$shim_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
@@ -505,7 +505,7 @@ run_scenario() {
 run_scenario disabled 0 ''
 disabled_qemu=$(<"$test_root/disabled/qemu.log")
 assert_contains "$disabled_qemu" 'name=dev.tryomarchy.timezone'
-# The Arch guest's settings unit and share are not part of a Roguix launch.
+# The Arch guest's settings unit and share are not part of an Omaguix launch.
 assert_not_contains "$disabled_qemu" try-omarchy-settings
 assert_not_contains "$disabled_qemu" 'systemd.unit='
 assert_line_pair "$test_root/disabled/qemu.log" -machine \
@@ -521,11 +521,11 @@ for option in -kernel -initrd -append; do
 done
 assert_line_pair "$test_root/disabled/qemu.log" -name 'Try Omaguix'
 assert_line_pair "$test_root/disabled/qemu.log" -smbios 'type=11,value=omarchy.qemu_virgl=1'
-# roguix-setup's suggestions: a keyboard layout always, the time zone when
+# omaguix-setup's suggestions: a keyboard layout always, the time zone when
 # the Mac names one.
 assert_contains "$disabled_qemu" 'type=11,value=tryomarchy.keyboard_layout='
 # UEFI has no virtio keyboard driver; GRUB's menu reads the USB keyboard.
-assert_line_pair "$test_root/disabled/qemu.log" -device 'usb-kbd,bus=roguix-usb.0'
+assert_line_pair "$test_root/disabled/qemu.log" -device 'usb-kbd,bus=omaguix-usb.0'
 assert_line_pair "$test_root/disabled/qemu.log" -drive \
   "if=none,id=omarchy-root,file=$persistent_root/disk.raw,format=raw,media=disk,cache=writeback,discard=unmap"
 assert_not_contains "$disabled_qemu" hostfwd
@@ -881,18 +881,18 @@ run_scenario bridge-ssh-preview 0 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1 \
 assert_contains "$(<"$test_root/bridge-ssh-preview/stderr")" tryomarchy.ssh_access=1
 run_scenario bridge-invalid 1 '' OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE='../en0'
 # An app identity without the networking helper offers only NAT.
-/usr/bin/plutil -replace RoguixNetworkHelperService -string '' "$contents/Info.plist"
+/usr/bin/plutil -replace OmaguixNetworkHelperService -string '' "$contents/Info.plist"
 run_scenario bridge-without-helper 1 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1 \
   OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE=en0
 assert_contains "$(<"$test_root/bridge-without-helper/stderr")" 'no bridged networking helper'
 [[ ! -e $test_root/bridge-without-helper/qemu.log ]] || fail 'bridged without a helper started QEMU'
 run_scenario nat-without-helper 0 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1
-/usr/bin/plutil -replace RoguixNetworkHelperService -string dev.tryroguix.network "$contents/Info.plist"
+/usr/bin/plutil -replace OmaguixNetworkHelperService -string dev.tryomaguix.network "$contents/Info.plist"
 # The VM helper app is named after the identity's app name.
-/usr/bin/plutil -replace RoguixApplicationName -string 'Try Other' "$contents/Info.plist"
+/usr/bin/plutil -replace OmaguixApplicationName -string 'Try Other' "$contents/Info.plist"
 run_scenario other-app-name 1 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1
 assert_contains "$(<"$test_root/other-app-name/stderr")" 'Helpers/Try Other.app/Contents/MacOS/Try Other'
-/usr/bin/plutil -replace RoguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
+/usr/bin/plutil -replace OmaguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
 [[ ! -s $test_root/bridge-invalid/storage.log ]] || fail 'invalid bridge touched storage'
 run_scenario bridge-reset 0 --reset-storage-only \
   OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE=en0 OMARCHY_NETWORK_WIFI_COMPATIBILITY=1

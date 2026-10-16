@@ -1,11 +1,11 @@
-# Roguix substitute server at roguix.frolow.dev
+# Omaguix substitute server at roguix.frolow.dev
 
 Superseded in part by [0005](0005-who-builds-roguix-substitutes.md): who
 builds the substitutes and where the server is defined.
 
 ## Context
 
-Roguix packages Hyprland 0.56, Quickshell, Omarchy and the VM agents itself.
+Omaguix packages Hyprland 0.56, Quickshell, Omarchy and the VM agents itself.
 Guix's substitute servers do not build them, so any Guix whose derivations
 differ from the image's (a later pin, a reconfigure that grafts again) would
 compile Hyprland and Quickshell in the VM, for hours. The image already keeps
@@ -14,7 +14,7 @@ binaries from somewhere the guest trusts.
 
 ## Decision
 
-The author's VPS publishes Roguix's store items at `https://roguix.frolow.dev`:
+The author's VPS publishes Omaguix's store items at `https://roguix.frolow.dev`:
 Guix 1.5.0 from `guix-install.sh` on Debian 13, `guix publish` on
 `127.0.0.1:8181` with a zstd cache in `/var/cache/guix/publish`, nginx and a
 Let's Encrypt certificate in front, as the host's other sites. The VPS
@@ -26,11 +26,11 @@ The host also serves other sites. The first setup compressed at `zstd:19`
 on demand; a guest's reconfigure asked for many uncached items and the host
 stopped responding for 15 minutes until a reboot. `guix publish` now runs
 with one worker at `zstd:3` under `Nice=19`, idle I/O, one CPU and 700 MB,
-and `server/roguix-prebake.sh` fills its cache ahead of guests
+and `server/omaguix-prebake.sh` fills its cache ahead of guests
 (`server/README.md`).
 
 The guest adds the URL after Guix's own servers and authorizes the server's
-public key, `guest/guix/modules/roguix/roguix.frolow.dev.pub`. The private key
+public key, `guest/guix/modules/omaguix/roguix.frolow.dev.pub`. The private key
 exists only on the VPS.
 
 ## Alternatives
@@ -44,15 +44,15 @@ exists only on the VPS.
 ## Consequences
 
 - Every guest trusts binaries signed by the VPS key; whoever holds
-  `/etc/guix/signing-key.sec` there can serve code to all Roguix VMs.
+  `/etc/guix/signing-key.sec` there can serve code to all Omaguix VMs.
   Rotating it needs a new image or a reconfigure with the new key. The plan
   to move signing off the VPS is in
-  [docs/roguix-signing-keys.md](../roguix-signing-keys.md).
+  [docs/omaguix-signing-keys.md](../omaguix-signing-keys.md).
 - A Guix pin moves only after the builder has built and uploaded that pin's
-  Roguix packages.
+  Omaguix packages.
 - The server is a single point of failure for updates, not for running VMs;
   without it the guest falls back to building.
-- Serving is direct from the VPS for now: guests fetch only Roguix's own
+- Serving is direct from the VPS for now: guests fetch only Omaguix's own
   items from it. Put it behind a CDN (Cloudflare proxy with long caching for
   `/nar/*`, short for `*.narinfo`) when the VPS's transfer allowance or
   distant download speed becomes the limit; signatures make the transport

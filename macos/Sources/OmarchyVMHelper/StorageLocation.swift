@@ -154,7 +154,7 @@ struct StorageLocationResolution: Equatable {
 enum GuestStateLayout {
     static let subdirectory = "guix"
     static let diskName = "disk.raw"
-    static let persistentDiskKind = "roguix-qemu-persistent-disk"
+    static let persistentDiskKind = "omaguix-qemu-persistent-disk"
 
     /// The directory holding `disks/` and `locks/` for a state root
     /// (`OMARCHY_QEMU_GPU_STATE_ROOT`, a chosen folder, or the default).
@@ -163,7 +163,7 @@ enum GuestStateLayout {
     }
 
     /// The marker `_qps_prepare_state_root` writes inside `directory`, which
-    /// is what makes a state root an existing Roguix workspace.
+    /// is what makes a state root an existing Omaguix workspace.
     static func rootMarker(inStateRoot stateRoot: URL) -> URL {
         directory(inStateRoot: stateRoot)
             .appendingPathComponent(StorageLocationPolicy.rootMarkerName, isDirectory: false)

@@ -963,9 +963,9 @@ final class QEMUGPUProcessSupervisor: @unchecked Sendable {
 
     /// The percentage in the last complete download progress line, written by
     /// qemu_persistent_storage_fetch_compressed_source as
-    /// "[qemu-gpu] Downloading Roguix: RECEIVED of TOTAL bytes".
+    /// "[qemu-gpu] Downloading Omaguix: RECEIVED of TOTAL bytes".
     static func diskDownloadPercent(in standardError: String) -> Int? {
-        let prefix = "[qemu-gpu] Downloading Roguix: "
+        let prefix = "[qemu-gpu] Downloading Omaguix: "
         var percent: Int?
         for line in standardError.split(separator: "\n", omittingEmptySubsequences: true)
         where line.hasPrefix(prefix) && line.hasSuffix(" bytes") {

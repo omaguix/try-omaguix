@@ -9,17 +9,17 @@ struct AppReleaseTests {
         InstalledAppRelease(info: [
             "CFBundleShortVersionString": version,
             "CFBundleVersion": "321",
-            "TryOmarchyBuildDescribe": "try-roguix-v\(version)",
+            "TryOmarchyBuildDescribe": "try-omaguix-v\(version)",
         ], identity: .tryOmaguix)
     }
 
     private func release(_ version: String = "0.5.0") throws -> AppRelease {
-        try AppRelease.decode(payload(tag: "try-roguix-v\(version)"), identity: .tryOmaguix)
+        try AppRelease.decode(payload(tag: "try-omaguix-v\(version)"), identity: .tryOmaguix)
     }
 
     private func payload(
-        tag: String = "try-roguix-v0.5.0", draft: Bool = false, prerelease: Bool = false,
-        assetName: String = "TryRoguix.dmg", assetState: String = "uploaded"
+        tag: String = "try-omaguix-v0.5.0", draft: Bool = false, prerelease: Bool = false,
+        assetName: String = "TryOmaguix.dmg", assetState: String = "uploaded"
     ) throws -> Data {
         try JSONSerialization.data(withJSONObject: [
             "tag_name": tag, "draft": draft, "prerelease": prerelease,
@@ -40,9 +40,9 @@ struct AppReleaseTests {
     @Test("names the upstreams a build carries, or nothing without them")
     func upstreamBases() {
         let info: [String: Any] = [
-            "RoguixTryOmarchyBase": "v0.4.1-33-g28f4722 (28f4722fab3e16ae26a7cb8fab2ab7908b1833e4)",
-            "RoguixOmarchyVersion": "4.0.4",
-            "RoguixGuixCommit": "7e74121a40a8308166e328a23647cf6f3768e6c8",
+            "OmaguixTryOmarchyBase": "v0.4.1-33-g28f4722 (28f4722fab3e16ae26a7cb8fab2ab7908b1833e4)",
+            "OmaguixOmarchyVersion": "4.0.4",
+            "OmaguixGuixCommit": "7e74121a40a8308166e328a23647cf6f3768e6c8",
         ]
         #expect(InstalledAppRelease.upstreams(info: info) ==
             "Based on Try Omarchy v0.4.1-33-g28f4722, Omarchy 4.0.4, Guix 7e74121a")
@@ -64,7 +64,7 @@ struct AppReleaseTests {
         let legacy = InstalledAppRelease(info: ["CFBundleShortVersionString": "0.4.0", "CFBundleVersion": "5"], identity: .tryOmaguix)
         #expect(legacy.version == nil)
         #expect(legacy.label == "Installed release unknown")
-        for describe in ["try-roguix-v0.5.0-2-gabc", "try-roguix-v0.5.0-dirty", "try-roguix-v0.6.0", "v0.5.0"] {
+        for describe in ["try-omaguix-v0.5.0-2-gabc", "try-omaguix-v0.5.0-dirty", "try-omaguix-v0.6.0", "v0.5.0"] {
             let build = InstalledAppRelease(info: ["CFBundleShortVersionString": "0.5.0", "TryOmarchyBuildDescribe": describe], identity: .tryOmaguix)
             #expect(build.version == nil)
         }
@@ -73,15 +73,13 @@ struct AppReleaseTests {
     @Test("only published stable releases with an uploaded Mac app are accepted")
     func releaseValidation() throws {
         let latest = try release()
-        #expect(latest.url.absoluteString == "https://github.com/omaguix/try-omaguix/releases/tag/try-roguix-v0.5.0")
+        #expect(latest.url.absoluteString == "https://github.com/omaguix/try-omaguix/releases/tag/try-omaguix-v0.5.0")
         for data in [
             try payload(draft: true), try payload(prerelease: true),
-            try payload(tag: "try-roguix-v0.5.0-beta"), try payload(tag: "0.5.0"),
-            try payload(tag: "v0.5.0"), try payload(tag: "roguix-v0.5.0"),
+            try payload(tag: "try-omaguix-v0.5.0-beta"), try payload(tag: "0.5.0"),
+            try payload(tag: "v0.5.0"), try payload(tag: "omaguix-v0.5.0"),
             try payload(assetName: "source.zip"), try payload(assetState: "starter"),
-            try payload(assetName: "TryRoguix-v0.4.0.dmg"),
             try payload(assetName: "TryOmaguix-v0.4.0.dmg"),
-            try payload(assetName: "TryRoguix-v0.5.0.dmg", assetState: "starter"),
             try payload(assetName: "TryOmaguix-v0.5.0.dmg", assetState: "starter"),
         ] {
             #expect(throws: AppReleaseError.self) { try AppRelease.decode(data, identity: .tryOmaguix) }
@@ -89,21 +87,20 @@ struct AppReleaseTests {
         #expect(throws: DecodingError.self) { try AppRelease.decode(Data("{}".utf8), identity: .tryOmaguix) }
     }
 
-    @Test("release downloads accept matching versioned names and legacy names", arguments: [
+    @Test("release downloads accept the matching versioned name and the plain name", arguments: [
         "TryOmaguix-v0.5.0.dmg", "TryOmaguix.dmg",
-        "TryRoguix-v0.5.0.dmg", "TryRoguix.dmg",
     ])
     func releaseDownloadNames(assetName: String) throws {
         let latest = try AppRelease.decode(payload(assetName: assetName), identity: .tryOmaguix)
         #expect(latest.version == AppReleaseVersion("0.5.0"))
-        #expect(latest.url.absoluteString == "https://github.com/omaguix/try-omaguix/releases/tag/try-roguix-v0.5.0")
+        #expect(latest.url.absoluteString == "https://github.com/omaguix/try-omaguix/releases/tag/try-omaguix-v0.5.0")
     }
 
-    @Test("Try Omaguix accepts exactly its current and historical disk image names")
+    @Test("Try Omaguix accepts exactly its own disk image names")
     func defaultIdentityAssetNames() throws {
         let version = try #require(AppReleaseVersion("0.5.0"))
         #expect(AppIdentity.tryOmaguix.releaseAssetNames(version) == [
-            "TryOmaguix-v0.5.0.dmg", "TryOmaguix.dmg", "TryRoguix-v0.5.0.dmg", "TryRoguix.dmg",
+            "TryOmaguix-v0.5.0.dmg", "TryOmaguix.dmg",
         ])
         for name in ["TryOmabend.dmg", "TryOmabend-v0.5.0.dmg"] {
             #expect(throws: AppReleaseError.self) {
@@ -112,27 +109,28 @@ struct AppReleaseTests {
         }
     }
 
-    @Test("a second app accepts and queries only its own releases")
+    @Test("a second app accepts and queries only its own releases, legacy names included")
     func secondIdentityReleases() async throws {
         let version = try #require(AppReleaseVersion("0.5.0"))
-        #expect(AppIdentity.second.releaseAssetNames(version) == ["TryOmabend-v0.5.0.dmg", "TryOmabend.dmg"])
-        for name in ["TryOmabend-v0.5.0.dmg", "TryOmabend.dmg"] {
+        #expect(AppIdentity.second.releaseAssetNames(version) == [
+            "TryOmabend-v0.5.0.dmg", "TryOmabend.dmg", "OldOmabend-v0.5.0.dmg", "OldOmabend.dmg",
+        ])
+        for name in ["TryOmabend-v0.5.0.dmg", "TryOmabend.dmg", "OldOmabend-v0.5.0.dmg", "OldOmabend.dmg"] {
             let latest = try AppRelease.decode(
                 payload(tag: "try-omabend-v0.5.0", assetName: name), identity: .second)
             #expect(latest.url.absoluteString == "https://github.com/example/try-omabend/releases/tag/try-omabend-v0.5.0")
         }
         for data in [
-            try payload(tag: "try-roguix-v0.5.0", assetName: "TryOmabend.dmg"),
+            try payload(tag: "try-omaguix-v0.5.0", assetName: "TryOmabend.dmg"),
             try payload(tag: "try-omabend-v0.5.0", assetName: "TryOmaguix.dmg"),
             try payload(tag: "try-omabend-v0.5.0", assetName: "TryOmaguix-v0.5.0.dmg"),
-            try payload(tag: "try-omabend-v0.5.0", assetName: "TryRoguix.dmg"),
-            try payload(tag: "try-omabend-v0.5.0", assetName: "TryRoguix-v0.5.0.dmg"),
+            try payload(tag: "try-omabend-v0.5.0", assetName: "OldOmabend-v0.4.0.dmg"),
         ] {
             #expect(throws: AppReleaseError.self) { try AppRelease.decode(data, identity: .second) }
         }
         // A Try Omaguix release tag is no release of the second app.
         let omaguix = InstalledAppRelease(info: [
-            "CFBundleShortVersionString": "0.5.0", "TryOmarchyBuildDescribe": "try-roguix-v0.5.0",
+            "CFBundleShortVersionString": "0.5.0", "TryOmarchyBuildDescribe": "try-omaguix-v0.5.0",
         ], identity: .second)
         #expect(omaguix.version == nil)
 

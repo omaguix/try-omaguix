@@ -16,8 +16,8 @@ import tempfile
 import unittest
 
 HERE = Path(__file__).parent
-PATCH = HERE / "modules" / "roguix" / "omarchy-theme-set-store-modes.patch"
-SEED = HERE / "modules" / "roguix" / "omarchy-seed"
+PATCH = HERE / "modules" / "omaguix" / "omarchy-theme-set-store-modes.patch"
+SEED = HERE / "modules" / "omaguix" / "omarchy-seed"
 
 
 def staging_lines(side):
@@ -110,8 +110,8 @@ class ThemeSetTests(unittest.TestCase):
         prefix = prefix.replace("cp -rn --no-preserve=mode", "cp -rn")
         prefix = prefix.replace("cp --no-preserve=mode", "cp")
         prefix = prefix.replace(
-            "roguix_share=/run/current-system/profile/share/roguix",
-            f'roguix_share="{HERE / "modules" / "roguix"}"',
+            "omaguix_share=/run/current-system/profile/share/omaguix",
+            f'omaguix_share="{HERE / "modules" / "omaguix"}"',
         )
         omarchy = self.root / "omarchy"
         (omarchy / "install" / "user").mkdir(parents=True, exist_ok=True)
@@ -135,7 +135,7 @@ class ThemeSetTests(unittest.TestCase):
         home = self.root / "home"
         state = home / ".local" / "state" / "omarchy"
         (state / "done").mkdir(parents=True)
-        (state / "done" / "roguix-seed").write_text("")
+        (state / "done" / "omaguix-seed").write_text("")
         (state / "current" / "theme").mkdir(parents=True)
         (state / "current" / "theme.name").write_text("gruvbox\n")
 

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""roguix-setup: Omaguix's first-start setup on tty1, run as root.
+"""omaguix-setup: Omaguix's first-start setup on tty1, run as root.
 
 It asks in Omarchy's order (install/provisioning/setup-form.sh): keyboard
 layout, the password of the account, an optional Git name and email, the host
 name and the time zone. The Mac app suggests the keyboard layout through the
-launcher's settings (/run/roguix/host-settings). The time zone offers "Same
-as macOS" first, as Try Omarchy does: roguix-timezone then follows the Mac's
+launcher's settings (/run/omaguix/host-settings). The time zone offers "Same
+as macOS" first, as Try Omarchy does: omaguix-timezone then follows the Mac's
 zone live, and any other choice fixes the zone. The system's
 language is the Mac's (tryomarchy.locale) without a question, set this once:
 later boots and Mac language changes leave the guest's choice alone.
 
-System values go into /var/lib/roguix/machine-settings.scm, a data file
+System values go into /var/lib/omaguix/machine-settings.scm, a data file
 that /etc/config.scm reads, and take effect at once; until a reconfigure
-builds them into the system, the roguix-machine-settings service applies
+builds them into the system, the omaguix-machine-settings service applies
 them at every boot, so the setup starts no reconfigure. The Git identity
 goes into the account's ~/.gitconfig.
 
@@ -20,7 +20,7 @@ One process reads the terminal for every question, in raw mode set once
 and never flushed, so keys typed ahead of the next question are kept: with
 a separate gum process per question they were lost between questions. Each
 question announces itself on the serial console (/dev/hvc0, captured by the
-Mac app) as "roguix-setup: ready STEP", which end-to-end tests wait for.
+Mac app) as "omaguix-setup: ready STEP", which end-to-end tests wait for.
 """
 
 import base64
@@ -35,10 +35,10 @@ import sys
 import termios
 
 ACCOUNT = "guest"
-MACHINE_SETTINGS = "/var/lib/roguix/machine-settings.scm"
-HOST_SETTINGS = "/run/roguix/host-settings"
-# The Mac's latest zone, which roguix-timezone receives this boot.
-HOST_ZONE = "/run/roguix/host-timezone"
+MACHINE_SETTINGS = "/var/lib/omaguix/machine-settings.scm"
+HOST_SETTINGS = "/run/omaguix/host-settings"
+# The Mac's latest zone, which omaguix-timezone receives this boot.
+HOST_ZONE = "/run/omaguix/host-timezone"
 FOLLOW_MAC = "Same as macOS"
 
 
@@ -140,7 +140,7 @@ def suggested_layout(settings):
 
 
 def mac_timezone(settings, latest=None):
-    """The Mac's zone: the latest one roguix-timezone received, else the
+    """The Mac's zone: the latest one omaguix-timezone received, else the
     one the launcher passed at launch; None when unknown or invalid."""
     try:
         with open(latest or HOST_ZONE, encoding="utf-8") as stream:
@@ -172,13 +172,13 @@ def scheme_string(text):
 
 def machine_settings(host_name, timezone, follows_mac, layout, locale):
     """The machine settings file's text: data that /etc/config.scm, the
-    roguix-machine-settings service and roguix-timezone read, never load."""
+    omaguix-machine-settings service and omaguix-timezone read, never load."""
     _, xkb_layout, variant, keymap = layout
     fields = (("host-name", host_name), ("timezone", timezone),
               ("timezone-follows-mac", "yes" if follows_mac else "no"),
               ("keyboard-layout", xkb_layout), ("keyboard-variant", variant),
               ("console-keymap", keymap), ("locale", locale))
-    return (";; Written by roguix-setup; read by /etc/config.scm and at boot.\n("
+    return (";; Written by omaguix-setup; read by /etc/config.scm and at boot.\n("
             + "\n ".join(f"({key} . {scheme_string(value)})" for key, value in fields)
             + ")\n")
 
@@ -237,7 +237,7 @@ class Terminal:
         if self.events is None:
             return
         try:
-            self.events.write(f"roguix-setup: {text}\n")
+            self.events.write(f"omaguix-setup: {text}\n")
             self.events.flush()
         except OSError:
             self.events = None
@@ -392,7 +392,7 @@ def ask_password(terminal):
 
 def ask_host_name(terminal):
     while True:
-        name = terminal.ask("host-name", "Host name", value="roguix")
+        name = terminal.ask("host-name", "Host name", value="omaguix")
         if HOSTNAME.match(name):
             return name
         problem = "Use lowercase letters, digits and inner hyphens (up to 63)."
@@ -441,7 +441,7 @@ def apply_layout(entry):
 
 
 def replace_file(path, text):
-    staging = path + ".roguix-setup"
+    staging = path + ".omaguix-setup"
     with open(staging, "w", encoding="utf-8") as stream:
         stream.write(text)
     os.chmod(staging, 0o644)
@@ -493,7 +493,7 @@ def apply_system(host_name, timezone, hosts="/etc/hosts"):
         text = stream.read()
     replace_file(hosts, renamed_hosts(text, previous, host_name))
     zone = os.path.join(ZONEINFO, timezone)
-    staging = "/etc/localtime.roguix-setup"
+    staging = "/etc/localtime.omaguix-setup"
     if os.path.lexists(staging):
         os.remove(staging)
     os.symlink(zone, staging)
@@ -555,5 +555,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         sys.exit(130)
     except Failure as error:
-        print(f"roguix-setup: {error}", file=sys.stderr)
+        print(f"omaguix-setup: {error}", file=sys.stderr)
         sys.exit(1)

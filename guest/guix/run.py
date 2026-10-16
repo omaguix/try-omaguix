@@ -25,7 +25,7 @@ def qemu_command(image, firmware):
     # -snapshot creates a disposable overlay; the supplied raw disk stays intact.
     disk = str(image).replace(",", ",,")
     return [
-        str(QEMU), "-name", "Roguix — development",
+        str(QEMU), "-name", "Omaguix — development",
         "-machine", "virt,accel=hvf,gic-version=3",
         "-cpu", "host,pmu=off", "-smp", "4", "-m", "4096M",
         "-nodefaults", "-action", "reboot=reset,shutdown=poweroff",

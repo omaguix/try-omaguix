@@ -29,26 +29,26 @@ GPT_ENTRIES = 128
 GPT_ENTRY_SIZE = 128
 GPT_ENTRY_SECTORS = GPT_ENTRIES * GPT_ENTRY_SIZE // SECTOR
 
-KIND = "roguix-guest-artifacts"
+KIND = "omaguix-guest-artifacts"
 BOOT_ABI = "uefi-gpt-v1"
 DISK = "disk.raw.zst"
 MANIFEST = "guix-manifest.json"
 SUMS = "SHA256SUMS"
 FILES = frozenset({DISK, MANIFEST, SUMS})
 # How the guest's account gets its password. first-boot: the image carries
-# none, and roguix-first-boot asks for one on the first start
-# (modules/roguix/services.scm). preset: the image's own system definition
+# none, and omaguix-first-boot asks for one on the first start
+# (modules/omaguix/services.scm). preset: the image's own system definition
 # sets the account's credentials (another app's guest, e.g. a fixed
 # development account). The launcher does not read this; it records what the
 # image expects of the person starting it.
 CREDENTIALS = frozenset({"first-boot", "preset"})
 # Optional guest languages the image carries (system.scm's locale
 # definitions, fcitx5 and Noto CJK); the app passes the Mac's language when it
-# is one of them, and the first-start setup takes it once (roguix-setup).
+# is one of them, and the first-start setup takes it once (omaguix-setup).
 LOCALES = ("zh_TW.UTF-8", "zh_CN.UTF-8", "ko_KR.UTF-8")
 ZSTD_MAGIC = bytes.fromhex("28b52ffd")
 # The persistent workspace the launcher creates; the guest grows its root
-# partition into the difference (roguix-grow-root). Matches the Arch guest's
+# partition into the difference (omaguix-grow-root). Matches the Arch guest's
 # expandedSizeMiB.
 WORKING_DISK_BYTES = 24576 << 20
 CHUNK = 8 << 20

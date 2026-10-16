@@ -6,7 +6,7 @@ usage() {
   cat <<'EOF'
 Usage: macos/build-qemu-gpu-runtime.sh [--archive-dir DIR]
 
-Build the pinned QEMU/VirGL source stack for macOS 15.0 with Try Roguix's Cocoa identity,
+Build the pinned QEMU/VirGL source stack for macOS 15.0 with Try Omaguix's Cocoa identity,
 dynamic-display, immersive-mode, pause-ownership, pinch-zoom, and ISO
 keyboard patches, then relocate, sign, validate, and
 atomically stage it at:
@@ -99,7 +99,7 @@ display_patch_sha256=71a96883be171835856f461b559dcdf15ca200ab2bcc4148b5b23965576
 immersive_patch_sha256=2462463932f7db0d659f754f7f9c182884564dbcd7d4b8e523f1b57f0bd9fe5b
 full_grab_patch_sha256=d94aaa7b8b8b97eb25a5ace2b3a1268985e1b16e4e6201847b926b8ee709dbfb
 reenable_patch_sha256=f6ed7e01e1554049aa3cf2964d1f4a851cb1735208f9ddc88eeb608d1b7fbaed
-command_tab_patch_sha256=313f386b8acafab3785bc8c26558dd90269b6edc222192df13a8529f139fd42e
+command_tab_patch_sha256=2175e4450a2833b31ed6d8ad41bec4cddb2c008f226ffe5b9a6c41a6aec74523
 pause_ownership_patch_sha256=1a5729b36eb3e437395d41883a10c3c652df71d289d5df84d95aebd49c78a8f0
 pinch_patch_sha256=37acb8895dddd35fc66812d0c49ec5fc697f9127e9e12ed2e60d17999bf32aee
 precise_scroll_patch_sha256=54252b3b19358aa7e2c75d5f50775a7f488ef2d8b4db8723ba4768b56316a78f
@@ -116,9 +116,9 @@ virgl_angle_multisample_patch_sha256=d7dc311caf70e4fff9071f69051b55dd91f8c6b53b3
 virgl_core_point_size_patch_sha256=2d59456d203172771a97d5ff6863d3575b40cbcf054a185045a374f5bdf9240f
 strchrnul_patch_sha256=ec1048dd0e8ebe53bf7e8a3bca9bf2f5f4336cd607d4cd077437470e9a32094a
 usb_exact_bus_patch_sha256=5e39159171295c566d014a1ef2744130f80fa02b742c349fa47373b00ae697ec
-minimum_guest_size_patch_sha256=17514983c64a7724429c3dfd45f8839f8f362e0d984cc850e6a5d3aa8cca7189
-full_grab_diagnostics_patch_sha256=4d37001df4694d5ec7f5baaa1b04920ae9b6dddb0a675f8cb1819c71fc5620ea
-gl_screendump_patch_sha256=eecb18a750f010d158578291da4efc9b01453d4a431202662ffca221f3047ac9
+minimum_guest_size_patch_sha256=05a4c2d060071781e61073ed00c6ddd09d6e3f85135e2d913958c55797da9380
+full_grab_diagnostics_patch_sha256=712f9617b1800bdb3047dc07e5d33d0cdd26c2417d4373999dc832a7d4509315
+gl_screendump_patch_sha256=f2f5d618eac1c232bf5c24a996e525307658c816094d46a2d8f7209b148aeeca
 udp_patch_sha256=95e8ee890be78cdce70b3ee54a8adac27be02421be08b986ae987c74ef8cec8c
 slirp_patch_sha256=20f3d424c79929fb82d240d0ee06b99e9f93ecfb9460579dc414303820d59f90
 slirp_source_root=libslirp-v4.9.4
@@ -448,48 +448,48 @@ mkdir -p "$source_dir/subprojects/keycodemapdb" "$source_dir/subprojects/dtc"
 tar -xzf "$keycodemap_archive" -C "$source_dir/subprojects/keycodemapdb" --strip-components=1
 tar -xzf "$dtc_archive" -C "$source_dir/subprojects/dtc" --strip-components=1
 
-verify_file_sha "Try Roguix texture-borrowing patch" "$texture_patch" "$texture_patch_sha256"
-verify_file_sha "Try Roguix GPU-resolution patch" "$gpu_fix_patch" "$gpu_fix_patch_sha256"
-verify_file_sha "Try Roguix Cocoa product-identity patch" \
+verify_file_sha "Try Omaguix texture-borrowing patch" "$texture_patch" "$texture_patch_sha256"
+verify_file_sha "Try Omaguix GPU-resolution patch" "$gpu_fix_patch" "$gpu_fix_patch_sha256"
+verify_file_sha "Try Omaguix Cocoa product-identity patch" \
   "$identity_patch" "$identity_patch_sha256"
-verify_file_sha "Try Roguix dynamic-display patch" "$display_patch" "$display_patch_sha256"
-verify_file_sha "Try Roguix Cocoa immersive-mode patch" \
+verify_file_sha "Try Omaguix dynamic-display patch" "$display_patch" "$display_patch_sha256"
+verify_file_sha "Try Omaguix Cocoa immersive-mode patch" \
   "$immersive_patch" "$immersive_patch_sha256"
-verify_file_sha "Try Roguix Cocoa full-grab patch" \
+verify_file_sha "Try Omaguix Cocoa full-grab patch" \
   "$full_grab_patch" "$full_grab_patch_sha256"
-verify_file_sha "Try Roguix Cocoa full-grab re-enable patch" \
+verify_file_sha "Try Omaguix Cocoa full-grab re-enable patch" \
   "$reenable_patch" "$reenable_patch_sha256"
-verify_file_sha "Try Roguix Cocoa Command-Tab patch" \
+verify_file_sha "Try Omaguix Cocoa Command-Tab patch" \
   "$command_tab_patch" "$command_tab_patch_sha256"
-verify_file_sha "Try Roguix Cocoa pause-ownership patch" \
+verify_file_sha "Try Omaguix Cocoa pause-ownership patch" \
   "$pause_ownership_patch" "$pause_ownership_patch_sha256"
-verify_file_sha "Try Roguix Cocoa pinch-zoom patch" \
+verify_file_sha "Try Omaguix Cocoa pinch-zoom patch" \
   "$pinch_patch" "$pinch_patch_sha256"
-verify_file_sha "Try Roguix Cocoa precise-scroll patch" \
+verify_file_sha "Try Omaguix Cocoa precise-scroll patch" \
   "$precise_scroll_patch" "$precise_scroll_patch_sha256"
-verify_file_sha "Try Roguix Cocoa ISO Section/Grave swap patch" \
+verify_file_sha "Try Omaguix Cocoa ISO Section/Grave swap patch" \
   "$iso_swap_patch" "$iso_swap_patch_sha256"
-verify_file_sha "Try Roguix Cocoa injected-text patch" \
+verify_file_sha "Try Omaguix Cocoa injected-text patch" \
   "$injected_text_patch" "$injected_text_patch_sha256"
-verify_file_sha "Try Roguix SDL audio-device patch" \
+verify_file_sha "Try Omaguix SDL audio-device patch" \
   "$audio_device_patch" "$audio_device_patch_sha256"
-verify_file_sha "Try Roguix 9p shared-folder patch" \
+verify_file_sha "Try Omaguix 9p shared-folder patch" \
   "$shared_folder_patch" "$shared_folder_patch_sha256"
-verify_file_sha "Try Roguix HVF free-page reclaim patch" \
+verify_file_sha "Try Omaguix HVF free-page reclaim patch" \
   "$memory_reclaim_patch" "$memory_reclaim_patch_sha256"
-verify_file_sha "Try Roguix HVF mapped-sections patch" \
+verify_file_sha "Try Omaguix HVF mapped-sections patch" \
   "$mapped_sections_patch" "$mapped_sections_patch_sha256"
-verify_file_sha "Try Roguix Cocoa minimum guest size patch" \
+verify_file_sha "Try Omaguix Cocoa minimum guest size patch" \
   "$minimum_guest_size_patch" "$minimum_guest_size_patch_sha256"
-verify_file_sha "Try Roguix Cocoa full-grab diagnostics patch" \
+verify_file_sha "Try Omaguix Cocoa full-grab diagnostics patch" \
   "$full_grab_diagnostics_patch" "$full_grab_diagnostics_patch_sha256"
-verify_file_sha "Try Roguix Cocoa GL screendump patch" \
+verify_file_sha "Try Omaguix Cocoa GL screendump patch" \
   "$gl_screendump_patch" "$gl_screendump_patch_sha256"
-verify_file_sha "Try Roguix Darwin GPU fence polling patch" \
+verify_file_sha "Try Omaguix Darwin GPU fence polling patch" \
   "$fence_poll_patch" "$fence_poll_patch_sha256"
-verify_file_sha "Try Roguix Darwin strchrnul compatibility patch" \
+verify_file_sha "Try Omaguix Darwin strchrnul compatibility patch" \
   "$strchrnul_patch" "$strchrnul_patch_sha256"
-verify_file_sha "Try Roguix USB exact-bus patch" \
+verify_file_sha "Try Omaguix USB exact-bus patch" \
   "$usb_exact_bus_patch" "$usb_exact_bus_patch_sha256"
 
 log "Applying the exact render, identity, display, immersive, pause-ownership, audio, folder, Darwin compatibility, memory reclaim, pinch, precise-scroll, ISO keyboard, and USB exact-bus patches"
@@ -502,7 +502,7 @@ patch -d "$source_dir" -p1 -f -i "$full_grab_patch"
 patch -d "$source_dir" -p1 -f -i "$reenable_patch"
 patch -d "$source_dir" -p1 -f -i "$command_tab_patch"
 patch -d "$source_dir" -p1 -f -i "$pause_ownership_patch"
-verify_file_sha "Try Roguix HDA full-ring recovery patch" \
+verify_file_sha "Try Omaguix HDA full-ring recovery patch" \
   "$audio_recovery_patch" "$audio_recovery_patch_sha256"
 patch -d "$source_dir" -p1 -f -i "$audio_device_patch"
 patch -d "$source_dir" -p1 -f -i "$audio_recovery_patch"

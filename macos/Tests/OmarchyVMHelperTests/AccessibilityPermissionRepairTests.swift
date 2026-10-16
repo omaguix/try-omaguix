@@ -33,7 +33,7 @@ struct AccessibilityPermissionRepairTests {
     }
 
     @Test("repair scopes its reset to the development or production bundle", arguments: [
-        "dev.tryroguix.native", "dev.tryroguix.native.development"
+        "dev.tryomaguix.native", "dev.tryomaguix.native.development"
     ])
     func scopedBundleIdentifier(identifier: String) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

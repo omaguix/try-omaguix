@@ -1,11 +1,14 @@
 # Architecture
 
-The product was renamed from Roguix to Omaguix in October 2026.
-The rename preserves the existing Guix module and command names, channel
-signing introduction, macOS bundle and service identifiers, preferences,
-and VM workspace paths. These identities are contracts with existing
-guests and installed host components; visible app names and artifacts use
-Omaguix without abandoning that state.
+The product was renamed from Roguix to Omaguix in October 2026, in one
+cutover before anyone used it: the Guix modules, commands, services, guest
+paths and environment variables, the channel's name, and the macOS bundle
+identifiers, LaunchDaemon, data and log directories, signing identity,
+`Info.plist` keys and release tag prefix all say Omaguix. Only history keeps
+the old name (git history, the tags `v0.5.0` and `try-roguix-v0.5.1`, the
+channel's earlier commits), together with the channel introduction and its
+signing key, which authenticate the renamed channel unchanged, and the
+substitute server's domain `roguix.frolow.dev`, which moves separately.
 
 Try Omaguix packages three pieces into one macOS app:
 
@@ -207,8 +210,8 @@ and users can still attempt authentication.
 
 The guest image is built by this project with `guix time-machine` from a
 pinned, signature-verified Guix commit (`guest/guix/build.py`); it is not an
-official Guix or Basecamp image. The system is `roguix-operating-system`
-in `guest/guix/modules/roguix/system.scm`: Guix's own packages, plus Omaguix's
+official Guix or Basecamp image. The system is `omaguix-operating-system`
+in `guest/guix/modules/omaguix/system.scm`: Guix's own packages, plus Omaguix's
 Hyprland 0.56 and Quickshell builds and the pinned upstream Omarchy tree,
 installed read-only at `/usr/share/omarchy` from the store. Omarchy's Arch
 assumptions are met by small compatibility commands instead of changes to its
@@ -217,7 +220,7 @@ time to manage Guix packages (`guest/guix/README.md`).
 
 The image carries no password; the first start asks for one on the console.
 In the VM, `/etc/config.scm` calls the same procedure with the owner's package
-list and `roguix-reconfigure` applies it with the Guix that built the image.
+list and `omaguix-reconfigure` applies it with the Guix that built the image.
 Omaguix's own packages have no substitutes on Guix's servers, so
 `https://roguix.frolow.dev` publishes them
 ([decision 0002](decisions/0002-roguix-substitute-server.md)), built by
@@ -233,7 +236,7 @@ Omaguix's own packages have no substitutes on Guix's servers, so
   virtualization uses QEMU's upstream Apple HVF implementation unchanged.
 - The guest is Guix System. Hyprland 0.56.1 with a guarded rounded-border
   coverage patch for the VM graphics path, Aquamarine 0.14.0 and Quickshell
-  0.3 are packaged in `guest/guix/modules/roguix/packages.scm` with their
+  0.3 are packaged in `guest/guix/modules/omaguix/packages.scm` with their
   reviewed source hashes.
 - The pinned Omarchy tree is packaged unchanged except for its menu, its
   package helpers and logo, rewritten at build time for Guix.
@@ -258,7 +261,7 @@ New VMs use the selected capacity when their writable disk is prepared.
 Nothing is overwritten while the app runs. The app bundle and packaged factory
 disk remain unchanged. Normal user launches use one private writable disk under
 `~/Library/Application Support/<directory>/VM/v1`, the directory being the app
-identity's (`Try Roguix` for Try Omaguix). The disk metadata retains
+identity's (`Try Omaguix` for Try Omaguix). The disk metadata retains
 the identity of the factory that created it. The VM boots its own firmware
 path, so a new app release can launch the existing VM without decompressing,
 cloning, expanding, or charging free space for its new factory disk.
@@ -329,4 +332,4 @@ notices, and review evidence together.
 
 App releases and guest updates are deliberately separate channels. Reusing a
 disk never imports a newer app's factory image; the VM changes only through
-Guix (`roguix-pkg`, `roguix-reconfigure`, roll-back) or a confirmed reset.
+Guix (`omaguix-pkg`, `omaguix-reconfigure`, roll-back) or a confirmed reset.

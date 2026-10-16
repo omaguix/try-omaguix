@@ -9,7 +9,7 @@ Usage: macos/resize-vm-disk.sh --size-gib N [--state-root DIR] [--apply]
 Preview growing an existing, stopped VM to N GiB (whole number, at most 8192).
 Add --apply to retain a verified APFS clone backup and enlarge the disk.
 The root partition and file system grow automatically on the next normal
-guest boot (roguix-grow-root).
+guest boot (omaguix-grow-root).
 
 DIR is the VM state directory containing .omarchy-qemu-storage and disks/current.
 Default: ~/Library/Application Support/DIRECTORY/VM/v1/guix, DIRECTORY being
@@ -136,4 +136,4 @@ finally:
     os.close(fd)
 PY
 printf 'VM disk enlarged to %s GiB. Backup: %s\n' "$size_gib" "$backup"
-printf 'Launch normally, then verify inside Roguix with: lsblk; df -h /\n'
+printf 'Launch normally, then verify inside Omaguix with: lsblk; df -h /\n'

@@ -1,4 +1,4 @@
-"""roguix-pkg: configuration edits, reconfigure and queries."""
+"""omaguix-pkg: configuration edits, reconfigure and queries."""
 
 import importlib.machinery
 import importlib.util
@@ -7,18 +7,18 @@ import tempfile
 import unittest
 from unittest import mock
 
-path = Path(__file__).with_name("modules") / "roguix" / "roguix-pkg"
+path = Path(__file__).with_name("modules") / "omaguix" / "omaguix-pkg"
 loader = importlib.machinery.SourceFileLoader("guix_pkg", str(path))
 spec = importlib.util.spec_from_loader("guix_pkg", loader)
 pkg = importlib.util.module_from_spec(spec)
 loader.exec_module(pkg)
 
-TEMPLATE = '''(use-modules (roguix system))
+TEMPLATE = '''(use-modules (omaguix system))
 
-(roguix-operating-system
+(omaguix-operating-system
  #:packages
- '(;; BEGIN roguix packages
-   ;; END roguix packages
+ '(;; BEGIN omaguix packages
+   ;; END omaguix packages
    ))
 '''
 
@@ -62,15 +62,15 @@ class GuixPkgTests(unittest.TestCase):
         self.assertEqual(pkg.config_packages(self.config.read_text()),
                          ["alacritty", "netcat-openbsd"])
         self.assertEqual(self.runs[-1], [pkg.RECONFIGURE])
-        self.assertIn('   "alacritty"\n   "netcat-openbsd"\n   ;; END roguix packages',
+        self.assertIn('   "alacritty"\n   "netcat-openbsd"\n   ;; END omaguix packages',
                       self.config.read_text())
 
     def test_reconfigure_refuses_builds_unless_allowed(self):
         self.assertEqual(pkg.main(["add", "alacritty"]), 0)
-        self.assertEqual(self.environments[-1]["ROGUIX_ALLOW_BUILD"], "0")
+        self.assertEqual(self.environments[-1]["OMAGUIX_ALLOW_BUILD"], "0")
         self.assertEqual(pkg.main(["add", "--allow-build", "helix"]), 0)
         self.assertEqual(self.runs[-1], [pkg.RECONFIGURE])
-        self.assertEqual(self.environments[-1]["ROGUIX_ALLOW_BUILD"], "1")
+        self.assertEqual(self.environments[-1]["OMAGUIX_ALLOW_BUILD"], "1")
         self.assertEqual(pkg.config_packages(self.config.read_text()), ["alacritty", "helix"])
 
     def test_installed_or_listed_does_nothing(self):
@@ -106,7 +106,7 @@ class GuixPkgTests(unittest.TestCase):
         self.assertEqual(self.config.read_text(), TEMPLATE)
 
     def test_damaged_block_is_refused(self):
-        self.config.write_text("(roguix-operating-system)\n")
+        self.config.write_text("(omaguix-operating-system)\n")
         self.assertEqual(pkg.main(["add", "helix"]), 1)
 
 

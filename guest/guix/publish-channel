@@ -1,21 +1,21 @@
 #!/bin/bash
-# Make guest/guix's Roguix definitions a signed commit of the roguix channel
+# Make guest/guix's Omaguix definitions a signed commit of the omaguix channel
 # (docs/decisions/0004-roguix-channel.md) and push it to release/<commit>, not
 # to main: guest/guix/release.py moves main once CI has built that commit
 # and roguix.frolow.dev serves it (docs/decisions/0006-one-roguix-release-step.md).
 # Prints "channel-commit <sha>" last, or nothing when the channel matches.
 #
-#   ROGUIX_CHANNEL_DIR  the channel checkout (default ../roguix-channel)
-#   GNUPGHOME           the channel key (default ~/.config/roguix-channel/gnupg)
+#   OMAGUIX_CHANNEL_DIR  the channel checkout (default ../omaguix-channel)
+#   GNUPGHOME           the channel key (default ~/.config/omaguix-channel/gnupg)
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
-channel=${ROGUIX_CHANNEL_DIR:-$(cd "$root/.." && pwd)/roguix-channel}
-export GNUPGHOME=${GNUPGHOME:-$HOME/.config/roguix-channel/gnupg}
+channel=${OMAGUIX_CHANNEL_DIR:-$(cd "$root/.." && pwd)/omaguix-channel}
+export GNUPGHOME=${GNUPGHOME:-$HOME/.config/omaguix-channel/gnupg}
 
-# Each channel commit names the try-roguix commit it was made from.
+# Each channel commit names the try-omaguix commit it was made from.
 if [[ -n $(git -C "$root" status --porcelain -- guest/guix) ]]; then
-  echo "publish-channel: commit guest/guix in try-roguix first" >&2
+  echo "publish-channel: commit guest/guix in try-omaguix first" >&2
   exit 1
 fi
 revision=$(git -C "$root" rev-parse --short HEAD)
@@ -23,16 +23,18 @@ revision=$(git -C "$root" rev-parse --short HEAD)
 git -C "$channel" fetch --quiet origin main keyring
 git -C "$channel" checkout --quiet --detach origin/main
 cp "$here/system.scm" "$channel/system.scm"
-mkdir -p "$channel/modules/roguix"
-rsync -a --delete --exclude __pycache__ "$here/modules/roguix/" "$channel/modules/roguix/"
+# The whole modules/ tree, so a module directory removed here (such as the
+# modules/roguix/ that the rename to Omaguix replaced) leaves the channel too.
+mkdir -p "$channel/modules"
+rsync -a --delete --exclude __pycache__ "$here/modules/" "$channel/modules/"
 
 git -C "$channel" add -A
 if git -C "$channel" diff --cached --quiet; then
-  echo "publish-channel: the channel already matches try-roguix $revision" >&2
+  echo "publish-channel: the channel already matches try-omaguix $revision" >&2
   exit 0
 fi
-git -C "$channel" commit --quiet --gpg-sign -m "Roguix from try-roguix $revision"
+git -C "$channel" commit --quiet --gpg-sign -m "Omaguix from try-omaguix $revision"
 commit=$(git -C "$channel" rev-parse HEAD)
 git -C "$channel" push --quiet origin "$commit:refs/heads/release/$commit"
-echo "publish-channel: pushed release/$commit (try-roguix $revision)" >&2
+echo "publish-channel: pushed release/$commit (try-omaguix $revision)" >&2
 echo "channel-commit $commit"

@@ -46,7 +46,7 @@ repo_dir=$(cd "$macos_dir/.." && pwd -P)
 app_identity=$(python3 "$macos_dir/apps/identity.py" shell) || exit 1
 eval "$app_identity"
 # make run passes the installed copy; by default, the development build.
-app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/$APP_NAME.app"}
+app=${TRY_OMAGUIX_APP:-"$repo_dir/build/dev.noindex/$APP_NAME.app"}
 helper="$app/Contents/MacOS/omarchy-vm-helper"
 info_plist="$app/Contents/Info.plist"
 [[ -d $app && ! -L $app ]] || {

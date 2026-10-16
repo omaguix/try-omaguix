@@ -10,11 +10,11 @@ binaries.
 
 ## Decision
 
-`guest/guix/modules/roguix/apps.scm` installs those release binaries, each
+`guest/guix/modules/omaguix/apps.scm` installs those release binaries, each
 pinned by URL and SHA-256. Four are statically linked. cliamp links glibc and
 ALSA dynamically; patchelf breaks this Go binary, so `bin/cliamp` runs the
 untouched binary through the store's loader with an explicit library path.
-The builder builds them and `roguix.frolow.dev` serves them like Roguix's
+The builder builds them and `roguix.frolow.dev` serves them like Omaguix's
 other packages (decision 0002). The channel also offers OpenAI's Codex CLI
 (`codex-bin`, Apache-2.0) the same way, not installed by default. Its
 `bin/codex` puts Guix's bubblewrap first on PATH for Codex's sandbox and turns
@@ -28,7 +28,7 @@ no aarch64 substitutes for (hours to build).
 
 ## Alternatives
 
-- Building from source in the roguix modules: the Guix way, but each needs
+- Building from source in the omaguix modules: the Guix way, but each needs
   its whole dependency graph packaged first.
 - Leaving them out: Omarchy's Disk Usage and Docker entries, its music key
   binding and scripts using gum would not work.
@@ -36,7 +36,7 @@ no aarch64 substitutes for (hours to build).
 ## Consequences
 
 - Guests run code built by the upstream projects' CI, not by Guix, and
-  signed by the Roguix server key; the SHA-256 pins make any change visible.
+  signed by the Omaguix server key; the SHA-256 pins make any change visible.
 - Updating one is a version change and a URL and hash per system in
   `apps.scm`.
 - The packages support `aarch64-linux` and `x86_64-linux`, one upstream

@@ -1,11 +1,11 @@
-;;; Roguix — Omarchy applications the pinned Guix does not package.
+;;; Omaguix — Omarchy applications the pinned Guix does not package.
 ;;;
 ;;; These install the upstream projects' own aarch64 and x86_64 release
 ;;; binaries instead of building from source
 ;;; (docs/decisions/0003-upstream-binary-packages.md). Each source is pinned by
 ;;; its SHA-256; the builder signs the result and roguix.frolow.dev serves it
-;;; like any other Roguix item.
-(define-module (roguix apps)
+;;; like any other Omaguix item.
+(define-module (omaguix apps)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix gexp)
@@ -269,9 +269,9 @@ exec ~a -c check_for_update_on_startup=false \"$@\"~%"
 Omarchy binds it to Super+Shift+Alt+M.")
     (license license:expat)))
 
-;; Guix's fastfetch links ZFS for pool details, which a Roguix VM has none of.
+;; Guix's fastfetch links ZFS for pool details, which an Omaguix VM has none of.
 ;; ZFS brings a kernel module build and, through Guix's grafts, a slow first
-;; roguix-update.
+;; omaguix-update.
 (define fastfetch-without-zfs
   (package
     (inherit fastfetch)

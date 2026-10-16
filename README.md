@@ -43,7 +43,7 @@ for the verified results and what is still open.
 
 ## Install
 
-Download `TryOmaguix.dmg` (older releases use `TryRoguix.dmg`) from the
+Download `TryOmaguix.dmg` (releases up to 0.5.1 use `TryRoguix.dmg`) from the
 [latest release](https://github.com/omaguix/try-omaguix/releases/latest) on an
 Apple Silicon Mac with macOS 15 or newer, and drag the app to Applications.
 Releases are not notarized yet: after macOS refuses the first launch, allow
@@ -101,9 +101,9 @@ Omarchy desktop keeps its old one; **Reset Omaguix** starts a new one.
 - **SSH:** add the SSH port mapping on the start menu, then
   `ssh -p 2222 guest@127.0.0.1`. `sshd` runs only while that mapping exists.
 - **Touch ID for sudo:** with the VM window in front, run
-  `roguix-touch-id enable` in the guest and approve on the Mac. `sudo` then
+  `omaguix-touch-id enable` in the guest and approve on the Mac. `sudo` then
   asks the Mac first and falls back to the password;
-  `roguix-touch-id disable` turns it off.
+  `omaguix-touch-id disable` turns it off.
 
 Processor cores, memory, networking (NAT or bridged), port forwarding and the
 VM's storage location are chosen on the start menu as in Try Omarchy; see the
@@ -111,7 +111,7 @@ corresponding sections of [docs/legacy-try-omarchy.md](docs/legacy-try-omarchy.m
 
 ## Data
 
-The VM lives in `~/Library/Application Support/Try Roguix/VM/v1/guix/`: the
+The VM lives in `~/Library/Application Support/Try Omaguix/VM/v1/guix/`: the
 verified factory image under `images/` and the VM's own disk under
 `disks/current/`. Updating the app never replaces an existing VM; **Reset Omaguix**
 on the start menu erases it and starts again from the factory image. When

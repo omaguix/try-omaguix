@@ -25,7 +25,7 @@ DROPPED = (
 )
 
 TERMINAL = "omarchy-launch-floating-terminal-with-presentation"
-PINNED_GUIX = "/var/guix/gcroots/roguix-guix/bin/guix"
+PINNED_GUIX = "/var/guix/gcroots/omaguix-guix/bin/guix"
 
 # (menu id, label, Guix packages offered: (id suffix, label, package)).
 CURATED = (
@@ -83,11 +83,11 @@ def transform(menu):
     result["install.package"] = dict(
         menu["install.package"], label="Package",
         description="Any Guix package, added to /etc/config.scm",
-        action=f"{TERMINAL} 'roguix-pkg pick-add'")
+        action=f"{TERMINAL} 'omaguix-pkg pick-add'")
     result["remove.package"] = dict(
         menu["remove.package"], label="Package",
         description="A package added in /etc/config.scm",
-        action=f"{TERMINAL} 'roguix-pkg pick-remove'")
+        action=f"{TERMINAL} 'omaguix-pkg pick-remove'")
     for group, label, programs in CURATED:
         icon = menu.get(group, {}).get("icon", "")
         result[group] = {"icon": icon, "label": label}
@@ -97,26 +97,26 @@ def transform(menu):
                 "icon": upstream.get("icon", icon),
                 "label": name,
                 "description": f"Guix package {package}",
-                "action": f"{TERMINAL} 'sudo roguix-pkg add {package}'",
-                "checked": f"roguix-pkg present {package}",
+                "action": f"{TERMINAL} 'sudo omaguix-pkg add {package}'",
+                "checked": f"omaguix-pkg present {package}",
             }
     # Try Omarchy's in-guest entry for the Mac app's settings, shown only
     # when the launcher provides the settings port.
-    result["setup.try-roguix"] = {
+    result["setup.try-omaguix"] = {
         "icon": "", "label": "Try Omaguix Settings",
         "description": "Open the Mac app settings",
-        "action": "roguix-settings",
+        "action": "omaguix-settings",
         "when": "test -w /dev/virtio-ports/dev.tryomarchy.settings"}
     result["update.system"] = {"icon": "", "label": "Guix System",
                                "aliases": ["reconfigure"]}
-    result["update.system.roguix"] = {
+    result["update.system.omaguix"] = {
         "icon": "", "label": "Update Omaguix",
-        "description": "Newest Omaguix from its signed channel (roguix-update)",
-        "action": f"{TERMINAL} roguix-update"}
+        "description": "Newest Omaguix from its signed channel (omaguix-update)",
+        "action": f"{TERMINAL} omaguix-update"}
     result["update.system.apply"] = {
         "icon": "", "label": "Apply configuration",
-        "description": "sudo roguix-reconfigure (/etc/config.scm)",
-        "action": f"{TERMINAL} roguix-reconfigure"}
+        "description": "sudo omaguix-reconfigure (/etc/config.scm)",
+        "action": f"{TERMINAL} omaguix-reconfigure"}
     result["update.system.edit"] = {
         "icon": "", "label": "Edit configuration",
         "description": "/etc/config.scm",

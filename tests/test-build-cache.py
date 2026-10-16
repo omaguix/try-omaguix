@@ -169,7 +169,7 @@ class BuildCacheTests(unittest.TestCase):
         self.assertIn('rm -rf -- "$legacy_app"', build_script)
         self.assertNotIn(".metadata_never_index", build_script)
         self.assertIn(
-            'app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/$APP_NAME.app"}',
+            'app=${TRY_OMAGUIX_APP:-"$repo_dir/build/dev.noindex/$APP_NAME.app"}',
             open_script,
         )
         # make run uses the same single saved VM as Finder; only
@@ -179,7 +179,7 @@ class BuildCacheTests(unittest.TestCase):
             ["make", "-n", "run-isolated"], cwd=REPOSITORY, check=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
         self.assertIn("OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1", isolated)
-        self.assertIn(f'TRY_ROGUIX_APP="{REPOSITORY}/build/dev.noindex/Try Omaguix.app"',
+        self.assertIn(f'TRY_OMAGUIX_APP="{REPOSITORY}/build/dev.noindex/Try Omaguix.app"',
                       isolated)
         run = subprocess.run(
             ["make", "-n", "run"], cwd=REPOSITORY, check=True,
@@ -298,7 +298,7 @@ class BuildCacheTests(unittest.TestCase):
                         patch.object(build_cache, "app_external_files", return_value=[]):
                     before = build_cache.fingerprint(root, "app", ["build-app"])
                     identity_file.write_text(identity_file.read_text().replace(
-                        "LOGS_DIRECTORY=Try Roguix", "LOGS_DIRECTORY=Try Omabend Logs"))
+                        "LOGS_DIRECTORY=Try Omaguix", "LOGS_DIRECTORY=Try Omabend Logs"))
                     after = build_cache.fingerprint(root, "app", ["build-app"])
                 self.assertNotEqual(before, after)
 
@@ -331,7 +331,7 @@ class BuildCacheTests(unittest.TestCase):
                 return build_cache.fingerprint(root, "app", ["build-app"])
 
             untagged = fingerprint()
-            git("tag", "try-roguix-v1.2.3")
+            git("tag", "try-omaguix-v1.2.3")
             tagged = fingerprint()
             self.assertNotEqual(untagged, tagged)
 

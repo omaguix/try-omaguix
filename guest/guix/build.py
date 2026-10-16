@@ -40,8 +40,8 @@ LOAD_PATH = HERE / "modules"
 def pin(load_path=LOAD_PATH):
     """The Guix commit the load path's modules build on: its one
     `<module directory>/guix-commit` (this repository's
-    modules/roguix/guix-commit, shared with the image's /etc/roguix and the
-    roguix channel)."""
+    modules/omaguix/guix-commit, shared with the image's /etc/omaguix and the
+    omaguix channel)."""
     load_path = Path(load_path)
     pins = sorted(load_path.glob("*/guix-commit"))
     if len(pins) != 1:
@@ -99,8 +99,8 @@ def inputs(system=SYSTEM, load_path=LOAD_PATH):
 
 def build(args):
     # The image records the published channel commit it is built from as
-    # /etc/roguix/channel-commit; roguix-update refuses to run without it
-    # (docs/decisions/0007). (roguix system) reads it at evaluation. Only a
+    # /etc/omaguix/channel-commit; omaguix-update refuses to run without it
+    # (docs/decisions/0007). (omaguix system) reads it at evaluation. Only a
     # dry run, which prints the plan, goes without it.
     channel = args.channel_commit or ""
     if not re.fullmatch(r"[0-9a-f]{40}", channel) and (channel or not args.dry_run):
@@ -109,7 +109,7 @@ def build(args):
     source = args.source.resolve(strict=True)
     commit = pin(args.load_path)
     env = git_environment()
-    env["ROGUIX_CHANNEL_COMMIT"] = channel
+    env["OMAGUIX_CHANNEL_COMMIT"] = channel
     # Git channels consume committed files, not a working-tree overlay.  Refuse
     # tracked edits rather than silently build something other than the source.
     head = subprocess.check_output(
@@ -136,7 +136,7 @@ def build(args):
     if not args.check and os.path.lexists(output):
         raise ValueError(f"Output already exists; choose a new --output: {output}")
     # The root partition's size. The system fills about 11.7 GiB of it, and
-    # roguix-grow-root grows it to the VM disk early in the first boot, so it
+    # omaguix-grow-root grows it to the VM disk early in the first boot, so it
     # needs headroom only for the closure to grow; the rest would be zeros
     # the builder writes into the store copy and the image file.
     command = [
@@ -151,7 +151,7 @@ def build(args):
     if args.dry_run:
         print(f"Authenticated local channel: {source} at {commit}")
         print(f"Keyring: {keyring}; official Guix introduction retained")
-        print(f"Channel release: ROGUIX_CHANNEL_COMMIT={channel or '(none; a build needs --channel-commit)'}")
+        print(f"Channel release: OMAGUIX_CHANNEL_COMMIT={channel or '(none; a build needs --channel-commit)'}")
         print(shlex.join(command))
         return
 
@@ -159,7 +159,7 @@ def build(args):
         raise ValueError("Build on Linux with Guix and a running guix-daemon; macOS cannot build this image directly")
     if not shutil.which("guix"):
         raise ValueError("guix is required")
-    with tempfile.TemporaryDirectory(prefix="roguix-channel-") as directory:
+    with tempfile.TemporaryDirectory(prefix="omaguix-channel-") as directory:
         channel_source = Path(directory) / "source.git"
         subprocess.run(
             ["git", "clone", "--quiet", "--bare", "--shared", str(source),

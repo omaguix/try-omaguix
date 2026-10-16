@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""roguix-pkg: the programs of this Guix system, for people and Omarchy.
+"""omaguix-pkg: the programs of this Guix system, for people and Omarchy.
 
-  roguix-pkg add NAME...      add to /etc/config.scm and reconfigure (root);
+  omaguix-pkg add NAME...      add to /etc/config.scm and reconfigure (root);
                               --allow-build compiles what no server has
-  roguix-pkg remove NAME...   remove from /etc/config.scm and reconfigure
-  roguix-pkg present NAME...  exit 0 when every NAME is installed
-  roguix-pkg list             the installed package names
-  roguix-pkg pick-add         choose from all Guix packages, then add
-  roguix-pkg pick-remove      choose from /etc/config.scm, then remove
+  omaguix-pkg remove NAME...   remove from /etc/config.scm and reconfigure
+  omaguix-pkg present NAME...  exit 0 when every NAME is installed
+  omaguix-pkg list             the installed package names
+  omaguix-pkg pick-add         choose from all Guix packages, then add
+  omaguix-pkg pick-remove      choose from /etc/config.scm, then remove
 
 NAME is a Guix package name (`guix search' finds them). Every program is part
 of the declarative system configuration: `add' edits the package list in
-/etc/config.scm and applies it with roguix-reconfigure (`guix system
+/etc/config.scm and applies it with omaguix-reconfigure (`guix system
 reconfigure' with the Guix that built this system). Omarchy's package helpers
 and its Install and Remove menus use this; a name Guix does not package is
 refused.
@@ -23,11 +23,11 @@ import subprocess
 import sys
 
 CONFIG = "/etc/config.scm"
-BEGIN = ";; BEGIN roguix packages"
-END = ";; END roguix packages"
+BEGIN = ";; BEGIN omaguix packages"
+END = ";; END omaguix packages"
 PROFILE_MANIFEST = "/run/current-system/profile/manifest"
-GUIX = "/var/guix/gcroots/roguix-guix/bin/guix"
-RECONFIGURE = "/run/current-system/profile/bin/roguix-reconfigure"
+GUIX = "/var/guix/gcroots/omaguix-guix/bin/guix"
+RECONFIGURE = "/run/current-system/profile/bin/omaguix-reconfigure"
 
 
 class Failure(Exception):
@@ -85,8 +85,8 @@ def apply(old_text, new_text, allow_build=False):
     if new_text == old_text:
         return 0
     write_config(new_text)
-    # roguix-reconfigure refuses to compile unless ROGUIX_ALLOW_BUILD=1.
-    environment = dict(os.environ, ROGUIX_ALLOW_BUILD="1" if allow_build else "0")
+    # omaguix-reconfigure refuses to compile unless OMAGUIX_ALLOW_BUILD=1.
+    environment = dict(os.environ, OMAGUIX_ALLOW_BUILD="1" if allow_build else "0")
     status = subprocess.run([RECONFIGURE], env=environment).returncode
     if status != 0:
         write_config(old_text)
@@ -182,10 +182,10 @@ def main(argv):
             return pick_add()
         if command == "pick-remove" and not names:
             return pick_remove()
-        raise Failure("usage: roguix-pkg add|remove|present NAME... "
+        raise Failure("usage: omaguix-pkg add|remove|present NAME... "
                       "| list | pick-add | pick-remove")
     except Failure as error:
-        print(f"\033[31mroguix-pkg: {error}\033[0m", file=sys.stderr)
+        print(f"\033[31momaguix-pkg: {error}\033[0m", file=sys.stderr)
         return 1
 
 

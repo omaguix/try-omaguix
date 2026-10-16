@@ -1,4 +1,4 @@
-"""roguix-setup: the first-start setup's settings and suggestion handling."""
+"""omaguix-setup: the first-start setup's settings and suggestion handling."""
 
 import base64
 import io
@@ -15,9 +15,9 @@ import unittest
 import unittest.mock
 
 HERE = Path(__file__).parent
-path = HERE / "modules" / "roguix" / "roguix-setup"
-loader = importlib.machinery.SourceFileLoader("roguix_setup", str(path))
-spec = importlib.util.spec_from_loader("roguix_setup", loader)
+path = HERE / "modules" / "omaguix" / "omaguix-setup"
+loader = importlib.machinery.SourceFileLoader("omaguix_setup", str(path))
+spec = importlib.util.spec_from_loader("omaguix_setup", loader)
 setup = importlib.util.module_from_spec(spec)
 loader.exec_module(setup)
 
@@ -52,10 +52,10 @@ class MachineSettingsTests(unittest.TestCase):
         self.assertEqual(setup.with_language("", "en_US.utf8"), "LANG=en_US.utf8\n")
 
     def test_hosts_keeps_resolving_the_new_name(self):
-        hosts = "127.0.0.1 localhost roguix\n::1 localhost roguix\n10.0.0.2 roguix-db\n"
-        self.assertEqual(setup.renamed_hosts(hosts, "roguix", "studio"),
+        hosts = "127.0.0.1 localhost omaguix\n::1 localhost omaguix\n10.0.0.2 omaguix-db\n"
+        self.assertEqual(setup.renamed_hosts(hosts, "omaguix", "studio"),
                          "127.0.0.1 localhost studio\n::1 localhost studio\n"
-                         "10.0.0.2 roguix-db\n")
+                         "10.0.0.2 omaguix-db\n")
 
 
 class SuggestionTests(unittest.TestCase):
@@ -99,7 +99,7 @@ class SuggestionTests(unittest.TestCase):
         self.assertEqual(set(setup.LOCALES), {"en_US.UTF-8", *artifact.LOCALES})
         # The image defines each language, so choosing one builds no locales;
         # these two are among Guix's %default-locale-definitions.
-        system = (HERE / "modules" / "roguix" / "system.scm").read_text()
+        system = (HERE / "modules" / "omaguix" / "system.scm").read_text()
         for guix in set(setup.LOCALES.values()) - {"en_US.utf8", "zh_CN.utf8"}:
             self.assertIn(f'(name "{guix}")', system)
 
@@ -137,7 +137,7 @@ class SuggestionTests(unittest.TestCase):
 
     def test_every_layout_is_a_valid_scheme_value(self):
         for entry in setup.LAYOUTS:
-            setup.machine_settings("roguix", "UTC", False, entry, "en_US.utf8")
+            setup.machine_settings("omaguix", "UTC", False, entry, "en_US.utf8")
 
 
 class TerminalTests(unittest.TestCase):
@@ -187,24 +187,24 @@ class TerminalTests(unittest.TestCase):
                          ("secret1", "Ada Lovelace", "ada@example.com", "studio",
                           "Europe/Warsaw", True, "zh_TW.utf8"))
         self.assertEqual([event for event in events if " ready " in event],
-                         [f"roguix-setup: ready {step}" for step in (
+                         [f"omaguix-setup: ready {step}" for step in (
                              "keyboard", "password", "password-repeat", "git-name",
                              "git-email", "host-name", "time-zone", "confirm")])
-        self.assertIn("roguix-setup: accepted confirm yes", events)
+        self.assertIn("omaguix-setup: accepted confirm yes", events)
 
     def test_rejections_ask_again_and_are_announced(self):
         keys = ("\r" "\r" "one\r" "two\r" "pass\r" "pass\r" "\r" "\r"
                 "\x15Bad_Name\r" "\x15good\r" "\r" "n" "\r"
                 "\r" "\r" "\r" "\r" "\r")
         (layout, password, name, email, host, zone, _, _), events = self.run_with(keys)
-        self.assertEqual((password, host), ("pass", "roguix"))
-        self.assertIn("roguix-setup: rejected password The password must not be empty.",
+        self.assertEqual((password, host), ("pass", "omaguix"))
+        self.assertIn("omaguix-setup: rejected password The password must not be empty.",
                       events)
-        self.assertIn("roguix-setup: rejected password The passwords differ.", events)
-        self.assertTrue(any(event.startswith("roguix-setup: rejected host-name")
+        self.assertIn("omaguix-setup: rejected password The passwords differ.", events)
+        self.assertTrue(any(event.startswith("omaguix-setup: rejected host-name")
                             for event in events))
-        self.assertIn("roguix-setup: accepted confirm no", events)
-        self.assertEqual(events[-1], "roguix-setup: accepted confirm yes")
+        self.assertIn("omaguix-setup: accepted confirm no", events)
+        self.assertEqual(events[-1], "omaguix-setup: accepted confirm yes")
 
     def test_search_and_arrow_keys_pick_another_item(self):
         keys = ("\r" "pw\r" "pw\r" "\r" "\r" "\r"

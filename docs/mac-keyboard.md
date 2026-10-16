@@ -101,14 +101,14 @@ its own bundle identifier, one per build:
 
 | Build | App | VM window |
 | --- | --- | --- |
-| Release | `dev.tryroguix.native` | `dev.tryroguix.native.vm` |
-| Development (`make app`, `Try Omaguix Dev.app`) | `dev.tryroguix.native.development` | `dev.tryroguix.native.development.vm` |
+| Release | `dev.tryomaguix.native` | `dev.tryomaguix.native.vm` |
+| Development (`make app`, `Try Omaguix Dev.app`) | `dev.tryomaguix.native.development` | `dev.tryomaguix.native.development.vm` |
 
 ```json
 "conditions": [
   {
     "type": "frontmost_application_unless",
-    "bundle_identifiers": ["^dev\\.tryroguix\\.native(\\.development)?\\.vm$"]
+    "bundle_identifiers": ["^dev\\.tryomaguix\\.native(\\.development)?\\.vm$"]
   }
 ]
 ```

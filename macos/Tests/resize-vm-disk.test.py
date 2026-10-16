@@ -19,7 +19,7 @@ class ResizeDiskTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         self.root_state = self.root / "VM with spaces"
-        # The storage library keeps the Roguix VM in a `guix` subdirectory.
+        # The storage library keeps the Omaguix VM in a `guix` subdirectory.
         self.state = self.root_state / "guix"
         self.source = self.root / "source.raw"
         self.payload = b"existing guest data" + bytes(4096)
