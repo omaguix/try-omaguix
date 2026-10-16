@@ -2,24 +2,6 @@
 
 ## Next, in order
 
-- [ ] Evaluate the release-manifest and pin-move guest code in the builder [t-omamanif]
-  Follow-up of the release step (decision 0006, done 2026-10-12), decided by
-  the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
-  channel's release.json: it names HEAD's parent (the released commit) and
-  its commit changes nothing but release.json, so modules can only come
-  from a released commit. Needs a guest build. Implemented together with
-  `[t-omaupgrd]` in commit `e24e710d` (`guest/guix/modules/roguix/omarchy.scm`
-  and `guest/guix/test_roguix_update.py`).
-  Landed with [t-omaupgrd] as e7420e41 (2026-10-16, run r-xyks6pbv, three
-  attempts, consult rounds 20261016-172546-fa06 and 20261016-172547-ff14).
-  What is left is the guest build: in the builder VM, run `build.py --check`
-  with a `--channel-commit` on e7420e41, so the new `computed-file` in
-  `system.scm`, the `ROGUIX_GUIX` pin and the `release.json` checks evaluate
-  under real Guix. It needs `guest/guix/vm-run`, so a pane worker does it.
-  The patched Guix and a real pin move wait for CI ([t-omarelfs]).
-  Started 2026-10-16 with the user's grant for this launch: pane worker
-  manif-check (wD4:p2S); wait job 20261016-173819-a655.
-
 - [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
   Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
   more names like that left unchanged? Ask the models." The rename kept the
@@ -125,6 +107,11 @@
   Gate from [t-omaupgrd] (d-qqlris3g): omaguix/omaguix's workflow builds
   P from upstream G plus try-roguix's forward-check patch, and the release
   names the patched commit.
+  x86_64 verified 2026-10-16 on the 2010 MacBook (pane worker codex-x86):
+  `codex-bin` built under the Roguix pin 7e74121a
+  (/gnu/store/wq2s2lnl...-codex-0.163.0), `codex --version` prints
+  codex-cli 0.163.0, and `codex sandbox` ran unprivileged with the store's
+  bwrap (not setuid) with writes blocked.
 
 - [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
   Decided by the user 2026-10-12: "yes, after acceptance". Proposed
@@ -568,6 +555,22 @@
   Decided by the user 2026-10-16 (d-q55wvgua): not now, there is space for
   now. Redo the plan when space runs short (the `macbook-2010` skill covers
   the move).
+
+- [ ] `build.py --check` evaluates the whole system [t-fxujivca]
+  Follow-up of [t-omamanif] (builder check 2026-10-16): `build.py --check`
+  exits 0 after Guix's dry run stops at the first graft build needed during
+  evaluation, so it never reaches most of the system (here, the new
+  `computed-file`). A full `system image --dry-run --no-grafts` did evaluate
+  it. Make `--check` evaluate everything, for example by adding
+  `--no-grafts` to the check; it changes what `--check` proves, so say so in
+  the README.
+
+- [ ] `vm-run` drops lines of the guest log [t-gmgkzhns]
+  Found 2026-10-16 by the [t-omamanif] worker: the host-side log lacked lines
+  24-40 of the guest's own log, and a short grep through `vm-run` exited 0
+  but printed nothing. That is a lost event in vm-run's streaming (the guest
+  log is complete), not a timing problem: find where the stream loses bytes
+  and fix the producer or the reader (Rule 10).
 
 ## Needs a decision
 
