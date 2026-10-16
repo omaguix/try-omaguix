@@ -29,6 +29,19 @@
   worker. Decided by the user 2026-10-16 (d-5gqofwk2): codex-bin brings
   Guix's bubblewrap on its PATH.
 
+- [ ] The update checker follows the app identity [t-lu4f36td]
+  Follow-up of [t-omabendl] (review rounds 20261016-160156-dde6 and
+  20261016-160157-dae4, sol): `AppRelease.swift` and `AppReleaseChecker.swift`
+  hardcode the repository `omaguix/try-omaguix`, the `try-roguix-v` tag prefix
+  and the DMG names, so a second app would offer Try Omaguix updates. Write
+  `RELEASE_REPOSITORY`, `RELEASE_TAG_PREFIX` and `RELEASE_DMG` into Info.plist
+  and read them there; Try Omaguix keeps accepting its historical
+  `TryRoguix*.dmg` names. Swift and `make test`: a pane worker.
+  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
+  When it lands, send the commit in one line to the guix-bend coordinator
+  (session guix-bend-60, pane wCX:p97): Try Omabend's app build waits only
+  on this item.
+
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
   owner (review of the Roguix repositories, consult round
@@ -280,19 +293,6 @@
   Omaguix's own packages") describes the pre-Omarchy Roguix image, so it
   should say Roguix.
   Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
-
-- [ ] The update checker follows the app identity [t-lu4f36td]
-  Follow-up of [t-omabendl] (review rounds 20261016-160156-dde6 and
-  20261016-160157-dae4, sol): `AppRelease.swift` and `AppReleaseChecker.swift`
-  hardcode the repository `omaguix/try-omaguix`, the `try-roguix-v` tag prefix
-  and the DMG names, so a second app would offer Try Omaguix updates. Write
-  `RELEASE_REPOSITORY`, `RELEASE_TAG_PREFIX` and `RELEASE_DMG` into Info.plist
-  and read them there; Try Omaguix keeps accepting its historical
-  `TryRoguix*.dmg` names. Swift and `make test`: a pane worker.
-  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
-  When it lands, send the commit in one line to the guix-bend coordinator
-  (session guix-bend-60, pane wCX:p97): Try Omabend's app build waits only
-  on this item.
 
 - [ ] UI strings name the app from its identity [t-5gcnv3af]
   Follow-up of [t-omabendl] (worker open point): windows and alerts say
