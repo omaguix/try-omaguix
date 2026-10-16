@@ -2,71 +2,21 @@
 
 ## Next, in order
 
-- [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
-  Requested 2026-10-12 by the roguix-vps coordinator, approved by the
-  owner (review of the Roguix repositories, consult round
-  20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
-  d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
-  upgrade path.
-  roguix-update (guest/guix/modules/roguix/omarchy.scm:483) tells users to
-  reset the VM when a release needs a newer Guix. Existing VMs should move to
-  the new pin keeping their settings and data, with a rollback. New users
-  are Try Omaguix Mac app users for now; bare metal is not pursued.
-  Decided by the user 2026-10-12, directly to the upgrade worker: the
-  signed release.json names the new Guix's store path and the VM only
-  substitutes it, without cloning Guix or contacting Codeberg. Nobody
-  uses Omaguix yet, so no older release format needs compatibility.
-  Checked 2026-10-14 (consult round 20261014-193606-be7d): the worker finished
-  two commits (`f3df437a` "docs: upgrade Roguix VMs across Guix pins" and
-  `e24e710d` "guest: roguix-update moves to a new Guix pin", which also covers
-  `[t-omamanif]` below with `guest/guix/test_roguix_update.py`). Before landing
-  them on `main`:
-  1. Decided by the user 2026-10-16 (d-avv7ucxt): `roguix-update` passes
-     `--no-check-forward-update` to `guix system reconfigure` after it
-     authenticates `release.json` and verifies that `P/bin/guix describe`
-     matches `guix-commit`, so moving across Guix pins never clones Guix from
-     Codeberg.
-  2. Rebase both commits onto `main` and update the renamed product and
-     repository references (`Omaguix`, `omaguix/omaguix`, `omaguix/omaguix-channel`).
-  3. Ensure `omaguix/omaguix`'s `.github/workflows/build-desktop.yml` emits
-     `split-<prefix>/guix-profile.txt` and includes that Guix profile in
-     `package-closure.txt` before `e24e710d`'s stricter `release.py` check is
-     used for a release.
-  Run r-xyks6pbv started 2026-10-16 (headless, checks test-contracts and
-  diff-check; wait job 20261016-165802-040b). The coordinator added a safety step: since
-  --no-check-forward-update also skips Guix's downgrade check,
-  roguix-update refuses a channel main that does not descend from the
-  checkout's previous commit. Point 3 (the CI workflow) is a gate of
-  [t-omarelfs], not of this landing.
-  Run r-xyks6pbv attempt 1 is WORKER-BLOCKED (event 165486): Guix has no
-  `--no-check-forward-update` option (checked at the pin 7e74121a:
-  `guix/scripts/system.scm:837` always runs check-forward-update, and
-  `reconfigure.scm:400-422` clones Guix whenever the commit changes), so
-  d-avv7ucxt chose an option that does not exist. Also, nothing records
-  which channel commit built a system, so the first run has no base for the
-  descendant check. Consult round 20261016-170251 is weighing the real
-  options; then the user re-decides.
-  Consult round 20261016-170251 (sol, MiMo, DeepSeek, Argon, Muse Wonder).
-  Decided by the user 2026-10-16, superseding d-avv7ucxt:
-  - d-qqlris3g: a patched Guix built by CI. P is upstream G plus a small,
-    named patch that adds a flag to skip check-forward-update.
-    `release.json` names the patch and the patched commit. roguix-update
-    checks `P/bin/guix describe` against the patched commit, and passes the
-    flag only after its own descendant check has passed. A test shows that a
-    downgrade still aborts without the flag.
-  - d-iudmnb4g: the image records the channel commit it was built from
-    (`/etc/roguix/channel-commit`); images come from a published channel
-    release. roguix-update fails closed when the record is missing, checks
-    `git merge-base --is-ancestor <recorded> <main>`, and, after a successful
-    reconfigure, advances its durable cursor atomically.
-  Open from the round (sol): a newer channel release can still name an
-  older G; the release step must refuse that.
-  CI's share (building P from G plus the patch, in omaguix/omaguix's
-  workflow) is a gate of the first release [t-omarelfs].
-  Decided by the user 2026-10-16 (d-726tnvqe), after the coordinator raised
-  the GitHub Actions cost (a patched Guix has no upstream substitutes, so CI
-  builds guix from source for both systems at every pin bump): stay with the
-  patch.
+- [ ] Evaluate the release-manifest and pin-move guest code in the builder [t-omamanif]
+  Follow-up of the release step (decision 0006, done 2026-10-12), decided by
+  the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
+  channel's release.json: it names HEAD's parent (the released commit) and
+  its commit changes nothing but release.json, so modules can only come
+  from a released commit. Needs a guest build. Implemented together with
+  `[t-omaupgrd]` in commit `e24e710d` (`guest/guix/modules/roguix/omarchy.scm`
+  and `guest/guix/test_roguix_update.py`).
+  Landed with [t-omaupgrd] as e7420e41 (2026-10-16, run r-xyks6pbv, three
+  attempts, consult rounds 20261016-172546-fa06 and 20261016-172547-ff14).
+  What is left is the guest build: in the builder VM, run `build.py --check`
+  with a `--channel-commit` on e7420e41, so the new `computed-file` in
+  `system.scm`, the `ROGUIX_GUIX` pin and the `release.json` checks evaluate
+  under real Guix. It needs `guest/guix/vm-run`, so a pane worker does it.
+  The patched Guix and a real pin move wait for CI ([t-omarelfs]).
 
 - [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
   Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
@@ -156,15 +106,6 @@
   macos/patches/virgl-angle-multisample.patch upstream once Metal is the
   default and LibreWolf and Chromium pass (Metal became the default
   2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
-
-- [ ] roguix-update checks the release manifest [t-omamanif]
-  Follow-up of the release step (decision 0006, done 2026-10-12), decided by
-  the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
-  channel's release.json: it names HEAD's parent (the released commit) and
-  its commit changes nothing but release.json, so modules can only come
-  from a released commit. Needs a guest build. Implemented together with
-  `[t-omaupgrd]` in commit `e24e710d` (`guest/guix/modules/roguix/omarchy.scm`
-  and `guest/guix/test_roguix_update.py`).
 
 - [ ] release.py resumes from an existing CI run [t-omaresum]
   Follow-up of the release step, decided by the user 2026-10-12
