@@ -23,6 +23,11 @@
   Started 2026-10-16 with the user's grant for this launch: pane worker
   codex-package (wD4:p1D), worktree ../try-roguix-codex, branch
   codex-package; wait job 20261016-161354-38c7.
+  Attempt 1 (20c5b8da) reviewed in consult round 20261016-162136-a9e2 (all
+  five models): the build ran the target binary (no x86_64 build), and the
+  -c override claim and TLS roots were unverified. Sent back to the same
+  worker. Decided by the user 2026-10-16 (d-5gqofwk2): codex-bin brings
+  Guix's bubblewrap on its PATH.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
