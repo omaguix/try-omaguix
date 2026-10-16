@@ -167,7 +167,8 @@ class BuildInputsTests(unittest.TestCase):
         output = io.StringIO()
         args = argparse.Namespace(source=HERE, output=Path("/nonexistent/image.raw"),
                                   dry_run=True, check=False,
-                                  system=builder.SYSTEM, load_path=builder.LOAD_PATH)
+                                  system=builder.SYSTEM, load_path=builder.LOAD_PATH,
+                                  channel_commit="c" * 40)
         with patch.object(builder.subprocess, "check_output",
                           side_effect=[builder.pin(), "", "a" * 40]), \
                 contextlib.redirect_stdout(output):

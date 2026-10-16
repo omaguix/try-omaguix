@@ -1,7 +1,8 @@
 # Roguix updates through a signed Guix channel
 
 Superseded in part by [0006](0006-one-roguix-release-step.md): how a
-release is published.
+release is published, and by [0007](0007-move-vms-across-guix-pins.md):
+a release on a newer Guix pin.
 
 ## Context
 
@@ -47,5 +48,5 @@ its packages there before its channel commit.
 - A release is one step, `guest/guix/release.py`
   ([0006](0006-one-roguix-release-step.md)): the channel commit, CI's
   builds of it, then a signed manifest that moves `main`.
-- A new Guix pin still needs a new image until the pinned Guix itself is
-  published; `roguix-update` says so rather than building Guix.
+- A new Guix pin needed a new image; since 0007, `roguix-update` moves the
+  VM to it.

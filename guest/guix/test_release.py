@@ -22,8 +22,14 @@ def item(n, name="pkg"):
     return ITEM.format(f"{n:032d}", name)
 
 
+GUIX = item(9, "profile")
+PATCH_SHA256 = release.guix_patch_sha256()
+PATCHED = "b" * 40
+
+
 def write_artifact(directory, system, commit=COMMIT, pin=PIN, tag="",
-                   publish=(), closure=(item(1), item(2))):
+                   publish=(), closure=(item(1), item(2), GUIX), guix=GUIX,
+                   patch_sha256=PATCH_SHA256, patched=PATCHED):
     artifact = directory / f"split-{release.ARCHITECTURES[system]}"
     artifact.mkdir(parents=True)
     (artifact / "channel-commit.txt").write_text(commit + "\n")
@@ -31,6 +37,12 @@ def write_artifact(directory, system, commit=COMMIT, pin=PIN, tag="",
     (artifact / "system.txt").write_text(system + "\n")
     if tag:
         (artifact / "release-tag.txt").write_text(tag + "\n")
+    if guix:
+        (artifact / "guix-profile.txt").write_text(guix + "\n")
+    for name, value in (("guix-patch-sha256.txt", patch_sha256),
+                        ("guix-patched-commit.txt", patched)):
+        if value:
+            (artifact / name).write_text(value + "\n")
     for name, lines in (("publish.txt", publish),
                         ("package-closure.txt", closure)):
         if lines:
@@ -74,16 +86,51 @@ class ReadBuildsTests(unittest.TestCase):
         write_artifact(self.dir, "aarch64-linux", tag="aarch64-desktop-x",
                        publish=[item(2)])
         write_artifact(self.dir, "x86_64-linux")
-        builds = release.read_builds(self.dir, COMMIT, PIN)
+        builds = release.read_builds(self.dir, COMMIT, PIN, PATCH_SHA256)
         self.assertEqual(builds["aarch64-linux"]["release"], "aarch64-desktop-x")
         self.assertEqual(builds["aarch64-linux"]["publish.txt"], [item(2)])
         self.assertIsNone(builds["x86_64-linux"]["release"])
         self.assertEqual(builds["x86_64-linux"]["vps-fetch.txt"], [])
+        self.assertEqual(builds["x86_64-linux"]["guix"], GUIX)
+        self.assertEqual(builds["x86_64-linux"]["guix-patched-commit"], PATCHED)
+
+    def test_the_guix_is_the_pin_plus_this_patch_in_one_commit(self):
+        # VMs run that Guix with --no-check-forward-update, which only the
+        # patch adds, after checking `guix describe' names the commit.
+        for kwargs, error in (({"patch_sha256": ""}, "guix-patch-sha256"),
+                              ({"patch_sha256": "0" * 64}, "guix-patch-sha256"),
+                              ({"patched": ""}, "not a commit"),
+                              ({"patched": "B" * 40}, "not a commit"),
+                              ({"patched": "d" * 40}, "different commits")):
+            with self.subTest(**kwargs), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                write_artifact(directory, "aarch64-linux", **kwargs)
+                write_artifact(directory, "x86_64-linux")
+                with self.assertRaisesRegex(release.ReleaseError, error):
+                    release.read_builds(directory, COMMIT, PIN, PATCH_SHA256)
+
+    def test_the_patch_is_the_one_in_the_channel(self):
+        self.assertEqual(release.GUIX_PATCH,
+                         "modules/roguix/guix-skip-forward-check.patch")
+        self.assertTrue((HERE / release.GUIX_PATCH).is_file())
+
+    def test_the_guix_profile_is_a_checked_store_item(self):
+        # VMs substitute it by its path, so it must be one item of the
+        # closure whose every item the release checks is served.
+        for guix, error in (("", "not a store item"),
+                            ("/gnu/store/../etc/passwd", "not a store item"),
+                            (item(8, "profile"), "not in package-closure")):
+            with self.subTest(guix=guix), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                write_artifact(directory, "aarch64-linux", guix=guix)
+                write_artifact(directory, "x86_64-linux")
+                with self.assertRaisesRegex(release.ReleaseError, error):
+                    release.read_builds(directory, COMMIT, PIN, PATCH_SHA256)
 
     def test_every_architecture_must_have_built(self):
         write_artifact(self.dir, "aarch64-linux")
         with self.assertRaisesRegex(release.ReleaseError, "split-x86_64"):
-            release.read_builds(self.dir, COMMIT, PIN)
+            release.read_builds(self.dir, COMMIT, PIN, PATCH_SHA256)
 
     def test_a_build_of_another_commit_or_pin_is_refused(self):
         for kwargs in ({"commit": "d" * 40}, {"pin": "e" * 40}):
@@ -92,13 +139,13 @@ class ReadBuildsTests(unittest.TestCase):
                 write_artifact(directory, "aarch64-linux", **kwargs)
                 write_artifact(directory, "x86_64-linux")
                 with self.assertRaises(release.ReleaseError):
-                    release.read_builds(directory, COMMIT, PIN)
+                    release.read_builds(directory, COMMIT, PIN, PATCH_SHA256)
 
     def test_a_release_tag_goes_with_items_to_publish(self):
         write_artifact(self.dir, "aarch64-linux", publish=[item(2)])
         write_artifact(self.dir, "x86_64-linux")
         with self.assertRaisesRegex(release.ReleaseError, "release tag"):
-            release.read_builds(self.dir, COMMIT, PIN)
+            release.read_builds(self.dir, COMMIT, PIN, PATCH_SHA256)
 
 
 class CoverageTests(unittest.TestCase):
@@ -126,22 +173,130 @@ class CoverageTests(unittest.TestCase):
 
 class ManifestTests(unittest.TestCase):
     def test_names_the_commit_its_builds_and_their_servers(self):
-        builds = {"aarch64-linux": {"release": "aarch64-desktop-x",
+        builds = {"aarch64-linux": {"release": "aarch64-desktop-x", "guix": GUIX,
+                                    "guix-patched-commit": PATCHED,
                                     "publish.txt": [item(2)]},
-                  "x86_64-linux": {"release": None, "publish.txt": []}}
+                  "x86_64-linux": {"release": None, "guix": GUIX,
+                                   "guix-patched-commit": PATCHED,
+                                   "publish.txt": []}}
         served = {"aarch64-linux": {"bordeaux": 5, "roguix": 2},
                   "x86_64-linux": {"bordeaux": 7, "roguix": 0}}
         ci_run = {"databaseId": 42, "url": "https://example/runs/42",
                   "headSha": "f" * 40}
-        document = release.manifest(COMMIT, "a" * 40, PIN, ci_run, builds, served)
+        document = release.manifest(COMMIT, "a" * 40, PIN, PATCH_SHA256, ci_run,
+                                    builds, served)
         self.assertEqual(document["channel-commit"], COMMIT)
         self.assertEqual(document["guix-commit"], PIN)
+        self.assertEqual(document["guix-patch"],
+                         {"file": release.GUIX_PATCH, "sha256": PATCH_SHA256})
+        self.assertEqual(document["guix-patched-commit"], PATCHED)
         self.assertEqual(document["ci"]["run-id"], 42)
         self.assertEqual(document["architectures"]["aarch64-linux"],
-                         {"release": "aarch64-desktop-x", "published": 1,
+                         {"guix": GUIX, "release": "aarch64-desktop-x", "published": 1,
                           "served-by-bordeaux": 5, "served-by-roguix": 2})
         self.assertIsNone(document["architectures"]["x86_64-linux"]["release"])
         json.dumps(document)
+
+
+def plain_git(directory, *args):
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+               GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.com",
+               GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.com")
+    return subprocess.run(["git", "-C", str(directory), *args], env=env,
+                          check=True, capture_output=True, text=True).stdout.strip()
+
+
+class GuixMovesForwardTests(unittest.TestCase):
+    """A release never names an older Guix than the previous release."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.guix = Path(self.tmp.name) / "guix"
+        plain_git(self.tmp.name, "init", "--quiet", "--initial-branch=master",
+                  str(self.guix))
+
+        def commit(message):
+            plain_git(self.guix, "commit", "--quiet", "--allow-empty", "-m", message)
+            return plain_git(self.guix, "rev-parse", "HEAD")
+        self.old = commit("old")
+        self.new = commit("new")
+        plain_git(self.guix, "checkout", "--quiet", "-b", "side", self.old)
+        self.side = commit("side")
+
+    def check(self, previous, pin, checkout="checkout"):
+        release.check_guix_moves_forward(
+            previous, pin, str(self.guix) if checkout == "checkout" else checkout)
+
+    def test_a_newer_or_the_same_pin_passes(self):
+        self.check(self.old, self.new)
+        self.check(self.new, self.new, checkout=None)
+        self.check(None, self.new, checkout=None)
+
+    def test_an_older_or_diverged_pin_is_refused(self):
+        for previous, pin in ((self.new, self.old), (self.new, self.side)):
+            with self.subTest(pin=pin), \
+                    self.assertRaisesRegex(release.ReleaseError, "does not descend"):
+                self.check(previous, pin)
+
+    def test_a_moved_pin_needs_a_clone_that_has_both_commits(self):
+        with self.assertRaisesRegex(release.ReleaseError, "GUIX_CHECKOUT"):
+            self.check(self.old, self.new, checkout=None)
+        with self.assertRaisesRegex(release.ReleaseError, "lacks Guix commit"):
+            self.check(self.old, "e" * 40)
+
+    def channel(self):
+        """A channel whose first commit predates releases, then a release
+        and a commit C on it; return the channel, the release and C."""
+        channel = Path(self.tmp.name) / "channel"
+        plain_git(self.tmp.name, "init", "--quiet", str(channel))
+        plain_git(channel, "commit", "--quiet", "--allow-empty", "-m", "first")
+        (channel / release.MANIFEST).write_text(json.dumps({"guix-commit": self.old}))
+        plain_git(channel, "add", release.MANIFEST)
+        plain_git(channel, "commit", "--quiet", "-m", "Release")
+        released = plain_git(channel, "rev-parse", "HEAD")
+        plain_git(channel, "commit", "--quiet", "--allow-empty", "-m", "C")
+        return channel, released, plain_git(channel, "rev-parse", "HEAD")
+
+    def test_the_previous_pin_is_the_parent_releases(self):
+        channel, released, commit = self.channel()
+        self.assertEqual(release.previous_pin(channel, commit), self.old)
+        # The first release: no earlier commit ever held a release.json.
+        self.assertIsNone(release.previous_pin(channel, released))
+
+    def test_a_repository_error_is_never_the_first_release(self):
+        channel, _, commit = self.channel()
+        for target, where in ((channel, "e" * 40),
+                              (Path(self.tmp.name) / "missing", commit)):
+            with self.subTest(target=target, commit=where), \
+                    self.assertRaises(release.ReleaseError):
+                release.previous_pin(target, where)
+        # main dropped release.json after a release: not a first release.
+        plain_git(channel, "rm", "--quiet", release.MANIFEST)
+        plain_git(channel, "commit", "--quiet", "-m", "drop")
+        plain_git(channel, "commit", "--quiet", "--allow-empty", "-m", "C2")
+        with self.assertRaisesRegex(release.ReleaseError, "which an earlier commit had"):
+            release.previous_pin(channel, plain_git(channel, "rev-parse", "HEAD"))
+        # A broken manifest stops the release too.
+        (channel / release.MANIFEST).write_text("{")
+        plain_git(channel, "add", release.MANIFEST)
+        plain_git(channel, "commit", "--quiet", "-m", "broken")
+        plain_git(channel, "commit", "--quiet", "--allow-empty", "-m", "C3")
+        with self.assertRaisesRegex(release.ReleaseError, "names no guix-commit"):
+            release.previous_pin(channel, plain_git(channel, "rev-parse", "HEAD"))
+
+    def test_the_release_commit_has_exactly_one_parent(self):
+        channel, released, commit = self.channel()
+        root = plain_git(channel, "rev-list", "--max-parents=0", "HEAD")
+        plain_git(channel, "checkout", "--quiet", "-b", "side", root)
+        plain_git(channel, "commit", "--quiet", "--allow-empty", "-m", "side")
+        plain_git(channel, "merge", "--quiet", "--no-ff", "--no-edit", commit)
+        merge = plain_git(channel, "rev-parse", "HEAD")
+        for target, parents in ((root, 0), (merge, 2)):
+            with self.subTest(parents=parents), self.assertRaisesRegex(
+                    release.ReleaseError, f"has {parents} parents, not one"):
+                release.previous_pin(channel, target)
 
 
 class PublishManifestTests(unittest.TestCase):

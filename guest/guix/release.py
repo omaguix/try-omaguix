@@ -6,10 +6,16 @@ channel commit C to release/C, omaguix/omaguix's CI builds C for every
 architecture, the VPS imports CI's releases, every package item is checked on
 a server, and only then a signed release.json on top of C moves the channel's
 main. Any failure stops before main moves.
+
+A release must not name an older Guix than the previous one
+(docs/decisions/0007): when the pin changed, .env's GUIX_CHECKOUT, a Git
+clone of Guix holding both commits, decides that the new pin descends from
+the previous release's.
 """
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -34,6 +40,12 @@ MANIFEST = "release.json"
 # Lists in each `split-PREFIX` artifact, as CI's desktop-split names them.
 ARTIFACT_LISTS = ("publish.txt", "vps-fetch.txt", "vps-has.txt",
                   "package-closure.txt")
+# The patch CI applies to the pinned Guix before building the Guix that VMs
+# move to another pin with (docs/decisions/0007): its path in the channel.
+GUIX_PATCH = "modules/roguix/guix-skip-forward-check.patch"
+COMMIT_ID = re.compile(r"[0-9a-f]{40}")
+# A direct store item, as Guix names one (nix-base32 hash).
+STORE_ITEM = re.compile(r"/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+")
 # delay: external deadline, a substitute server that accepts the connection
 # but never answers a narinfo request.
 NARINFO_TIMEOUT = 60
@@ -52,6 +64,11 @@ def roguix_server():
 
 def guix_pin():
     return (HERE / "modules" / "roguix" / "guix-commit").read_text().strip()
+
+
+def guix_patch_sha256():
+    """SHA-256 of the Guix patch, as publish-channel copies it into C."""
+    return hashlib.sha256((HERE / GUIX_PATCH).read_bytes()).hexdigest()
 
 
 def run(command, capture=True, **kwargs):
@@ -85,9 +102,10 @@ def read_lines(path):
     return [line for line in path.read_text().splitlines() if line]
 
 
-def read_builds(directory, commit, pin):
+def read_builds(directory, commit, pin, patch_sha256):
     """Each architecture's lists from `gh run download`, checked to be CI's
-    build of COMMIT at PIN for that architecture."""
+    build of COMMIT at PIN for that architecture, with a Guix built from PIN
+    plus the patch whose SHA-256 is PATCH_SHA256."""
     builds = {}
     for system, prefix in ARCHITECTURES.items():
         artifact = directory / f"split-{prefix}"
@@ -107,13 +125,92 @@ def read_builds(directory, commit, pin):
                  for name in ARTIFACT_LISTS}
         if not lists["package-closure.txt"]:
             raise ReleaseError(f"split-{prefix}/package-closure.txt is empty")
+        # The Guix profile CI's `guix time-machine --commit=PIN' ran: VMs
+        # on another pin substitute it (docs/decisions/0007), so it is
+        # checked and served like the packages.
+        guix_path = artifact / "guix-profile.txt"
+        guix = guix_path.read_text().strip() if guix_path.is_file() else ""
+        if not STORE_ITEM.fullmatch(guix):
+            raise ReleaseError(f"split-{prefix}/guix-profile.txt is {guix!r}, "
+                               "not a store item")
+        if guix not in lists["package-closure.txt"]:
+            raise ReleaseError(f"split-{prefix}: the Guix profile {guix} is "
+                               "not in package-closure.txt")
+        # That Guix is PIN plus GUIX_PATCH, committed by CI; `guix describe'
+        # in it names that commit, which VMs check before running it.
+        found = {}
+        for name in ("guix-patch-sha256.txt", "guix-patched-commit.txt"):
+            path = artifact / name
+            found[name] = path.read_text().strip() if path.is_file() else ""
+        if found["guix-patch-sha256.txt"] != patch_sha256:
+            raise ReleaseError(f"split-{prefix}/guix-patch-sha256.txt is "
+                               f"{found['guix-patch-sha256.txt']!r}, expected "
+                               f"{patch_sha256!r} ({GUIX_PATCH})")
+        patched = found["guix-patched-commit.txt"]
+        if not COMMIT_ID.fullmatch(patched):
+            raise ReleaseError(f"split-{prefix}/guix-patched-commit.txt is "
+                               f"{patched!r}, not a commit")
         tag_path = artifact / "release-tag.txt"
         tag = tag_path.read_text().strip() if tag_path.is_file() else ""
         if bool(tag) != bool(lists["publish.txt"]):
             raise ReleaseError(f"split-{prefix}: release tag {tag!r} with "
                                f"{len(lists['publish.txt'])} items to publish")
-        builds[system] = {"release": tag or None, **lists}
+        builds[system] = {"release": tag or None, "guix": guix,
+                          "guix-patched-commit": patched, **lists}
+    patched = {build["guix-patched-commit"] for build in builds.values()}
+    if len(patched) != 1:
+        raise ReleaseError("the architectures' Guix come from different "
+                           f"commits: {' '.join(sorted(patched))}")
     return builds
+
+
+def previous_pin(channel, commit):
+    """The Guix pin of the release COMMIT is made on (its one parent, the
+    channel's main), or None when no commit before COMMIT has ever held a
+    release. Any Git failure stops the release: it never counts as the
+    first one."""
+    parents = git(channel, "rev-list", "--parents", "-n", "1", commit).split()[1:]
+    if len(parents) != 1:
+        raise ReleaseError(f"channel commit {commit} has {len(parents)} parents, "
+                           "not one (the channel's main)")
+    parent = parents[0]
+    if not git(channel, "ls-tree", "--name-only", parent, "--", MANIFEST):
+        if git(channel, "log", "-n", "1", "--format=%H", parent, "--", MANIFEST):
+            raise ReleaseError(f"the channel's main {parent} lacks {MANIFEST}, "
+                               "which an earlier commit had")
+        return None
+    try:
+        pin = json.loads(git(channel, "show", f"{parent}:{MANIFEST}"))["guix-commit"]
+    except (ValueError, KeyError, TypeError) as error:
+        raise ReleaseError(f"{parent}:{MANIFEST} names no guix-commit: {error}")
+    if not isinstance(pin, str) or not COMMIT_ID.fullmatch(pin):
+        raise ReleaseError(f"{parent}:{MANIFEST} has guix-commit {pin!r}")
+    return pin
+
+
+def check_guix_moves_forward(previous, pin, checkout):
+    """Refuse PIN unless it is PREVIOUS or descends from it in the Guix
+    clone CHECKOUT: VMs move to a release's Guix without Guix's own
+    downgrade check (docs/decisions/0007)."""
+    if previous is None or previous == pin:
+        return
+    if not checkout:
+        raise ReleaseError(f"the Guix pin moves from {previous} to {pin}; "
+                           ".env sets no GUIX_CHECKOUT, a Guix clone to check "
+                           "that it moves forward")
+    for commit in (previous, pin):
+        if subprocess.run(["git", "-C", checkout, "cat-file", "-e",
+                           f"{commit}^{{commit}}"],
+                          capture_output=True).returncode != 0:
+            raise ReleaseError(f"GUIX_CHECKOUT {checkout} lacks Guix commit "
+                               f"{commit}; fetch it there first")
+    result = subprocess.run(["git", "-C", checkout, "merge-base",
+                             "--is-ancestor", previous, pin])
+    if result.returncode == 1:
+        raise ReleaseError(f"the Guix pin {pin} does not descend from the "
+                           f"previous release's {previous}")
+    if result.returncode != 0:
+        raise ReleaseError(f"git merge-base exited with {result.returncode}")
 
 
 def narinfo_status(server, item):
@@ -150,15 +247,18 @@ def coverage(builds, roguix, status=narinfo_status):
     return result
 
 
-def manifest(commit, try_roguix, pin, ci_run, builds, served):
+def manifest(commit, try_roguix, pin, patch_sha256, ci_run, builds, served):
     return {
         "channel-commit": commit,
         "try-roguix-commit": try_roguix,
         "guix-commit": pin,
+        "guix-patch": {"file": GUIX_PATCH, "sha256": patch_sha256},
+        "guix-patched-commit": next(iter(builds.values()))["guix-patched-commit"],
         "ci": {"repository": CI_REPO, "run-id": ci_run["databaseId"],
                "url": ci_run["url"], "commit": ci_run["headSha"]},
         "architectures": {
-            system: {"release": build["release"],
+            system: {"guix": build["guix"],
+                     "release": build["release"],
                      "published": len(build["publish.txt"]),
                      "served-by-bordeaux": served[system]["bordeaux"],
                      "served-by-roguix": served[system]["roguix"]}
@@ -216,7 +316,9 @@ def plan(try_roguix, pin, channel, env, roguix):
            else "ssh: .env lacks SSH_USER, SSH_HOST or VPS_IMPORT")
     return "\n".join([
         f"try-roguix {try_roguix}, Guix {pin}, channel checkout {channel}",
-        "1. guest/guix/publish-channel: signed commit C, pushed to release/C",
+        "1. guest/guix/publish-channel: signed commit C, pushed to release/C;"
+        " a changed Guix pin must descend from the previous release's"
+        " (GUIX_CHECKOUT)",
         f"2. gh workflow run {WORKFLOW} -R {CI_REPO} -f channel_commit=C,"
         " gh run watch RUN --exit-status, gh run download RUN",
         f"3. for each architecture's CI release: {ssh};"
@@ -229,6 +331,7 @@ def release(args):
     channel = args.channel.resolve()
     roguix = roguix_server()
     pin = guix_pin()
+    patch_sha256 = guix_patch_sha256()
     if run(["git", "-C", str(ROOT), "status", "--porcelain", "--",
             "guest/guix"]).strip():
         raise ReleaseError("commit guest/guix in try-roguix first")
@@ -244,6 +347,8 @@ def release(args):
     if commit is None:
         print("release: the channel already matches try-roguix")
         return
+    check_guix_moves_forward(previous_pin(channel, commit), pin,
+                             env.get("GUIX_CHECKOUT"))
     number = run_id(run(["gh", "workflow", "run", WORKFLOW, "-R", CI_REPO,
                          "-f", f"channel_commit={commit}"]))
     # gh polls GitHub's API until the run ends (external polling).
@@ -256,13 +361,14 @@ def release(args):
         raise ReleaseError(f"CI run {number} ended {ci_run['conclusion']}")
     with tempfile.TemporaryDirectory(prefix="roguix-release-") as tmp:
         run(["gh", "run", "download", number, "-R", CI_REPO, "-D", tmp])
-        builds = read_builds(Path(tmp), commit, pin)
+        builds = read_builds(Path(tmp), commit, pin, patch_sha256)
     for build in builds.values():
         if build["release"]:
             vps_import(env, build["release"])
     served = coverage(builds, roguix)
     head = publish_manifest(
-        channel, commit, manifest(commit, try_roguix, pin, ci_run, builds, served))
+        channel, commit,
+        manifest(commit, try_roguix, pin, patch_sha256, ci_run, builds, served))
     print(f"release: channel main is {head}, built by {ci_run['url']}")
 
 

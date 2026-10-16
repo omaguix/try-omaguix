@@ -54,9 +54,11 @@ attempt starts again from `main`; CI then substitutes what the failed
 attempt already imported. Two releases at once cannot both land: the second
 push to `main` is not a fast-forward and fails.
 
-`roguix-update` is unchanged: it authenticates and follows `main`, which now
-names only released commits. Checking `release.json` in the VM (its parent
-is C, and M changes no module) is a later guest change.
+`roguix-update` authenticates and follows `main`, which now names only
+released commits; since [0007](0007-move-vms-across-guix-pins.md) it also
+checks that `main` is such a release commit (its parent is C, and M changes
+nothing but `release.json`), and `release.json` names each architecture's
+Guix for VMs that move to its pin.
 
 The closure split is `omaguix/omaguix`'s `scripts/desktop-split`, with its
 licence collector; try-roguix's builder fallback (`server/publish-system.sh`)

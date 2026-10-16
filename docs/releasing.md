@@ -68,7 +68,10 @@ after the first attempt; never to turn Gatekeeper off.
 
 1. Publish the release's guest packages and channel (above).
 2. Build and package the factory image (`guest/guix/README.md`,
-   `make guix-package GUIX_IMAGE=...`) from the commit being released.
+   `make guix-package GUIX_IMAGE=...`) from the commit being released,
+   passing `build.py` the channel release of step 1 as `--channel-commit`:
+   `roguix-update` in the image updates only from that release on
+   (docs/decisions/0007-move-vms-across-guix-pins.md).
 3. `make test`.
 4. Tag the release commit: `git tag -a try-roguix-vX.Y.Z -m "Try Omaguix X.Y.Z"`.
 5. `macos/release.sh`: `TryOmaguix.dmg`, the disk parts and `SHA256SUMS` in

@@ -98,9 +98,18 @@ def inputs(system=SYSTEM, load_path=LOAD_PATH):
 
 
 def build(args):
+    # The image records the published channel commit it is built from as
+    # /etc/roguix/channel-commit; roguix-update refuses to run without it
+    # (docs/decisions/0007). (roguix system) reads it at evaluation. Only a
+    # dry run, which prints the plan, goes without it.
+    channel = args.channel_commit or ""
+    if not re.fullmatch(r"[0-9a-f]{40}", channel) and (channel or not args.dry_run):
+        raise ValueError("--channel-commit must name the channel's release commit "
+                         f"(its main) the modules come from; got {channel!r}")
     source = args.source.resolve(strict=True)
     commit = pin(args.load_path)
     env = git_environment()
+    env["ROGUIX_CHANNEL_COMMIT"] = channel
     # Git channels consume committed files, not a working-tree overlay.  Refuse
     # tracked edits rather than silently build something other than the source.
     head = subprocess.check_output(
@@ -142,6 +151,7 @@ def build(args):
     if args.dry_run:
         print(f"Authenticated local channel: {source} at {commit}")
         print(f"Keyring: {keyring}; official Guix introduction retained")
+        print(f"Channel release: ROGUIX_CHANNEL_COMMIT={channel or '(none; a build needs --channel-commit)'}")
         print(shlex.join(command))
         return
 
@@ -217,6 +227,9 @@ def main():
                         help="system definition to build (default: %(default)s)")
     parser.add_argument("--load-path", type=Path, default=LOAD_PATH,
                         help="module directory for --system (default: %(default)s)")
+    parser.add_argument("--channel-commit", metavar="COMMIT",
+                        help="the channel release (a commit of its main) whose "
+                             "modules the load path holds; required to build")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the plan without running Guix")
     parser.add_argument("--check", action="store_true",

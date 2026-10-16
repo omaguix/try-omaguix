@@ -60,9 +60,17 @@ On the Linux builder:
 
 ```sh
 # Authenticate and evaluate with the pinned Guix before building the image:
-python3 guest/guix/build.py --source /path/to/vendor/guix --check
-python3 guest/guix/build.py --source /path/to/vendor/guix
+python3 guest/guix/build.py --source /path/to/vendor/guix --channel-commit COMMIT --check
+python3 guest/guix/build.py --source /path/to/vendor/guix --channel-commit COMMIT
 ```
+
+An image is built from a published channel release: check out the
+try-roguix commit whose `guest/guix/modules/roguix` a release of the roguix
+channel carries, and pass that release's commit (the channel's `main` after
+`release.py`) as `--channel-commit`. The image installs it as
+`/etc/roguix/channel-commit`, the base `roguix-update` requires the
+channel's `main` to descend from (decision 0007); `build.py` refuses to
+build or check without it, and only `--dry-run` goes without.
 
 Unlike `--dry-run`, `--check` actually runs Guix and needs Linux, network access
 and a daemon. It can download/build Guix itself and instantiate derivations,
@@ -603,6 +611,21 @@ and is part of the system configuration:
   grafts* as `/var/guix/gcroots/roguix-ungrafted`: a reconfigure grafts
   again from those builds, and without them it would rebuild Hyprland and
   Quickshell, which have no substitutes, for hours.
+- **`roguix-update`** (`test_roguix_update.py`) applies the newest
+  release of the signed channel (decisions 0004 and 0006) after checking
+  that the channel's `main` is a release commit that descends from the
+  running system's record `/etc/roguix/channel-commit` (the release the
+  image, or the update that made this system, was built from) and from
+  `/var/lib/roguix/channel-commit`, the newest release it applied, which it
+  moves forward after each successful update and ignores when garbled.
+  Without the system's record, or for an older or diverged `main`, it
+  changes nothing; one run at a time holds `/var/lib/roguix/update.lock`. A release on another Guix pin is applied with the Guix its
+  `release.json` names (the pin plus
+  `modules/roguix/guix-skip-forward-check.patch`, built by CI), substituted
+  after a free-space check, checked with `guix describe`, run with
+  `--no-check-forward-update` so that it clones no Guix, and pinned as the
+  new root; `guix system roll-back` (the menu's Roll back) and a reboot
+  return to the old generation and its Guix (decision 0007).
 - **Substitutes for Omaguix's own packages** come from
   `https://roguix.frolow.dev` (decisions 0002 and 0005), after Guix's servers;
   the guest authorizes `modules/roguix/roguix.frolow.dev.pub`. This server,

@@ -334,6 +334,12 @@ gate_failed() {
   exit \"$1\"
 }")
 
+;; Free space roguix-update requires before it moves to another Guix pin
+;; (GiB): the new Guix took 0.5 GiB in a test VM on 2026-10-12. The new
+;; system's own packages come on top; Guix fetches them before it switches,
+;; so running short there fails without a change.
+(define %guix-move-free-gib "2")
+
 (define roguix-omarchy-compat
   (package
     (name "roguix-omarchy-compat")
@@ -455,19 +461,59 @@ exit 0
 "))
               ;; Update Omaguix from its signed channel (docs/decisions/0004):
               ;; fetch it, authenticate every new commit from the channel
-              ;; introduction, require the same Guix pin as this image, then
+              ;; introduction, check that main is a release (0006) that
+              ;; descends from the last one this system applied (0007), then
               ;; reconfigure /etc/config.scm with the channel's modules. The
               ;; applied modules become /etc/roguix, so roguix-reconfigure
-              ;; keeps using them offline.
+              ;; keeps using them offline. A release on another Guix pin is
+              ;; applied by the Guix it names, which the new system pins
+              ;; (0007); Guix builds everything before it switches, so a
+              ;; failed move leaves the system as it was, and `guix system
+              ;; roll-back' returns to the old Guix.
               (shim "roguix-update" (string-append "\
 [ \"$(id -u)\" = 0 ] || \\
   exec sudo ROGUIX_ALLOW_BUILD=\"${ROGUIX_ALLOW_BUILD:-0}\" \"$0\" \"$@\"
 " #$%build-gate "
 set -e
 git=" #$(file-append git "/bin/git") "
+jq=" #$(file-append jq "/bin/jq") "
 guix=/var/guix/gcroots/roguix-guix/bin/guix
-dir=/var/lib/roguix/channel
+state=/var/lib/roguix
+dir=$state/channel
 url=" #$(roguix-trust-channel-url %roguix-trust) "
+# One run at a time: two would race on the checkout and the cursor.
+mkdir -p \"$state\"
+exec 9> \"$state/update.lock\"
+if ! " #$(file-append util-linux "/bin/flock") " -n 9; then
+  echo 'roguix-update: another roguix-update is running; nothing changed.' >&2
+  exit 1
+fi
+# main must descend from the channel commit the running system was built
+# from, since the move to another Guix skips Guix's own downgrade check
+# (docs/decisions/0007). The image and every system roguix-update applies
+# record it; it is the authority. The cursor, the newest commit
+# roguix-update applied, only moves forward and keeps main from going back
+# to an older generation `guix system roll-back' returned to.
+commit_id() { echo \"$1\" | grep -Eqx '[0-9a-f]{40}'; }
+base=$(cat /etc/roguix/channel-commit 2>/dev/null) || base=
+if ! commit_id \"$base\"; then
+  echo 'roguix-update: this system records no channel commit it was built from' >&2
+  echo '(/etc/roguix/channel-commit); nothing changed.' >&2
+  exit 1
+fi
+cursor=$state/channel-commit
+applied=$(cat \"$cursor\" 2>/dev/null) || applied=
+if [ -e \"$cursor\" ] && ! commit_id \"$applied\"; then
+  echo \"roguix-update: ignoring $cursor, which holds no commit;\" >&2
+  echo \"the system's record $base stands.\" >&2
+  applied=
+fi
+current=$(cat /etc/roguix/modules/roguix/guix-commit 2>/dev/null) || current=
+if ! commit_id \"$current\"; then
+  echo 'roguix-update: this system records no Guix pin' >&2
+  echo '(/etc/roguix/modules/roguix/guix-commit); nothing changed.' >&2
+  exit 1
+fi
 [ -d \"$dir/.git\" ] || $git clone --quiet --no-checkout \"$url\" \"$dir\"
 # A checkout cloned before the channel moved follows its new URL.
 $git -C \"$dir\" remote set-url origin \"$url\"
@@ -477,14 +523,91 @@ head=$($git -C \"$dir\" rev-parse origin/main)
 ( cd \"$dir\" && $guix git authenticate --keyring=origin/keyring --end=\"$head\" \\
     " #$(roguix-trust-channel-introduction %roguix-trust) " \\
     '" #$(roguix-trust-channel-signer %roguix-trust) "' )
-$git -C \"$dir\" checkout --quiet --detach \"$head\"
-if ! cmp -s \"$dir/modules/roguix/guix-commit\" /etc/roguix/modules/roguix/guix-commit; then
-  echo 'roguix-update: this Omaguix release needs a newer Guix than this VM has;' >&2
-  echo 'reset Omaguix from the latest Try Omaguix app to get it.' >&2
+# main is a release commit (docs/decisions/0006): its one parent is the
+# released commit that release.json names, and it changes only that file.
+released=$($git -C \"$dir\" rev-list --parents -n 1 \"$head\" | cut -d ' ' -f 2-)
+changed=$($git -C \"$dir\" diff-tree --no-commit-id --name-only -r \"$head\")
+manifest=$($git -C \"$dir\" show \"$head:release.json\")
+if [ \"$changed\" != release.json ] || [ \"${released#* }\" != \"$released\" ] \\
+   || [ \"$(echo \"$manifest\" | $jq -r '.\"channel-commit\"')\" != \"$released\" ] \\
+   || [ \"$(echo \"$manifest\" | $jq -r '.\"guix-commit\"')\" != \\
+        \"$($git -C \"$dir\" show \"$released:modules/roguix/guix-commit\")\" ]; then
+  echo \"roguix-update: the channel's main ($head) is not a release; nothing changed.\" >&2
   exit 1
 fi
-$guix system reconfigure $gate -L \"$dir/modules\" /etc/config.scm \"$@\" \\
-  || gate_failed $?
+for from in $base $applied; do
+  if ! $git -C \"$dir\" merge-base --is-ancestor \"$from\" \"$head\" 2>/dev/null; then
+    echo \"roguix-update: the channel's main ($head) does not descend from $from,\" >&2
+    echo 'a release this system applied; nothing changed.' >&2
+    exit 1
+  fi
+done
+$git -C \"$dir\" checkout --quiet --detach \"$head\"
+# Move the cursor to main once the new system is in place: a unique temporary
+# file, flushed to disk before it replaces the old one. A failed run, or a
+# crash before this, keeps the old cursor, and the new system's own record
+# stands for main.
+advance() {
+  new=$(mktemp \"$cursor.XXXXXX\")
+  printf '%s\\n' \"$head\" > \"$new\"
+  sync \"$new\"
+  mv -f \"$new\" \"$cursor\"
+  sync \"$state\"
+}
+export ROGUIX_CHANNEL_COMMIT=\"$head\"
+pin=$(cat \"$dir/modules/roguix/guix-commit\")
+if [ \"$pin\" = \"$current\" ]; then
+  $guix system reconfigure $gate -L \"$dir/modules\" /etc/config.scm \"$@\" \\
+    || gate_failed $?
+  advance
+  exit
+fi
+# Another Guix pin: the release names the Guix it was built with, upstream
+# Guix plus guix-skip-forward-check.patch, which the servers publish;
+# substitute it, never build it (docs/decisions/0007).
+system=$(uname -m)-linux
+next=$(echo \"$manifest\" | $jq -r --arg system \"$system\" '.architectures[$system].guix // \"\"')
+echo \"$next\" | grep -Eqx '/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+' \\
+  || next=
+patched=$(echo \"$manifest\" | $jq -r '.\"guix-patched-commit\" // \"\"')
+echo \"$patched\" | grep -Eqx '[0-9a-f]{40}' || next=
+if [ -z \"$next\" ]; then
+  echo \"roguix-update: this release names no Guix for $system; nothing changed.\" >&2
+  exit 1
+fi
+free=$(df -Pk /gnu/store | awk 'NR == 2 && $4 ~ /^[0-9]+$/ { print int($4 / 1048576) }')
+case $free in
+  ''|*[!0-9]*)
+    echo \"roguix-update: cannot tell the free space in /gnu/store ($free); nothing changed.\" >&2
+    exit 1 ;;
+esac
+if [ \"$free\" -lt " #$%guix-move-free-gib " ]; then
+  echo \"roguix-update: this release moves to Guix $pin, which needs at least\" >&2
+  echo \"" #$%guix-move-free-gib " GiB free; $free GiB are. Delete old system generations\" >&2
+  echo '(sudo guix system delete-generations) and run sudo guix gc first.' >&2
+  exit 1
+fi
+echo \"roguix-update: moving to Guix $pin; the current system stays as the roll-back.\"
+# Keep the new Guix from the garbage collector until the new system pins it.
+root=/var/guix/gcroots/roguix-guix-next
+ln -sfn \"$next\" \"$root\"
+trap 'rm -f \"$root\"' EXIT
+script=$(mktemp)
+# ensure-path fails on an item no server has; build-things would not.
+echo '(use-modules (guix store)) (with-store store (ensure-path store (cadr (command-line))))' > \"$script\"
+$guix repl -- \"$script\" \"$next\" || { rc=$?; rm -f \"$script\"; df -h /gnu/store >&2; exit $rc; }
+rm -f \"$script\"
+if ! \"$next/bin/guix\" describe | grep -q \"commit: $patched\\$\"; then
+  echo \"roguix-update: $next is not the patched Guix $patched; nothing changed.\" >&2
+  exit 1
+fi
+# Guix's check-forward-update would clone Guix from its channel URL to
+# compare commits; the descendant check above stands in for it, and the
+# patched Guix skips it only when asked.
+ROGUIX_GUIX=\"$next\" \"$next/bin/guix\" system reconfigure --no-check-forward-update \\
+  $gate -L \"$dir/modules\" /etc/config.scm \"$@\" \\
+  || { rc=$?; df -h /gnu/store >&2; gate_failed $rc; }
+advance
 "))
               (for-each (lambda (program)
                           (chmod (string-append #$output "/bin/" program) #o555))

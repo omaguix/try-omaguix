@@ -23,7 +23,8 @@ class BuildTests(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         self.args = argparse.Namespace(source=self.root, output=self.root / "out/image.raw", dry_run=True, check=False,
-                                       system=builder.SYSTEM, load_path=builder.LOAD_PATH)
+                                       system=builder.SYSTEM, load_path=builder.LOAD_PATH,
+                                       channel_commit="c" * 40)
 
     def git(self, head=builder.pin(), changes=""):
         return patch.object(builder.subprocess, "check_output", side_effect=[head, changes, "a" * 40])
@@ -39,6 +40,40 @@ class BuildTests(unittest.TestCase):
         self.assertIn("--load-path=" + str(builder.HERE / "modules"), output.getvalue())
         run.assert_not_called()
         self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_a_build_needs_the_channel_release_it_comes_from(self):
+        # roguix-update in the image needs /etc/roguix/channel-commit, so no
+        # build or check goes without it; a dry run only prints the plan.
+        for dry_run, check in ((False, False), (False, True)):
+            for commit in (None, "", "c" * 39, "C" * 40, "c" * 40 + "\n"):
+                self.args.dry_run, self.args.check, self.args.channel_commit = dry_run, check, commit
+                with self.subTest(check=check, commit=commit), \
+                        patch.object(builder.subprocess, "check_output") as check_output, \
+                        patch.object(builder.subprocess, "run") as run:
+                    with self.assertRaisesRegex(ValueError, "--channel-commit"):
+                        builder.build(self.args)
+                    check_output.assert_not_called()
+                    run.assert_not_called()
+        self.assertFalse(self.args.output.parent.exists())
+        self.args.dry_run, self.args.check, self.args.channel_commit = True, False, None
+        output = io.StringIO()
+        with self.git(), contextlib.redirect_stdout(output):
+            builder.build(self.args)
+        self.assertIn("a build needs --channel-commit", output.getvalue())
+
+    def test_the_build_passes_the_channel_release_to_the_system(self):
+        self.args.dry_run = False
+        seen = []
+
+        def run(command, **kwargs):
+            if command[0] == "guix":
+                seen.append(kwargs["env"].get("ROGUIX_CHANNEL_COMMIT"))
+        with self.git(), patch.object(builder.platform, "system", return_value="Linux"), \
+                patch.object(builder.shutil, "which", return_value="/bin/guix"), \
+                patch.object(builder.subprocess, "run", side_effect=run), \
+                contextlib.redirect_stdout(io.StringIO()):
+            builder.build(self.args)
+        self.assertEqual(seen, ["c" * 40])
 
     def test_wrong_pin_and_tracked_changes_are_rejected(self):
         for head, changes in [("0" * 40, ""), (builder.pin(), " M gnu.scm")]:

@@ -11,7 +11,10 @@
   #:use-module (gnu system locale)
   #:use-module (guix gexp)
   #:use-module (guix grafts)
+  #:use-module ((guix store) #:select (direct-store-path?))
   #:use-module (ice-9 match)
+  #:use-module (ice-9 regex)
+  #:use-module (ice-9 textual-ports)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (roguix integrations)
@@ -30,18 +33,58 @@
 ;; commit run by `guix time-machine'; the image keeps it as a GC root, and in
 ;; the guest the system reuses that same store item instead of rebuilding it,
 ;; so reconfiguring with it computes the very derivations the image was built
-;; from and only fetches what the owner adds.
+;; from and only fetches what the owner adds. roguix-update moves the system
+;; to a release's Guix by running that Guix with ROGUIX_GUIX set to it, which
+;; pins it instead (docs/decisions/0007).
 (define %pinned-guix-root "/var/guix/gcroots/roguix-guix")
 (define (pinned-guix)
-  (if (file-exists? %pinned-guix-root)
-      (readlink %pinned-guix-root)
-      (current-guix)))
+  (match (getenv "ROGUIX_GUIX")
+    (#f (if (file-exists? %pinned-guix-root)
+            (readlink %pinned-guix-root)
+            (current-guix)))
+    ((? direct-store-path? guix) guix)
+    (other (error "ROGUIX_GUIX is not a store item:" other))))
 
 ;; Files that define this system; build and test tooling is left out.
 (define (roguix-source? file stat)
   (or (eq? 'directory (stat:type stat))
       (member (basename file) '("system.scm"))
       (string-contains file "/modules/roguix/")))
+
+;; The commit of the channel's main this system was built from, kept as
+;; /etc/roguix/channel-commit: roguix-update moves only to a main that
+;; descends from it (docs/decisions/0007). build.py (the image) and
+;; roguix-update set ROGUIX_CHANNEL_COMMIT; any other reconfigure, such as
+;; roguix-reconfigure's, keeps the running system's record.
+(define %channel-commit-file "/etc/roguix/channel-commit")
+(define (channel-commit)
+  (let ((commit (or (getenv "ROGUIX_CHANNEL_COMMIT")
+                    (and (file-exists? %channel-commit-file)
+                         (string-trim-both
+                          (call-with-input-file %channel-commit-file
+                            get-string-all))))))
+    (cond ((not commit) #f)
+          ((string-match "^[0-9a-f]{40}$" commit) commit)
+          (else (error "not a channel commit:" commit)))))
+
+(define (roguix-sources)
+  (let ((sources (local-file "../.." "roguix-sources"
+                             #:recursive? #t
+                             #:select? roguix-source?))
+        (commit (channel-commit)))
+    (if commit
+        (computed-file "roguix-sources"
+                       (with-imported-modules '((guix build utils))
+                         #~(begin
+                             (use-modules (guix build utils))
+                             (copy-recursively #$sources #$output
+                                               #:log (%make-void-port "w"))
+                             (call-with-output-file
+                                 (string-append #$output "/channel-commit")
+                               (lambda (port)
+                                 (display #$commit port)
+                                 (newline port))))))
+        sources)))
 
 ;; Installed as /etc/config.scm on first boot, then the owner's to edit.
 (define config-template
@@ -245,10 +288,7 @@ image's defaults."
             ;;   sudo guix system reconfigure -L /etc/roguix/modules \
             ;;     /etc/roguix/system.scm
             (simple-service 'roguix-sources etc-service-type
-                            `(("roguix"
-                               ,(local-file "../.." "roguix-sources"
-                                            #:recursive? #t
-                                            #:select? roguix-source?))))
+                            `(("roguix" ,(roguix-sources))))
             ;; Omarchy 4's desktop: its Hyprland configuration and Quickshell
             ;; shell, seeded into the account at the first desktop login.
             (service roguix-omarchy-service-type)

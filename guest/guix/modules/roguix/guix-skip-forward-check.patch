@@ -1,0 +1,35 @@
+diff --git a/guix/scripts/system.scm b/guix/scripts/system.scm
+index 8277e24..e3332f7 100644
+--- a/guix/scripts/system.scm
++++ b/guix/scripts/system.scm
+@@ -834,7 +834,8 @@ static checks."
+ 
+   (when (eq? action 'reconfigure)
+     (maybe-suggest-running-guix-pull)
+-    (check-forward-update validate-reconfigure))
++    (when validate-reconfigure
++      (check-forward-update validate-reconfigure)))
+ 
+   ;; Check whether the declared file systems exist.  This is better than
+   ;; instantiating a broken configuration.  Assume that we can only check if
+@@ -1013,6 +1014,10 @@ Some ACTIONS support additional ARGS.\n"))
+   (display (G_ "
+       --allow-downgrades for 'reconfigure', allow downgrades to earlier
+                          channel revisions"))
++  (display (G_ "
++      --no-check-forward-update
++                         for 'reconfigure', do not compare the running
++                         system's channels with the new ones"))
+   (display (G_ "
+       --on-error=STRATEGY
+                          apply STRATEGY (one of nothing-special, backtrace,
+@@ -1107,6 +1112,9 @@ Some ACTIONS support additional ARGS.\n"))
+                    (alist-cons 'validate-reconfigure
+                                warn-about-backward-reconfigure
+                                result)))
++         (option '("no-check-forward-update") #f #f
++                 (lambda (opt name arg result)
++                   (alist-cons 'validate-reconfigure #f result)))
+          (option '("on-error") #t #f
+                  (lambda (opt name arg result)
+                    (alist-cons 'on-error (string->symbol arg)
