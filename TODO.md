@@ -72,6 +72,11 @@
   (build.py via vm-run, the sources copied to the pendrive) was blocked by
   the auto-mode classifier ("Modify Shared Resources"); not retried. It waits
   for the user to allow that one build in the worker's pane wD4:p33.
+  Stopped 2026-10-17 at the user's request (subscription tokens running out),
+  during the image build of step 2: the worker was told to power the builder
+  off and leave branch omaguix-rename (2bab963d) in ../try-roguix-rename.
+  Resume: rerun the image build with the export on the pendrive, then make
+  guix-package, make app, make test, a model review, landing.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
