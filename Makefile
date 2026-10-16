@@ -5,9 +5,29 @@ override ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 override BUILD := $(ROOT)/build
 override DIST := $(ROOT)/dist
 override GUEST_DIST := $(BUILD)/guix
-override APP := $(BUILD)/dev.noindex/Try Omaguix.app
+# The app's names, bundle identifiers, data directories, development signing
+# identity and release naming (macos/README.md, "App identity"). Another app
+# built from this repository passes its own file. The scripts below read the
+# exported path through macos/apps/identity.py, which also validates it here
+# before Make includes the same KEY=value lines.
+APP_IDENTITY ?= $(ROOT)/macos/apps/try-omaguix.env
+$(if $(APP_IDENTITY),,$(error app-identity: APP_IDENTITY is empty; unset it or name an identity file))
+override APP_IDENTITY := $(abspath $(APP_IDENTITY))
+export APP_IDENTITY
+override APP_IDENTITY_ERROR := $(shell APP_IDENTITY="$(APP_IDENTITY)" python3 "$(ROOT)/macos/apps/identity.py" check 2>&1 >/dev/null)
+$(if $(APP_IDENTITY_ERROR),$(error $(APP_IDENTITY_ERROR)))
+include $(APP_IDENTITY)
+# `include` does not replace a command-line (or `make -e` environment) value,
+# which the scripts would not see either; refuse one instead of building or
+# cleaning under a mixed identity.
+$(foreach key,$(shell python3 "$(ROOT)/macos/apps/identity.py" keys),$(if $(filter command_line environment_override,$(subst $() ,_,$(origin $(key)))),$(error app-identity: $(key) cannot be set on the command line or with make -e; edit $(APP_IDENTITY) or select another file with APP_IDENTITY)))
+override comma := ,
+# Every name a running copy of this app may have, as an extended regex
+# alternation for clean-all's guard.
+override RUNNING_APP_NAMES := $(if $(LEGACY_APP_NAMES),$(subst $(comma),|,$(LEGACY_APP_NAMES))|)$(APP_NAME)|$(DEVELOPMENT_APP_NAME)
+override APP := $(BUILD)/dev.noindex/$(APP_NAME).app
 # Runs use an installed copy, so rebuilding never rewrites a running app.
-INSTALLED_APP ?= $(HOME)/Applications/Try Omaguix Dev.app
+INSTALLED_APP ?= $(HOME)/Applications/$(DEVELOPMENT_APP_NAME).app
 override BUILD_CACHE := $(ROOT)/scripts/build-cache.py
 override BUILD_STATE := $(ROOT)/.build/state
 RELEASE_SIGN_IDENTITY ?= Developer ID Application: Eduardo Martinez (RZC79MPD34)
@@ -32,7 +52,7 @@ SHELL_TEST_TARGETS := $(addprefix test-shell-,$(SHELL_TESTS))
 
 help:
 	@printf '%s\n' \
-	  'Try Omaguix — native macOS build commands' \
+	  '$(APP_NAME) — native macOS build commands' \
 	  '' \
 	  '  make doctor         Check the local toolchain' \
 	  '  make test           Run native and guest contract tests' \
@@ -91,6 +111,7 @@ test-contracts:
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-build-cache.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-profile-process.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-development-sign-identity.py"
+	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-app-identity.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-app-version.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-package-dmg.py"
 	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/tests/test-pack-app-icon.py"
@@ -159,7 +180,7 @@ build: doctor app
 	@printf 'Build output: %s\n' "$(APP)"
 
 install: app
-	@if pgrep -f -- "$(INSTALLED_APP)/Contents/" >/dev/null; then echo 'error: the installed Try Omaguix Dev is running; quit it, then run make install again' >&2; exit 1; fi
+	@if pgrep -f -- "$(INSTALLED_APP)/Contents/" >/dev/null; then echo 'error: the installed $(DEVELOPMENT_APP_NAME) is running; quit it, then run make install again' >&2; exit 1; fi
 	@mkdir -p "$(dir $(INSTALLED_APP))"
 	@rm -rf -- "$(INSTALLED_APP)"
 	@ditto "$(APP)" "$(INSTALLED_APP)"
@@ -170,7 +191,7 @@ run: install
 	@TRY_ROGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh
 
 run-isolated: app
-	@OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1 $(ROOT)/macos/open-qemu-gpu.sh
+	@TRY_ROGUIX_APP="$(APP)" OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1 $(ROOT)/macos/open-qemu-gpu.sh
 
 run-ephemeral: install
 	@TRY_ROGUIX_APP="$(INSTALLED_APP)" $(ROOT)/macos/open-qemu-gpu.sh --ephemeral
@@ -222,9 +243,9 @@ clean:
 
 clean-all:
 	@[[ "$$(uname -s)" == Darwin ]] || { echo 'error: make clean-all requires macOS' >&2; exit 1; }
-	@pgrep -f 'omarchy-[q]emu|omarchy-[d]mg|Try (Roguix|Omaguix)( Dev)?[.]app/Contents/' >/dev/null 2>&1; status=$$?; \
+	@pgrep -f 'omarchy-[q]emu|omarchy-[d]mg|($(RUNNING_APP_NAMES))[.]app/Contents/' >/dev/null 2>&1; status=$$?; \
 	if (( status == 0 )); then \
-	  echo 'error: Try Omaguix or one of its build tools is running; close it before make clean-all' >&2; \
+	  echo 'error: $(APP_NAME) or one of its build tools is running; close it before make clean-all' >&2; \
 	  exit 1; \
 	elif (( status != 1 )); then \
 	  echo 'error: could not safely inspect running processes' >&2; \
@@ -233,7 +254,7 @@ clean-all:
 	@confirmation=''; \
 	if ! { \
 	  printf '%s\n%s' \
-	    'This permanently deletes all Try Omaguix builds, caches, VM disks, and app state.' \
+	    'This permanently deletes all $(APP_NAME) builds, caches, VM disks, and app state.' \
 	    'Type clean-all to continue: ' >/dev/tty && \
 	  IFS= read -r confirmation </dev/tty; \
 	}; then \
@@ -244,13 +265,13 @@ clean-all:
 	@$(MAKE) --no-print-directory clean
 	@user_home=$$(python3 -c 'import os,pwd; print(pwd.getpwuid(os.getuid()).pw_dir)'); \
 	  [[ "$$user_home" == /* && "$$user_home" != / ]] || { echo 'error: could not resolve a safe user home' >&2; exit 1; }; \
-	  app_support="$$user_home/Library/Application Support/Try Roguix"; \
-	  cache="$$user_home/Library/Caches/dev.tryroguix.native"; \
-	  preferences="$$user_home/Library/Preferences/dev.tryroguix.native.plist"; \
-	  saved_state="$$user_home/Library/Saved Application State/dev.tryroguix.native.savedState"; \
-	  development_cache="$$user_home/Library/Caches/dev.tryroguix.native.development"; \
-	  development_preferences="$$user_home/Library/Preferences/dev.tryroguix.native.development.plist"; \
-	  development_saved_state="$$user_home/Library/Saved Application State/dev.tryroguix.native.development.savedState"; \
+	  app_support="$$user_home/Library/Application Support/$(APPLICATION_SUPPORT_DIRECTORY)"; \
+	  cache="$$user_home/Library/Caches/$(BUNDLE_IDENTIFIER)"; \
+	  preferences="$$user_home/Library/Preferences/$(BUNDLE_IDENTIFIER).plist"; \
+	  saved_state="$$user_home/Library/Saved Application State/$(BUNDLE_IDENTIFIER).savedState"; \
+	  development_cache="$$user_home/Library/Caches/$(DEVELOPMENT_BUNDLE_IDENTIFIER)"; \
+	  development_preferences="$$user_home/Library/Preferences/$(DEVELOPMENT_BUNDLE_IDENTIFIER).plist"; \
+	  development_saved_state="$$user_home/Library/Saved Application State/$(DEVELOPMENT_BUNDLE_IDENTIFIER).savedState"; \
 	  echo "Removing persistent VM disks and app state from $$app_support..."; \
 	  rm -rf -- "$$app_support" "$$cache" "$$preferences" "$$saved_state" \
 	    "$$development_cache" "$$development_preferences" "$$development_saved_state"
@@ -270,4 +291,4 @@ clean-all:
 	       -o -name 'omarchy-audio-route-tests.*' \
 	       -o -name 'try-omarchy-space-estimate-*' \) \
 	    -exec rm -rf -- {} +
-	@echo 'Try Omaguix deep cleanup complete.'
+	@echo '$(APP_NAME) deep cleanup complete.'

@@ -22,29 +22,40 @@ import artifact
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ZSTD = ROOT / "macos/.build/qemu-gpu-runtime/bin/zstd"
-# The files that define the system; the same set the image installs under
-# /etc/roguix (see roguix-source? in system.scm).
-SYSTEM_FILES = ("system.scm",) + tuple(
-    path.relative_to(HERE).as_posix()
-    for path in sorted((HERE / "modules/roguix").iterdir()) if path.is_file())
 
 
-def guix_commit():
+def _builder():
     spec = importlib.util.spec_from_file_location("guix_image_build", HERE / "build.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.COMMIT
+    return module
 
 
-def system_files_sha256(base=HERE):
-    """Digest of the system definition, recorded as the packager declares it."""
+builder = _builder()
+
+
+def guix_commit():
+    return builder.COMMIT
+
+
+def system_files_sha256(system=builder.SYSTEM, load_path=builder.LOAD_PATH):
+    """Digest of the image's build inputs (build.py's `inputs`: the system
+    definition and the files Git tracks under its load path), recorded as
+    the packager declares them. Each file's executable bit counts, since
+    Guix's recursive local-file keeps it."""
     digest = hashlib.sha256()
-    for name in SYSTEM_FILES:
-        digest.update(f"{name}\0{artifact.sha256_file(base / name)}\n".encode())
+    try:
+        files = builder.inputs(system, load_path)
+    except ValueError as error:
+        raise artifact.ArtifactError(str(error)) from None
+    for name, path in sorted(files.items()):
+        mode = "755" if path.stat().st_mode & 0o100 else "644"
+        digest.update(f"{name}\0{mode}\0{artifact.sha256_file(path)}\n".encode())
     return digest.hexdigest()
 
 
-def package(image, output, zstd, credentials):
+def package(image, output, zstd, credentials, system=builder.SYSTEM,
+            load_path=builder.LOAD_PATH):
     image = Path(image).resolve(strict=True)
     output = Path(output).absolute()
     if os.path.lexists(output):
@@ -58,7 +69,8 @@ def package(image, output, zstd, credentials):
         compressed = staging / artifact.DISK
         raw_sha256 = artifact.compress_and_hash(image, compressed, zstd)
         manifest = artifact.manifest_for(layout, raw_sha256, compressed,
-                                         guix_commit(), system_files_sha256(),
+                                         guix_commit(),
+                                         system_files_sha256(system, load_path),
                                          credentials)
         (staging / artifact.MANIFEST).write_text(artifact.canonical_json(manifest),
                                                  encoding="utf-8")
@@ -82,10 +94,19 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "build/guix")
     parser.add_argument("--zstd", type=Path, default=ZSTD)
     parser.add_argument("--credentials", default="first-boot",
-                        choices=sorted(artifact.CREDENTIALS))
+                        choices=sorted(artifact.CREDENTIALS),
+                        help="how the guest gets its account's password "
+                             "(artifact.CREDENTIALS; default: %(default)s)")
+    parser.add_argument("--system", type=Path, default=builder.SYSTEM,
+                        help="the system definition the image was built from "
+                             "(build.py --system; default: %(default)s)")
+    parser.add_argument("--load-path", type=Path, default=builder.LOAD_PATH,
+                        help="its module directory (build.py --load-path; "
+                             "default: %(default)s)")
     args = parser.parse_args()
     try:
-        manifest = package(args.image, args.output, args.zstd, args.credentials)
+        manifest = package(args.image, args.output, args.zstd, args.credentials,
+                           args.system, args.load_path)
     except (OSError, artifact.ArtifactError) as error:
         parser.exit(1, f"guix-package: {error}\n")
     disk = manifest["disk"]

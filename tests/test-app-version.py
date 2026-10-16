@@ -21,6 +21,9 @@ class AppVersionTests(unittest.TestCase):
         (self.root / "scripts").mkdir()
         shutil.copy2(VERSION_SCRIPT, self.root / "scripts/app_version.py")
         shutil.copy2(REPOSITORY / "Makefile", self.root / "Makefile")
+        # The Makefile and app_version.py read the release tag prefix from
+        # the app identity beside them.
+        shutil.copytree(REPOSITORY / "macos/apps", self.root / "macos/apps")
         (self.root / ".gitignore").write_text("/dist/\n/.build/\n")
         self.source = self.root / "source.swift"
         self.source.write_text("// initial source\n")

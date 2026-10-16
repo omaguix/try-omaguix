@@ -35,9 +35,13 @@ DISK = "disk.raw.zst"
 MANIFEST = "guix-manifest.json"
 SUMS = "SHA256SUMS"
 FILES = frozenset({DISK, MANIFEST, SUMS})
-# The image carries no password: roguix-first-boot asks for one on the first
-# start (modules/roguix/services.scm).
-CREDENTIALS = frozenset({"first-boot"})
+# How the guest's account gets its password. first-boot: the image carries
+# none, and roguix-first-boot asks for one on the first start
+# (modules/roguix/services.scm). preset: the image's own system definition
+# sets the account's credentials (another app's guest, e.g. a fixed
+# development account). The launcher does not read this; it records what the
+# image expects of the person starting it.
+CREDENTIALS = frozenset({"first-boot", "preset"})
 # Optional guest languages the image carries (system.scm's locale
 # definitions, fcitx5 and Noto CJK); the app passes the Mac's language when it
 # is one of them, and the first-start setup takes it once (roguix-setup).

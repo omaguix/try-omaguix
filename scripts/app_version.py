@@ -4,14 +4,21 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 from pathlib import Path
 import plistlib
 import re
 import subprocess
 import sys
 
-# Try Roguix's release tags: TAG_PREFIX plus X.Y.Z (docs/releasing.md).
-TAG_PREFIX = "try-roguix-v"
+
+def release_tag_prefix() -> str:
+    """The app identity's release tags: this prefix plus X.Y.Z (docs/releasing.md)."""
+    path = Path(__file__).resolve().parents[1] / "macos/apps/identity.py"
+    spec = importlib.util.spec_from_file_location("app_identity", path)
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    return identity.load()["RELEASE_TAG_PREFIX"]
 
 
 def build_version(root: Path) -> dict[str, str] | None:
@@ -29,11 +36,12 @@ def build_version(root: Path) -> dict[str, str] | None:
     if inside != "true":
         return None
 
-    describe = git("describe", "--tags", "--match", TAG_PREFIX + "[0-9]*", "--always")
+    prefix = release_tag_prefix()
+    describe = git("describe", "--tags", "--match", prefix + "[0-9]*", "--always")
     # Unlike `git describe --dirty`, status also detects untracked source files.
     if git("status", "--porcelain", "--untracked-files=all"):
         describe += "-dirty"
-    release = re.fullmatch(re.escape(TAG_PREFIX) + r"([0-9]+\.[0-9]+\.[0-9]+)", describe)
+    release = re.fullmatch(re.escape(prefix) + r"([0-9]+\.[0-9]+\.[0-9]+)", describe)
     return {
         "CFBundleShortVersionString": release.group(1) if release else "0.0.0",
         "CFBundleVersion": git("rev-list", "--count", "HEAD"),
@@ -82,10 +90,11 @@ def main() -> None:
         if version and version["TryOmarchyBuildDescribe"].endswith("-dirty"):
             raise ValueError("the worktree must be clean before building a signed app")
         if not version or re.fullmatch(
-            re.escape(TAG_PREFIX) + r"[0-9]+\.[0-9]+\.[0-9]+",
+            re.escape(release_tag_prefix()) + r"[0-9]+\.[0-9]+\.[0-9]+",
             version["TryOmarchyBuildDescribe"],
         ) is None:
-            raise ValueError(f"HEAD must carry an exact {TAG_PREFIX}X.Y.Z release tag")
+            raise ValueError(
+                f"HEAD must carry an exact {release_tag_prefix()}X.Y.Z release tag")
         if args.check_app:
             info = plistlib.loads((args.check_app / "Contents/Info.plist").read_bytes())
             for key in ("CFBundleShortVersionString", "TryOmarchyBuildDescribe"):

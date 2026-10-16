@@ -301,6 +301,10 @@ unrecognized host files stay untouched, as everywhere else here.
   `make signing-identity` when it exists, ad hoc otherwise; releases are
   signed as `docs/releasing.md` describes (`macos/README.md`, "Development
   signing identity").
+  The app's names, bundle identifiers, data directories, development signing
+  identity and release naming come from one identity file selected with
+  `APP_IDENTITY`, by default `macos/apps/try-omaguix.env`, so a second app
+  can be built from this repository (`macos/README.md`, "App identity").
 - `build/` holds what builds produce: the packaged guest (`build/guix`), the
   development app (`build/dev.noindex`) and the release app
   (`build/release.noindex`). `make install` copies the development app to

@@ -96,6 +96,49 @@ storage location. Development signing is local, with secure timestamping disable
 does not notarize the app. Production keeps secure timestamping and the
 release notarization workflow.
 
+### App identity
+
+The app's names and identifiers live in one identity file, plain `KEY=value`
+lines that Make includes and `macos/apps/identity.py` validates and reads for
+the build scripts (`build-app.sh`, `release.sh`,
+`development-signing-identity.sh`, `scripts/app_version.py`). The `make`
+variable `APP_IDENTITY` selects it; the default is
+[`macos/apps/try-omaguix.env`](apps/try-omaguix.env), Try Omaguix itself.
+Another app built from this repository passes its own file, for example
+`make app APP_IDENTITY=/path/to/try-omabend.env`; every key is required and
+nothing falls back to Try Omaguix's values. An empty `APP_IDENTITY` is
+refused (only an unset one selects the default), and so is a key given on the
+`make` command line or with `make -e`: Make would use it while the scripts
+read the file. Comments are whole lines starting with `#`, and may not end in
+a backslash, which Make would read as a continuation.
+
+| Key | Try Omaguix | Used for |
+| --- | --- | --- |
+| `APP_NAME` | `Try Omaguix` | the app bundle's file name (`build/*.noindex/NAME.app`), the production display name and the VM helper app's name and executable |
+| `DEVELOPMENT_APP_NAME` | `Try Omaguix Dev` | the development display name and `make install`'s `~/Applications/NAME.app` |
+| `BUNDLE_IDENTIFIER` | `dev.tryroguix.native` | the production bundle identifier (the VM helper adds `.vm`) |
+| `DEVELOPMENT_BUNDLE_IDENTIFIER` | `dev.tryroguix.native.development` | the development bundle identifier |
+| `APPLICATION_SUPPORT_DIRECTORY` | `Try Roguix` | the VM's directory under `~/Library/Application Support`, written to `Info.plist` as `RoguixApplicationSupportDirectory` |
+| `LOGS_DIRECTORY` | `Try Roguix` | the launcher log's directory under `~/Library/Logs`, written to `Info.plist` as `RoguixLogsDirectory` |
+| `LEGACY_APP_NAMES` | `Try Roguix,Try Roguix Dev` | older names of the same app, comma-separated (may be empty): `make clean-all` refuses to run while one is running, and `build-app.sh` removes stale `dist/NAME.app` bundles |
+| `DEVELOPMENT_CERTIFICATE` | `Try Roguix Development` | the local signing identity's name (below) |
+| `DEVELOPMENT_KEYCHAIN` | `try-roguix-development.keychain-db` | its keychain under `~/Library/Keychains` |
+| `DEVELOPMENT_KEYCHAIN_PASSWORD` | `try-roguix/development-keychain-password` | the keychain's password file under `~/.config` |
+| `RELEASE_TAG_PREFIX` | `try-roguix-v` | release tags, the prefix plus `X.Y.Z` (`docs/releasing.md`) |
+| `RELEASE_DMG` | `TryOmaguix.dmg` | the release asset; local DMG builds are `STEM-vX.Y.Z.dmg` |
+| `RELEASE_REPOSITORY` | `omaguix/try-omaguix` | the GitHub repository whose releases host the disk parts |
+
+Try Omaguix keeps the pre-rename `Try Roguix` and `dev.tryroguix` values on
+purpose: installed apps keep their VM, logs, privacy grants and preferences
+under them. A second app needs its own value for every key, so that the two
+never share VM state, logs, preferences or signing keys.
+
+`RoguixApplicationSupportDirectory` and `RoguixLogsDirectory` in the built
+app's `Info.plist` carry the two directory names for the app to read; until
+the launcher reads them, it still uses `Try Roguix` for both. The launcher
+sources, `run-qemu-gpu.sh`, `open-qemu-gpu.sh`, `package-dmg.sh`, the icon
+and the privacy descriptions in `Info.plist` also still name Try Omaguix.
+
 ### Development signing identity
 
 An ad-hoc signature's designated requirement is the build's cdhash, so every
@@ -107,10 +150,12 @@ make signing-identity
 ```
 
 It creates a self-signed "Try Roguix Development" code-signing certificate
-(code-signing EKU, valid ten years) in its own keychain,
-`~/Library/Keychains/try-roguix-development.keychain-db`, whose random
-password is in `~/.config/try-roguix/development-keychain-password` (mode
-600). The login keychain, its search list and trust settings are not changed,
+(the app identity's `DEVELOPMENT_CERTIFICATE`; code-signing EKU, valid ten
+years) in its own keychain,
+`~/Library/Keychains/try-roguix-development.keychain-db`
+(`DEVELOPMENT_KEYCHAIN`), whose random password is in
+`~/.config/try-roguix/development-keychain-password`
+(`DEVELOPMENT_KEYCHAIN_PASSWORD`, mode 600). The login keychain, its search list and trust settings are not changed,
 and running it again reuses the identity. `make app` then unlocks that
 keychain and signs with the identity, so the designated requirement becomes
 `identifier "dev.tryroguix.native.development" and certificate leaf = H"..."`

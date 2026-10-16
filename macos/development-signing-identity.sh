@@ -7,7 +7,8 @@ usage() {
 Usage: macos/development-signing-identity.sh [--create | --unlock]
 
 --create (the default, `make signing-identity`) creates the self-signed
-"Try Roguix Development" code-signing identity in its own keychain, once.
+code-signing identity named by the app identity's DEVELOPMENT_CERTIFICATE
+(APP_IDENTITY; macos/README.md, "App identity") in its own keychain, once.
 --unlock (`make app`) unlocks that keychain and prints the identity's SHA-1
 and the keychain path, tab-separated, or nothing when it does not exist.
 The login keychain and the keychain search list are never changed.
@@ -22,11 +23,13 @@ case "${1:-}" in
   *) usage ;;
 esac
 
-name="Try Roguix Development"
-keychain="$HOME/Library/Keychains/try-roguix-development.keychain-db"
+app_identity=$(python3 "$(dirname "$0")/apps/identity.py" shell)
+eval "$app_identity"
+name=$DEVELOPMENT_CERTIFICATE
+keychain="$HOME/Library/Keychains/$DEVELOPMENT_KEYCHAIN"
 # The password only guards a local development key; it lives beside the
 # keychain's own protection (the user's home), readable only by the user.
-password_file="$HOME/.config/try-roguix/development-keychain-password"
+password_file="$HOME/.config/$DEVELOPMENT_KEYCHAIN_PASSWORD"
 
 identity_hash() {
   # Untrusted self-signed identities are listed without -v; codesign signs
@@ -65,7 +68,7 @@ if [[ -f $keychain ]]; then
   exit 0
 fi
 
-work=$(mktemp -d "${TMPDIR:-/tmp}/try-roguix-signing.XXXXXX")
+work=$(mktemp -d "${TMPDIR:-/tmp}/development-signing.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 
 mkdir -p "$(dirname "$password_file")"

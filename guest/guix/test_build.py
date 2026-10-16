@@ -22,7 +22,8 @@ class BuildTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        self.args = argparse.Namespace(source=self.root, output=self.root / "out/image.raw", dry_run=True, check=False)
+        self.args = argparse.Namespace(source=self.root, output=self.root / "out/image.raw", dry_run=True, check=False,
+                                       system=builder.SYSTEM, load_path=builder.LOAD_PATH)
 
     def git(self, head=builder.COMMIT, changes=""):
         return patch.object(builder.subprocess, "check_output", side_effect=[head, changes, "a" * 40])

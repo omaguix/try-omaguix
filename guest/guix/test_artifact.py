@@ -1,13 +1,18 @@
 """Artifact layout and packaging contracts on small synthetic GPT disks."""
 
+import argparse
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
 import shutil
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import uuid
 import zlib
 
@@ -119,15 +124,127 @@ class InspectDiskTests(unittest.TestCase):
             artifact.inspect_disk(self.path)
 
 
-class SystemFilesTests(unittest.TestCase):
-    def test_digest_covers_exactly_the_files_the_image_installs(self):
-        # system.scm installs system.scm and all of modules/roguix.
-        text = (HERE / "modules/roguix/system.scm").read_text()
-        self.assertIn('''(member (basename file) '("system.scm"))''', text)
-        self.assertIn('(string-contains file "/modules/roguix/")', text)
-        modules = sorted(p.relative_to(HERE).as_posix()
-                         for p in (HERE / "modules/roguix").iterdir() if p.is_file())
-        self.assertEqual(package.SYSTEM_FILES, ("system.scm", *modules))
+def git(directory, *arguments):
+    return subprocess.run(["git", "-C", str(directory), *arguments], check=True,
+                          capture_output=True, text=True,
+                          env=package.builder.git_environment()).stdout
+
+
+def guest_sources(root):
+    """Another app's guest in a Git repository: a system file and a load path."""
+    git(root, "init", "-q")
+    system = root / "other.scm"
+    system.write_text("(use-modules (other system))\n")
+    load_path = root / "lib"
+    (load_path / "other/data").mkdir(parents=True)
+    (load_path / "other/system.scm").write_text("(define-module (other system))\n")
+    (load_path / "other/data/seed").write_text("seed\n")
+    (root / ".gitignore").write_text("__pycache__/\n.DS_Store\n")
+    git(root, "add", ".")
+    return system, load_path
+
+
+class BuildInputsTests(unittest.TestCase):
+    """systemFilesSHA256 covers what `guix system image` reads (build.py)."""
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.system, self.load_path = guest_sources(self.root)
+
+    def digest(self):
+        return package.system_files_sha256(self.system, self.load_path)
+
+    def test_default_inputs_are_the_system_file_and_its_tracked_load_path(self):
+        builder = package.builder
+        self.assertEqual((builder.SYSTEM, builder.LOAD_PATH), (HERE / "system.scm", HERE / "modules"))
+        output = io.StringIO()
+        args = argparse.Namespace(source=HERE, output=Path("/nonexistent/image.raw"),
+                                  dry_run=True, check=False,
+                                  system=builder.SYSTEM, load_path=builder.LOAD_PATH)
+        with patch.object(builder.subprocess, "check_output",
+                          side_effect=[builder.COMMIT, "", "a" * 40]), \
+                contextlib.redirect_stdout(output):
+            builder.build(args)
+        command = output.getvalue().splitlines()[-1]
+        self.assertIn(f"--load-path={HERE / 'modules'} ", command)
+        self.assertTrue(command.endswith(f" {HERE / 'system.scm'}"))
+        tracked = git(HERE / "modules", "ls-files", "-z", "--", ".").split("\0")
+        self.assertEqual(package.builder.inputs(),
+                         {"system.scm": HERE / "system.scm",
+                          **{"modules/" + name: HERE / "modules" / name
+                             for name in sorted(tracked) if name}})
+        # Files in subdirectories, which modules read with local-file, count.
+        self.assertIn("modules/roguix/settings/roguix-settings", package.builder.inputs())
+        self.assertIn("modules/roguix/battery-module/Makefile", package.builder.inputs())
+
+    def test_digest_follows_every_input_of_the_image_being_packaged(self):
+        digest = self.digest()
+        self.assertNotEqual(digest, package.system_files_sha256())
+        self.assertEqual(digest, self.digest())
+        seed = self.load_path / "other/data/seed"
+
+        def add():
+            (self.load_path / "other/new.scm").write_text("x\n")
+            git(self.root, "add", "lib/other/new.scm")
+
+        for name, change in {
+            "system file": lambda: self.system.write_text("changed\n"),
+            "nested file": lambda: seed.write_text("x\n"),
+            "added file": add,
+            "renamed file": lambda: git(self.root, "mv", "lib/other/data/seed",
+                                        "lib/other/data/seed2"),
+            "executable bit": lambda: (self.load_path / "other/system.scm").chmod(0o755),
+            "system file's executable bit": lambda: self.system.chmod(0o755),
+        }.items():
+            with self.subTest(name):
+                before = self.digest()
+                change()
+                self.assertNotEqual(self.digest(), before)
+
+    def test_ignored_files_are_not_inputs(self):
+        before = self.digest()
+        (self.load_path / "other/__pycache__").mkdir()
+        (self.load_path / "other/__pycache__/system.cpython.pyc").write_text("junk\n")
+        (self.load_path / ".DS_Store").write_text("junk\n")
+        self.assertEqual(self.digest(), before)
+        self.assertNotIn("lib/.DS_Store", package.builder.inputs(self.system, self.load_path))
+
+    def test_untracked_file_is_refused(self):
+        (self.load_path / "other/stray.scm").write_text("x\n")
+        with self.assertRaisesRegex(artifact.ArtifactError, "untracked file"):
+            self.digest()
+
+    def test_symlinked_input_is_refused(self):
+        (self.load_path / "other/link").symlink_to(self.system)
+        git(self.root, "add", "lib/other/link")
+        with self.assertRaises(artifact.ArtifactError):
+            self.digest()
+
+    def test_missing_or_symlinked_roots_are_refused(self):
+        link = self.root / "link"
+        for name, (system, load_path) in {
+            "missing system file": (self.root / "missing.scm", self.load_path),
+            "missing load path": (self.system, self.root / "missing"),
+            "load path outside Git": (self.system, Path(tempfile.mkdtemp(dir=self.root.parent))),
+            "symlinked system file": (link.with_suffix(".scm"), self.load_path),
+            "symlinked load path": (self.system, link),
+        }.items():
+            with self.subTest(name):
+                if name == "symlinked system file":
+                    link.with_suffix(".scm").symlink_to(self.system)
+                if name == "symlinked load path":
+                    link.symlink_to(self.load_path)
+                if name == "load path outside Git":
+                    self.addCleanup(shutil.rmtree, load_path)
+                with self.assertRaises(artifact.ArtifactError):
+                    package.system_files_sha256(system, load_path)
+
+    def test_deleted_tracked_file_is_refused(self):
+        (self.load_path / "other/data/seed").unlink()
+        with self.assertRaises(artifact.ArtifactError):
+            self.digest()
 
 
 @unittest.skipUnless(shutil.which("zstd") or package.ZSTD.is_file(), "needs zstd")
@@ -140,8 +257,35 @@ class PackageTests(unittest.TestCase):
         self.image = gpt_disk(self.root / "image.raw")
         self.output = self.root / "build/guix"
 
-    def packaged(self):
-        return package.package(self.image, self.output, self.zstd, "first-boot")
+    def packaged(self, credentials="first-boot"):
+        return package.package(self.image, self.output, self.zstd, credentials)
+
+    def test_credentials_policies(self):
+        self.assertEqual(artifact.CREDENTIALS, {"first-boot", "preset"})
+        manifest = self.packaged("preset")
+        self.assertEqual(manifest["guest"]["credentials"], "preset")
+        self.assertEqual(artifact.validate_artifacts(self.output, self.zstd), manifest)
+        layout = artifact.inspect_disk(self.image)
+        with self.assertRaises(artifact.ArtifactError):
+            artifact.manifest_for(layout, "0" * 64, self.image, "0" * 40, "0" * 64, "none")
+        # Another policy does not relax the layout checks.
+        for options in ({"root_label": b"omarchy"}, {"corrupt": 512 + 40}):
+            for credentials in sorted(artifact.CREDENTIALS):
+                with self.subTest(credentials=credentials, **options):
+                    image = gpt_disk(self.root / "bad.raw", **options)
+                    with self.assertRaises(artifact.ArtifactError):
+                        package.package(image, self.root / f"bad-{credentials}",
+                                        self.zstd, credentials)
+                    self.assertFalse(os.path.lexists(self.root / f"bad-{credentials}"))
+
+    def test_records_the_inputs_of_the_image_being_packaged(self):
+        sources = self.root / "sources"
+        sources.mkdir()
+        system, load_path = guest_sources(sources)
+        manifest = package.package(self.image, self.output, self.zstd, "preset",
+                                   system, load_path)
+        self.assertEqual(manifest["source"]["systemFilesSHA256"],
+                         package.system_files_sha256(system, load_path))
 
     def test_round_trip_records_layout_source_and_checksums(self):
         manifest = self.packaged()

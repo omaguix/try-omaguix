@@ -83,12 +83,14 @@ macos_major=$(sw_vers -productVersion | cut -d. -f1)
 
 macos_dir=$(cd "$(dirname "$0")" && pwd)
 repo_dir=$(cd "$macos_dir/.." && pwd -P)
-# Bundle IDs and signing identities stay stable so existing privacy grants and
-# preferences survive the product rename.
+# The app's names and identifiers: macos/apps/try-omaguix.env, or the file
+# APP_IDENTITY names (macos/README.md, "App identity").
+app_identity=$(python3 "$macos_dir/apps/identity.py" shell)
+eval "$app_identity"
 case "$configuration" in
   development)
-    bundle_identifier=dev.tryroguix.native.development
-    app_display_name='Try Omaguix Dev'
+    bundle_identifier=$DEVELOPMENT_BUNDLE_IDENTIFIER
+    app_display_name=$DEVELOPMENT_APP_NAME
     (( build_dmg == 0 )) || {
       echo 'build-app: --dmg requires --configuration production' >&2
       exit 1
@@ -96,8 +98,8 @@ case "$configuration" in
     sign_identity=$(python3 "$macos_dir/development-sign-identity.py" "$sign_identity")
     ;;
   production)
-    bundle_identifier=dev.tryroguix.native
-    app_display_name='Try Omaguix'
+    bundle_identifier=$BUNDLE_IDENTIFIER
+    app_display_name=$APP_NAME
     [[ $sign_identity != auto ]] || {
       echo 'build-app: production requires --sign-identity (use - for an explicit ad-hoc test build)' >&2
       exit 1
@@ -106,7 +108,6 @@ case "$configuration" in
   *) usage ;;
 esac
 helper="$macos_dir/.build/release/omarchy-vm-helper"
-legacy_app="$repo_dir/dist/Try Roguix.app"
 # Development and release builds each get their own .noindex directory, so
 # building one never rewrites a bundle that is running from the other.
 if [[ -z $output_dir ]]; then
@@ -117,14 +118,14 @@ mkdir -p "$output_dir" && output_dir=$(cd "$output_dir" && pwd -P) || {
   echo "build-app: cannot use output directory $output_dir" >&2
   exit 1
 }
-app="$output_dir/Try Omaguix.app"
+app="$output_dir/$APP_NAME.app"
 contents="$app/Contents"
 # QEMU owns the VM window, so it runs from a nested helper app: the window
 # then has its own bundle identifier, and a Dock tile pinned while the VM ran
 # launches the helper, which hands that launch to this app.
-vm_app="$contents/Helpers/Try Omaguix.app"
+vm_app="$contents/Helpers/$APP_NAME.app"
 vm_bundle_identifier="$bundle_identifier.vm"
-bundled_qemu="$vm_app/Contents/MacOS/Try Omaguix"
+bundled_qemu="$vm_app/Contents/MacOS/$APP_NAME"
 module_cache="$macos_dir/.build/module-cache"
 runtime_source="$macos_dir/.build/qemu-gpu-runtime"
 guest_dir=${guest_dir:-"$repo_dir/build/guix"}
@@ -182,13 +183,17 @@ fi
   exit 1
 }
 
-if [[ -e $legacy_app || -L $legacy_app ]]; then
-  lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
-  if [[ -x $lsregister ]]; then
-    "$lsregister" -u "$legacy_app" >/dev/null 2>&1 || true
+IFS=, read -r -a legacy_app_names <<<"$LEGACY_APP_NAMES"
+for legacy_app_name in ${legacy_app_names[@]+"${legacy_app_names[@]}"}; do
+  legacy_app="$repo_dir/dist/$legacy_app_name.app"
+  if [[ -e $legacy_app || -L $legacy_app ]]; then
+    lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    if [[ -x $lsregister ]]; then
+      "$lsregister" -u "$legacy_app" >/dev/null 2>&1 || true
+    fi
+    rm -rf -- "$legacy_app"
   fi
-  rm -rf -- "$legacy_app"
-fi
+done
 mkdir -p "$output_dir"
 # A .noindex container is the supported per-directory Spotlight exclusion.
 # Removing and unregistering the legacy bundle above also prevents a previously
@@ -255,13 +260,18 @@ PYTHON
 install -m 0644 "$macos_dir/network-helper/vendor/LICENSE" "$contents/Resources/network/LICENSE.socket_vmnet"
 install -m 0755 "$helper" "$contents/MacOS/omarchy-vm-helper"
 install -m 0644 "$macos_dir/Info.plist" "$contents/Info.plist"
-python3 - "$contents/Info.plist" "$bundle_identifier" "$app_display_name" <<'PYTHON'
+python3 - "$contents/Info.plist" "$bundle_identifier" "$app_display_name" \
+  "$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" <<'PYTHON'
 import plistlib, sys
 from pathlib import Path
 path = Path(sys.argv[1])
 value = plistlib.loads(path.read_bytes())
 value["CFBundleIdentifier"] = sys.argv[2]
 value["CFBundleName"] = value["CFBundleDisplayName"] = sys.argv[3]
+# The directories under ~/Library/Application Support and ~/Library/Logs that
+# hold this app's VM and logs (macos/README.md, "App identity").
+value["RoguixApplicationSupportDirectory"] = sys.argv[4]
+value["RoguixLogsDirectory"] = sys.argv[5]
 path.write_bytes(plistlib.dumps(value))
 PYTHON
 python3 "$repo_dir/scripts/app_version.py" \
@@ -272,13 +282,14 @@ install -m 0644 "$generated_icon" "$contents/Resources/TryOmaguix.icns"
 install -m 0644 "$generated_icon" "$vm_app/Contents/Resources/TryOmaguix.icns"
 # The helper shares the app's version, icon and privacy descriptions; only its
 # executable, identifier and name differ.
-python3 - "$contents/Info.plist" "$vm_app/Contents/Info.plist" "$vm_bundle_identifier" <<'PYTHON'
+python3 - "$contents/Info.plist" "$vm_app/Contents/Info.plist" "$vm_bundle_identifier" \
+  "$APP_NAME" <<'PYTHON'
 import plistlib, sys
 from pathlib import Path
 value = plistlib.loads(Path(sys.argv[1]).read_bytes())
-value["CFBundleExecutable"] = "Try Omaguix"
+value["CFBundleExecutable"] = sys.argv[4]
 value["CFBundleIdentifier"] = sys.argv[3]
-value["CFBundleName"] = value["CFBundleDisplayName"] = "Try Omaguix"
+value["CFBundleName"] = value["CFBundleDisplayName"] = sys.argv[4]
 # QEMU makes itself a foreground app when it opens the VM window; a launch
 # from a pinned Dock tile only opens the app and exits, without a Dock icon.
 value["LSUIElement"] = True
@@ -414,7 +425,7 @@ codesign --verify --deep --strict --verbose=2 "$app"
 echo "[native] Built $app"
 if (( build_dmg )); then
   app_version=$(/usr/bin/plutil -extract CFBundleShortVersionString raw "$contents/Info.plist")
-  dmg="$output_dir/TryOmaguix-v${app_version}.dmg"
+  dmg="$output_dir/${RELEASE_DMG%.dmg}-v${app_version}.dmg"
   rm -f "$dmg"
   package_options=()
   if [[ $sign_identity != - ]]; then

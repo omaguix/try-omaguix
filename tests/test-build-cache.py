@@ -147,9 +147,10 @@ class BuildCacheTests(unittest.TestCase):
             'output_dir="$repo_dir/build/dev.noindex"',
             build_script,
         )
-        self.assertIn('app="$output_dir/Try Omaguix.app"', build_script)
+        # The name comes from the app identity (macos/apps/try-omaguix.env).
+        self.assertIn('app="$output_dir/$APP_NAME.app"', build_script)
         self.assertIn(
-            'legacy_app="$repo_dir/dist/Try Roguix.app"',
+            'legacy_app="$repo_dir/dist/$legacy_app_name.app"',
             build_script,
         )
         self.assertIn('rm -rf -- "$legacy_app"', build_script)
@@ -165,6 +166,8 @@ class BuildCacheTests(unittest.TestCase):
             ["make", "-n", "run-isolated"], cwd=REPOSITORY, check=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
         self.assertIn("OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=1", isolated)
+        self.assertIn(f'TRY_ROGUIX_APP="{REPOSITORY}/build/dev.noindex/Try Omaguix.app"',
+                      isolated)
         run = subprocess.run(
             ["make", "-n", "run"], cwd=REPOSITORY, check=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout

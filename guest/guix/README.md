@@ -272,16 +272,30 @@ system partition (FAT) at LBA 2048 and partition 2 an ext4 root labelled
 - `disk.raw.zst`: the disk, compressed with the runtime's pinned `zstd`;
 - `guix-manifest.json`: kind `roguix-guest-artifacts`, boot ABI
   `uefi-gpt-v1`, the recorded partition layout, raw and compressed sizes and
-  SHA-256 values, the Guix commit, a digest of the system definition files, and
+  SHA-256 values, the Guix commit, a digest of the image's build inputs, and
   the credentials profile;
 - `SHA256SUMS` for the other two files.
 
 The directory is staged beside its target and renamed into place only after
 `artifact.validate_artifacts` passes, including a full decompression that
 must reproduce the raw SHA-256. An existing output is never replaced.
-`systemFilesSHA256` records the definition present when packaging; the image
-itself is not re-derived. The credentials profile is `first-boot`: the
-image carries no password (see above).
+`systemFilesSHA256` digests what `guix system image` reads, as present when
+packaging: the system file and every file Git tracks under its load path,
+each with its executable bit, which Guix's recursive `local-file` keeps
+(`build.py`'s `inputs`; subdirectories included). Ignored files such as
+`__pycache__/` are not inputs; an untracked file that is not ignored, a
+symlink, a deleted tracked file, or a missing or symlinked system file or
+load path is refused, so the digest never differs from what was built. The image
+itself is not re-derived. Both scripts default to `system.scm` and
+`modules/`; another app's guest passes its own with `--system` and
+`--load-path` to `build.py` and the same to `package.py`, so its manifest
+digests its own inputs.
+
+`--credentials` records how the guest's account gets its password:
+`first-boot` (the default; the image carries no password, see above) or
+`preset` (the image's own system definition sets the account's credentials).
+The launcher does not act on it, and either profile gets the same partition
+checks.
 
 ## Ephemeral graphics smoke test on macOS
 

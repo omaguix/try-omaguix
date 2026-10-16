@@ -34,6 +34,52 @@ def git_environment():
 # roguix channel, which must build on the same Guix.
 COMMIT = (Path(__file__).resolve().parent
           / "modules/roguix/guix-commit").read_text().strip()
+# The system definition and the module directory `guix system image` reads;
+# another app's guest passes its own with --system and --load-path.
+SYSTEM = HERE / "system.scm"
+LOAD_PATH = HERE / "modules"
+
+
+def inputs(system=SYSTEM, load_path=LOAD_PATH):
+    """The files the image is built from, by name: the system definition and
+    every file Git tracks under the load path, which its modules may read
+    with local-file. Names are the system file's own and the load path's
+    directory name plus the path below it.
+
+    Ignored files (__pycache__, .DS_Store) are not inputs; an untracked file
+    that is not ignored is refused, since Guix would copy it with the
+    modules and the digest would no longer describe the build."""
+    system, load_path = Path(system), Path(load_path)
+    if system.is_symlink() or not system.is_file():
+        raise ValueError(f"system file is not a regular file: {system}")
+    if load_path.is_symlink() or not load_path.is_dir():
+        raise ValueError(f"load path is not a directory: {load_path}")
+
+    def git(*arguments):
+        try:
+            output = subprocess.run(
+                ["git", "-C", str(load_path), *arguments, "-z", "--", "."],
+                check=True, capture_output=True, text=True,
+                env=git_environment()).stdout
+        except (OSError, subprocess.CalledProcessError) as error:
+            raise ValueError(f"cannot list the load path's files with git: {error}") from None
+        return sorted(name for name in output.split("\0") if name)
+
+    untracked = git("ls-files", "--others", "--exclude-standard")
+    if untracked:
+        raise ValueError(f"untracked file in the load path: {load_path / untracked[0]}")
+    files = {system.name: system}
+    for name in git("ls-files"):
+        path = load_path / name
+        for part in [path, *path.parents]:
+            if part == load_path:
+                break
+            if part.is_symlink():
+                raise ValueError(f"build input is a symlink: {part}")
+        if not path.is_file():
+            raise ValueError(f"build input is not a regular file: {path}")
+        files[f"{load_path.name}/{name}"] = path
+    return files
 
 
 def build(args):
@@ -70,9 +116,9 @@ def build(args):
     # the builder writes into the store copy and the image file.
     command = [
         "guix", "time-machine", "--channels=CHANNELS", "--", "system", "image",
-        f"--load-path={HERE / 'modules'}",
+        f"--load-path={args.load_path.absolute()}",
         "--system=aarch64-linux", "--image-type=efi-raw", "--image-size=16G",
-        f"--root={output}", str(HERE / "system.scm"),
+        f"--root={output}", str(args.system.absolute()),
     ]
     if args.check:
         command.remove(f"--root={output}")
@@ -151,6 +197,10 @@ def main():
                         default=HERE.parents[2] / "vendor/guix")
     parser.add_argument("--output", type=Path,
                         default=HERE.parents[1] / "build/guix/image.raw")
+    parser.add_argument("--system", type=Path, default=SYSTEM,
+                        help="system definition to build (default: %(default)s)")
+    parser.add_argument("--load-path", type=Path, default=LOAD_PATH,
+                        help="module directory for --system (default: %(default)s)")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the plan without running Guix")
     parser.add_argument("--check", action="store_true",
