@@ -7,7 +7,7 @@
 #include <xpc/xpc.h>
 
 #ifndef NETWORK_SERVICE_NAME
-#define NETWORK_SERVICE_NAME "dev.tryroguix.network"
+#error "build.sh defines NETWORK_SERVICE_NAME from the app identity"
 #endif
 #include "payload-check.h"
 

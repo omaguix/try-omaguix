@@ -18,14 +18,15 @@ struct LauncherLogTests {
     @Test("The log lives with the user's other app logs")
     func defaultLocation() {
         let home = URL(fileURLWithPath: "/Users/example")
-        #expect(LauncherLog.defaultURL(home: home).path == "/Users/example/Library/Logs/Try Roguix/launcher.log")
+        #expect(LauncherLog.defaultURL(home: home, identity: .tryOmaguix).path == "/Users/example/Library/Logs/Try Roguix/launcher.log")
+        #expect(LauncherLog.defaultURL(home: home, identity: .second).path == "/Users/example/Library/Logs/Try Omabend Logs/launcher.log")
     }
 
     @Test("Each run starts a new file and keeps the previous run")
     func runRotation() throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let log = LauncherLog(url: directory.appendingPathComponent("Logs/launcher.log"))
+        let log = LauncherLog(url: directory.appendingPathComponent("Logs/launcher.log"), subsystem: "dev.example.tests")
 
         log.beginRun()
         log.append(Data("first run\n".utf8))
@@ -40,7 +41,7 @@ struct LauncherLogTests {
     func sizeBound() throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let log = LauncherLog(url: directory.appendingPathComponent("launcher.log"), maximumBytes: 64)
+        let log = LauncherLog(url: directory.appendingPathComponent("launcher.log"), maximumBytes: 64, subsystem: "dev.example.tests")
 
         log.beginRun()
         for index in 0..<100 {
@@ -59,7 +60,7 @@ struct LauncherLogTests {
     func supervisorWritesLog() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let log = LauncherLog(url: directory.appendingPathComponent("launcher.log"))
+        let log = LauncherLog(url: directory.appendingPathComponent("launcher.log"), subsystem: "dev.example.tests")
         let supervisor = QEMUGPUProcessSupervisor(log: log)
 
         let status: Int32 = await withCheckedContinuation { continuation in
@@ -91,7 +92,7 @@ struct LauncherFailureReportTests {
         let text = LauncherFailureReport.detail(
             summary: "The app’s virtual machine stopped during startup.",
             standardError: standardError,
-            logURL: LauncherLog.defaultURL(home: home)
+            logURL: LauncherLog.defaultURL(home: home, identity: .tryOmaguix)
         )
 
         #expect(text.hasPrefix("The app’s virtual machine stopped during startup."))

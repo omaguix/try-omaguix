@@ -34,8 +34,12 @@ def _builder():
 builder = _builder()
 
 
-def guix_commit():
-    return builder.COMMIT
+def guix_commit(load_path=builder.LOAD_PATH):
+    """The Guix commit the selected load path pins (build.py's `pin`)."""
+    try:
+        return builder.pin(load_path)
+    except ValueError as error:
+        raise artifact.ArtifactError(str(error)) from None
 
 
 def system_files_sha256(system=builder.SYSTEM, load_path=builder.LOAD_PATH):
@@ -69,7 +73,7 @@ def package(image, output, zstd, credentials, system=builder.SYSTEM,
         compressed = staging / artifact.DISK
         raw_sha256 = artifact.compress_and_hash(image, compressed, zstd)
         manifest = artifact.manifest_for(layout, raw_sha256, compressed,
-                                         guix_commit(),
+                                         guix_commit(load_path),
                                          system_files_sha256(system, load_path),
                                          credentials)
         (staging / artifact.MANIFEST).write_text(artifact.canonical_json(manifest),

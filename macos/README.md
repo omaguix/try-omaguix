@@ -127,17 +127,32 @@ a backslash, which Make would read as a continuation.
 | `RELEASE_TAG_PREFIX` | `try-roguix-v` | release tags, the prefix plus `X.Y.Z` (`docs/releasing.md`) |
 | `RELEASE_DMG` | `TryOmaguix.dmg` | the release asset; local DMG builds are `STEM-vX.Y.Z.dmg` |
 | `RELEASE_REPOSITORY` | `omaguix/try-omaguix` | the GitHub repository whose releases host the disk parts |
+| `ICON` | `TryOmaguix.svg` | the app icon's SVG source, in the identity file's directory; the bundle carries it as `NAME.icns` (`TryOmaguix.icns`) |
+| `NETWORK_HELPER_SERVICE` | `dev.tryroguix.network` | the bridged-networking helper's launchd label and Mach service, and its LaunchDaemon plist's name (`NAME.plist`); empty for an app without the helper, which then has no LaunchDaemon, networking daemon or helper binaries, offers only NAT, and whose launcher refuses bridged networking |
 
 Try Omaguix keeps the pre-rename `Try Roguix` and `dev.tryroguix` values on
 purpose: installed apps keep their VM, logs, privacy grants and preferences
 under them. A second app needs its own value for every key, so that the two
 never share VM state, logs, preferences or signing keys.
 
-`RoguixApplicationSupportDirectory` and `RoguixLogsDirectory` in the built
-app's `Info.plist` carry the two directory names for the app to read; until
-the launcher reads them, it still uses `Try Roguix` for both. The launcher
-sources, `run-qemu-gpu.sh`, `open-qemu-gpu.sh`, `package-dmg.sh`, the icon
-and the privacy descriptions in `Info.plist` also still name Try Omaguix.
+The build writes what the app and its launcher need at run time into the
+bundle's `Info.plist`: `RoguixApplicationName` (`APP_NAME`, which also names
+the VM helper app and the QEMU window), `RoguixDevelopmentApplicationName`,
+`RoguixApplicationSupportDirectory`, `RoguixLogsDirectory` and
+`RoguixNetworkHelperService` (empty without the helper), besides the bundle
+identifier, display name, icon file and the privacy descriptions, whose
+`{APP_NAME}` in `macos/Info.plist` becomes `APP_NAME`. The app
+(`AppIdentity.swift`) and `run-qemu-gpu.sh` read them from there; a missing
+key is a build bug and stops them, with no fallback. Logger subsystems and
+dispatch-queue labels start with the running app's bundle identifier.
+`open-qemu-gpu.sh` and `resize-vm-disk.sh` read the selected identity file,
+and `package-dmg.sh` names the volume and the disk image's signing identifier
+after the packaged app's display name and bundle identifier.
+
+Still named after Try Omaguix: the user-visible texts in the app's windows
+and alerts, the QEMU runtime's Cocoa menus (`patches/`, shared by every app),
+and the release update check (`AppRelease.swift`, which reads Try Omaguix's
+repository, tag prefix and DMG names).
 
 ### Development signing identity
 
@@ -208,8 +223,10 @@ selected only for a new, reset, or ephemeral VM, so an existing VM launches
 without first preparing the new factory disk.
 
 The helper keeps the launcher's stderr (`run-qemu-gpu.sh` and QEMU) in
-`~/Library/Logs/Try Roguix/launcher.log` and in the unified log (subsystem
-`dev.tryroguix.native`, category `launcher`). Each launch or reset starts a new
+`~/Library/Logs/Try Roguix/launcher.log` (the app identity's `LOGS_DIRECTORY`)
+and in the unified log (subsystem: the running app's bundle identifier,
+`dev.tryroguix.native` or, for a development build,
+`dev.tryroguix.native.development`; category `launcher`). Each launch or reset starts a new
 file and keeps the previous one as `launcher.log.1`; a run that passes 1 MiB
 rotates the same way. When the VM stops during startup without a more specific
 explanation, the alert quotes the log's last lines and **Show Log** reveals it

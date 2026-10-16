@@ -52,6 +52,15 @@ for tool in codesign diskutil ditto hdiutil ln mkdir mktemp osascript rm sync; d
   command -v "$tool" >/dev/null 2>&1 || fail "required tool is unavailable: $tool"
 done
 codesign --verify --deep --strict --verbose=2 "$app"
+# The volume and the image's signature are named after the app being packaged
+# (its app identity, macos/README.md).
+info_plist="$app/Contents/Info.plist"
+volume_name=$(/usr/bin/plutil -extract CFBundleDisplayName raw -expect string "$info_plist") || \
+  fail "the app has no display name"
+bundle_identifier=$(/usr/bin/plutil -extract CFBundleIdentifier raw -expect string "$info_plist") || \
+  fail "the app has no bundle identifier"
+[[ $volume_name =~ ^[A-Za-z0-9][A-Za-z0-9\ ._-]*$ && $bundle_identifier =~ ^[A-Za-z0-9.-]+$ ]] || \
+  fail "the app's display name or bundle identifier is unsupported"
 
 native_dir=$(cd "$(dirname "$0")" && pwd -P)
 layout_source="$native_dir/dmg-layout.applescript"
@@ -61,7 +70,7 @@ layout_source="$native_dir/dmg-layout.applescript"
 
 work_dir=$(mktemp -d /private/tmp/omarchy-dmg.XXXXXX)
 mounted=0
-working_volume_name="Try Omaguix ${work_dir##*/}"
+working_volume_name="$volume_name ${work_dir##*/}"
 mount_dir="$work_dir/$working_volume_name"
 cleanup() {
   status=$?
@@ -104,7 +113,7 @@ osascript "$layout_source" "$mount_dir" "${app##*/}"
 
 # Finder references can use volume and window names. Keep both the volume
 # label and mount folder distinct until Finder has finished arranging it.
-diskutil rename "$mount_dir" "Try Omaguix" >/dev/null
+diskutil rename "$mount_dir" "$volume_name" >/dev/null
 sync
 hdiutil detach "$mount_dir" >/dev/null
 mounted=0
@@ -117,7 +126,7 @@ hdiutil convert \
 if [[ -n $sign_identity ]]; then
   codesign \
     --sign "$sign_identity" \
-    --identifier dev.tryroguix.native.disk-image \
+    --identifier "$bundle_identifier.disk-image" \
     --timestamp \
     "$output"
   codesign --verify --strict --verbose=2 "$output"

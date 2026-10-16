@@ -347,6 +347,7 @@ struct StartMenuWindowWidthTests {
             connectedUSBDevices: { [] },
             saveUSBDevice: { _ in },
             portForwardingStatus: { [] },
+            offersBridgedNetworking: true,
             immersiveMode: { true },
             setImmersiveMode: { _ in },
             launch: {}

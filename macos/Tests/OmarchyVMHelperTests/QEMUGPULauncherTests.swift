@@ -257,15 +257,22 @@ struct QEMUGPUStorageSpaceEstimateTests {
         ) == standardizedConfiguredRoot.appendingPathComponent("guix", isDirectory: true))
 
         let defaultDirectory = try #require(QEMUGPUStorageSpaceEstimate.dataDirectoryDisplayPath(
-            environment: [:]
+            environment: [:], identity: .tryOmaguix
         ))
         #expect(defaultDirectory == "~/Library/Application Support/Try Roguix")
+        // Another app identity keeps its VM in its own directory.
+        #expect(QEMUGPUStorageSpaceEstimate.dataDirectoryDisplayPath(
+            environment: [:], identity: .second
+        ) == "~/Library/Application Support/Try Omabend Data")
+        #expect(QEMUGPUStorageSpaceEstimate.storageRootURL(
+            environment: [:], identity: .second
+        )?.path.hasSuffix("/Library/Application Support/Try Omabend Data/VM/v1/guix") == true)
 
         let defaultDirectoryURL = try #require(QEMUGPUStorageSpaceEstimate.dataDirectoryURL(
-            environment: [:]
+            environment: [:], identity: .tryOmaguix
         ))
         let defaultStorageRoot = try #require(QEMUGPUStorageSpaceEstimate.storageRootURL(
-            environment: [:]
+            environment: [:], identity: .tryOmaguix
         ))
         #expect(defaultStorageRoot == defaultDirectoryURL
             .appendingPathComponent("VM/v1/guix", isDirectory: true)
@@ -520,7 +527,25 @@ struct QEMUGPULauncherPathTests {
         let fixture = try makeFixture(appName: appName)
         defer { try? FileManager.default.removeItem(at: fixture.root) }
 
-        #expect(try QEMUGPULauncherPath.resolve(bundleURL: fixture.app) == fixture.launcher)
+        #expect(try QEMUGPULauncherPath.resolve(
+            bundleURL: fixture.app, identity: .tryOmaguix
+        ) == fixture.launcher)
+    }
+
+    @Test(
+        "accepts the names of the running app's identity only",
+        arguments: ["Try Omabend.app", "Try Omabend Dev.app"]
+    )
+    func followsTheAppIdentity(appName: String) throws {
+        let fixture = try makeFixture(appName: appName)
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+
+        #expect(try QEMUGPULauncherPath.resolve(
+            bundleURL: fixture.app, identity: .second
+        ) == fixture.launcher)
+        #expect(throws: HelperError.self) {
+            try QEMUGPULauncherPath.resolve(bundleURL: fixture.app, identity: .tryOmaguix)
+        }
     }
 
     @Test("rejects a launcher symlink")
@@ -533,7 +558,7 @@ struct QEMUGPULauncherPathTests {
         try FileManager.default.createSymbolicLink(at: fixture.launcher, withDestinationURL: other)
 
         #expect(throws: HelperError.self) {
-            try QEMUGPULauncherPath.resolve(bundleURL: fixture.app)
+            try QEMUGPULauncherPath.resolve(bundleURL: fixture.app, identity: .tryOmaguix)
         }
     }
 
@@ -543,7 +568,7 @@ struct QEMUGPULauncherPathTests {
         defer { try? FileManager.default.removeItem(at: fixture.root) }
 
         #expect(throws: HelperError.self) {
-            try QEMUGPULauncherPath.resolve(bundleURL: fixture.app)
+            try QEMUGPULauncherPath.resolve(bundleURL: fixture.app, identity: .tryOmaguix)
         }
     }
 

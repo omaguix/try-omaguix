@@ -39,6 +39,10 @@ DEVELOPMENT_SIGN_IDENTITY ?=
 PACKAGE_SIGN_IDENTITY ?= $(RELEASE_SIGN_IDENTITY)
 PACKAGE_NOTARY_PROFILE ?= $(RELEASE_NOTARY_PROFILE)
 FORCE ?= 0
+# The sources the packaged guest image was built from (guest/guix/build.py
+# --system and --load-path); another app's guest passes its own.
+GUIX_SYSTEM ?= $(ROOT)/guest/guix/system.scm
+GUIX_LOAD_PATH ?= $(ROOT)/guest/guix/modules
 TEST_JOBS ?= 4
 
 SHELL_TESTS := network-helper qemu-networking qemu-port-forwarding \
@@ -71,7 +75,8 @@ help:
 	  '' \
 	  'Component builds:' \
 	  '  make guix-package GUIX_IMAGE=/path/image.raw' \
-	  '                      Package a Roguix image (guest/guix/build.py) into build/guix' \
+	  '                      Package a Roguix image (guest/guix/build.py) into build/guix;' \
+	  '                      GUIX_SYSTEM and GUIX_LOAD_PATH name its sources' \
 	  '  make runtime        Ensure macos/.build/qemu-gpu-runtime is current' \
 	  '  make app            Ensure the runtime and the app (with build/guix) are current' \
 	  '' \
@@ -148,7 +153,8 @@ test-resize: test-swift
 
 guix-package: runtime
 	@test -n "$(GUIX_IMAGE)" || { echo 'Set GUIX_IMAGE to a raw image from guest/guix/build.py' >&2; exit 64; }
-	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/package.py" --image "$(GUIX_IMAGE)"
+	@PYTHONDONTWRITEBYTECODE=1 python3 "$(ROOT)/guest/guix/package.py" --image "$(GUIX_IMAGE)" \
+	  --system "$(GUIX_SYSTEM)" --load-path "$(GUIX_LOAD_PATH)"
 
 runtime:
 	@OMARCHY_FORCE_BUILD="$(FORCE)" "$(BUILD_CACHE)" \

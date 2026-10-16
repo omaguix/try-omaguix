@@ -194,6 +194,7 @@ struct StartMenuStartupTests {
             chooseSharedFolder: { _ in nil },
             setSharedFolderEnabled: { _ in },
             portForwardingStatus: { [] },
+            offersBridgedNetworking: true,
             immersiveMode: { true },
             setImmersiveMode: { _ in },
             sendsCommandTab: sendsCommandTab,

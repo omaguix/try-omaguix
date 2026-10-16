@@ -188,6 +188,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     private let checkForAppUpdates: () -> Void
     private weak var appReleaseButton: NSButton?
     private let canResetStorage: Bool
+    /// Whether the app ships the bridged-networking helper
+    /// (`NetworkService.isAvailable`); without it, networking is NAT only.
+    private let offersBridgedNetworking: Bool
     private let storageLocation: () -> String?
     private let storageLocationURL: () -> URL?
     private let storageLocationStatus: () -> StorageLocationMenuState
@@ -273,6 +276,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         networkPreferences: @escaping () -> VMNetworkPreferences = { VMNetworkPreferences() },
         saveNetworkPreferences: @escaping (VMNetworkPreferences) -> String? = { _ in nil },
         networkIdentity: VMNetworkIdentityAccess = .unavailable,
+        offersBridgedNetworking: Bool,
         immersiveMode: @escaping () -> Bool = { true },
         setImmersiveMode: @escaping (Bool) -> Void = { _ in },
         sendsCommandTab: @escaping () -> Bool = { false },
@@ -318,6 +322,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         self.networkPreferences = networkPreferences
         self.saveNetworkPreferences = saveNetworkPreferences
         self.networkIdentity = networkIdentity
+        self.offersBridgedNetworking = offersBridgedNetworking
         self.immersiveMode = immersiveMode
         self.setImmersiveMode = setImmersiveMode
         self.sendsCommandTab = sendsCommandTab
@@ -829,7 +834,9 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
             rowIdentifier: "usb"
         )
 
-        let network = networkPreferences()
+        // An app without the networking helper offers only NAT, with
+        // nothing to configure.
+        let network = offersBridgedNetworking ? networkPreferences() : VMNetworkPreferences()
         let bridgeAvailable = VMBridgeInterfaces.available().contains { $0.name == network.interface }
         let networkWarning = network.mode == .bridged
             ? (!bridgeAvailable ? "Adapter unavailable — Omaguix will start offline" : NetworkService.service.status != .enabled ? "Setup required" : nil)
@@ -841,7 +848,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
             granted: network.mode == .bridged,
             statusLabels: ("Bridged", "Shared (NAT)"),
             statusTint: networkWarning == nil ? OmarchyStartMenuTheme.foreground : .systemOrange,
-            actions: [("Configure…", #selector(beginNetworkConfiguration))],
+            actions: offersBridgedNetworking ? [("Configure…", #selector(beginNetworkConfiguration))] : [],
             minimumHeight: 75,
             rowIdentifier: "networking"
         )
@@ -1789,7 +1796,7 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
     }
 
     @objc private func beginNetworkConfiguration() {
-        guard !controlsBusy, !resetInProgress, networkEditor == nil else { return }
+        guard !controlsBusy, !resetInProgress, networkEditor == nil, offersBridgedNetworking else { return }
         let editor = NetworkEditor(preferences: networkPreferences(), interfaces: VMBridgeInterfaces.available(),
             identity: networkIdentity, save: saveNetworkPreferences, didClose: { [weak self] in
                 self?.networkEditor = nil

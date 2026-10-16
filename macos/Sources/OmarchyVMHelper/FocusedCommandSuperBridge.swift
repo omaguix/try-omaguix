@@ -259,9 +259,15 @@ struct KernelProcessIdentity: Equatable {
     let startSeconds: UInt64
     let startMicroseconds: UInt64
 
+    /// QEMU runs as the VM helper app's executable, named after the app
+    /// identity's app name, or as a plain qemu-system binary.
     var isQEMUSystemProcess: Bool {
+        isQEMUSystemProcess(applicationName: AppIdentity.main.applicationName)
+    }
+
+    func isQEMUSystemProcess(applicationName: String) -> Bool {
         let name = URL(fileURLWithPath: executablePath).lastPathComponent
-        if name == "Try Omaguix" {
+        if name == applicationName {
             return true
         }
         guard name.hasPrefix("qemu-system-") else { return false }

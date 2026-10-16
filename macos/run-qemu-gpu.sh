@@ -50,7 +50,6 @@ resources_dir=$(cd "$script_dir/.." && pwd -P)
 contents_dir=$(cd "$resources_dir/.." && pwd -P)
 app_bundle=$(cd "$contents_dir/.." && pwd -P)
 guest_input=${1:-"$resources_dir/guest"}
-qemu_bin="$contents_dir/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix"
 native_bridge="$contents_dir/MacOS/omarchy-vm-helper"
 storage_library="$script_dir/qemu-persistent-storage.sh"
 port_forwarding_library="$script_dir/qemu-port-forwarding.sh"
@@ -60,6 +59,20 @@ port_forwarding_library="$script_dir/qemu-port-forwarding.sh"
 macos_major=$(sw_vers -productVersion | cut -d. -f1)
 [[ $macos_major =~ ^[0-9]+$ ]] && (( macos_major >= 15 )) || \
   fail "requires macOS 15 or newer"
+info_plist="$contents_dir/Info.plist"
+[[ -f $info_plist && ! -L $info_plist ]] || fail "the app has no safe Info.plist"
+# The app identity build-app.sh writes into Info.plist (macos/README.md,
+# "App identity"); every key is required, some may be empty.
+app_identity() {
+  /usr/bin/plutil -extract "$1" raw -expect string "$info_plist" 2>/dev/null || \
+    fail "the app's Info.plist has no $1"
+}
+app_name=$(app_identity RoguixApplicationName)
+application_support_directory=$(app_identity RoguixApplicationSupportDirectory)
+network_helper_service=$(app_identity RoguixNetworkHelperService)
+[[ -n $app_name && -n $application_support_directory ]] || \
+  fail "the app's Info.plist has an empty app identity"
+qemu_bin="$contents_dir/Helpers/$app_name.app/Contents/MacOS/$app_name"
 [[ -d $guest_input && ! -L $guest_input ]] || fail "ARM guest directory is missing or unsafe: $guest_input"
 guest_dir=$(cd "$guest_input" && pwd -P)
 # The Roguix guest (guest/guix/package.py) is a UEFI/GPT disk booted by the
@@ -68,10 +81,10 @@ uefi_boot_abi=uefi-gpt-v1
 # A disposable VM (--ephemeral) or a development build's own VM
 # (make run-isolated) is a test run: its window must not pass for the user's.
 # The native app marks its own disposable workspace independently of storage mode.
-qemu_window_name='Try Omaguix'
+qemu_window_name=$app_name
 if [[ $storage_mode == ephemeral || ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 1 \
       || ${OMARCHY_QEMU_GPU_TEST_RUN:-0} == 1 ]]; then
-  qemu_window_name='Try Omaguix (test)'
+  qemu_window_name="$app_name (test)"
 fi
 uefi_firmware="$resources_dir/runtime/share/qemu/edk2-aarch64-code.fd"
 
@@ -99,8 +112,9 @@ esac
   fail "missing bundled UEFI firmware; run make runtime"
 }
 file "$qemu_bin" | grep 'arm64' >/dev/null || fail "staged QEMU is not an ARM64 executable"
+# The runtime's Cocoa product-identity patch (shared by every app identity).
 LC_ALL=C grep -aFq 'Try Omaguix: cannot open' "$qemu_bin" || {
-  fail "staged QEMU lacks the Try Omaguix macOS identity; run make runtime"
+  fail "staged QEMU lacks the Cocoa product-identity patch; run make runtime"
 }
 for marker in \
   OMARCHY_SDL_AUDIO_CONTROL_DIRECTORY \
@@ -310,6 +324,7 @@ fi
 # shellcheck source=qemu-persistent-storage.sh
 source "$storage_library"
 QEMU_PERSISTENT_STORAGE_HELPER=$native_bridge
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY=$application_support_directory
 if [[ -n $keep_saved_vm ]]; then
   # The start menu's choice between several saved VMs; nothing is launched.
   qemu_persistent_storage_keep_saved_vm "$keep_saved_vm" || exit $?
@@ -319,6 +334,9 @@ fi
 source "$port_forwarding_library"
 source "$script_dir/qemu-networking.sh"
 qemu_network_validate
+if [[ $QEMU_NETWORK_MODE == bridged && -z $network_helper_service ]]; then
+  fail 'This app has no bridged networking helper; use NAT.'
+fi
 if [[ $QEMU_NETWORK_MODE == bridged ]]; then
   grep -qx stream <<<"$qemu_netdevs" || fail 'The bundled QEMU does not support bridged networking. Rebuild the runtime.'
 fi

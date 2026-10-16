@@ -10,23 +10,30 @@ import os
 /// files never hold more than twice that.
 final class LauncherLog: @unchecked Sendable {
     static let maximumBytes = 1_024 * 1_024
-    private static let logger = Logger(subsystem: "dev.tryroguix.native", category: "launcher")
 
     let url: URL
     private let maximumBytes: Int
+    private let logger: Logger
     private let lock = NSLock()
     private var handle: FileHandle?
     private var writtenBytes = 0
 
-    init(url: URL, maximumBytes: Int = LauncherLog.maximumBytes) {
+    /// `subsystem` is the unified log's: the app's bundle identifier.
+    init(url: URL, maximumBytes: Int = LauncherLog.maximumBytes, subsystem: String) {
         self.url = url
         self.maximumBytes = maximumBytes
+        logger = Logger(subsystem: subsystem, category: "launcher")
     }
 
-    /// `~/Library/Logs/Try Roguix/launcher.log`, where Console lists it under
-    /// Log Reports.
-    static func defaultURL(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
-        home.appendingPathComponent("Library/Logs/Try Roguix/launcher.log")
+    /// `~/Library/Logs/<the identity's logs directory>/launcher.log`, where
+    /// Console lists it under Log Reports.
+    static func defaultURL(
+        home: URL = FileManager.default.homeDirectoryForCurrentUser,
+        identity: AppIdentity = .main
+    ) -> URL {
+        home.appendingPathComponent("Library/Logs", isDirectory: true)
+            .appendingPathComponent(identity.logsDirectory, isDirectory: true)
+            .appendingPathComponent("launcher.log")
     }
 
     var rotatedURL: URL {
@@ -41,7 +48,7 @@ final class LauncherLog: @unchecked Sendable {
 
     func append(_ data: Data) {
         guard !data.isEmpty else { return }
-        Self.logger.notice("\(String(decoding: data, as: UTF8.self), privacy: .public)")
+        logger.notice("\(String(decoding: data, as: UTF8.self), privacy: .public)")
         lock.lock()
         defer { lock.unlock() }
         if handle == nil || writtenBytes >= maximumBytes {
@@ -52,7 +59,7 @@ final class LauncherLog: @unchecked Sendable {
             try handle.write(contentsOf: data)
             writtenBytes += data.count
         } catch {
-            Self.logger.error("cannot write \(self.url.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            logger.error("cannot write \(self.url.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
             self.handle = nil
         }
     }
@@ -78,7 +85,7 @@ final class LauncherLog: @unchecked Sendable {
             }
             handle = try FileHandle(forWritingTo: url)
         } catch {
-            Self.logger.error("cannot open \(self.url.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            logger.error("cannot open \(self.url.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 }

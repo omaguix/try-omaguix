@@ -200,8 +200,8 @@ final class GeneralPasteboard: HostPasteboardProviding {
 final class NativeClipboardBridge {
     private let descriptor: Int32
     private let pasteboard: HostPasteboardProviding
-    private let stateQueue = DispatchQueue(label: "dev.tryroguix.native.clipboard-bridge-state")
-    private let writeQueue = DispatchQueue(label: "dev.tryroguix.native.clipboard-bridge-writes")
+    private let stateQueue = DispatchQueue(label: "\(AppIdentity.bundleIdentifier).clipboard-bridge-state")
+    private let writeQueue = DispatchQueue(label: "\(AppIdentity.bundleIdentifier).clipboard-bridge-writes")
     private let stopLock = NSLock()
     private var state = ClipboardSyncState()
     private var observedChangeCount: Int

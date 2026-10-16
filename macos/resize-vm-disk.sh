@@ -12,7 +12,9 @@ The root partition and file system grow automatically on the next normal
 guest boot (roguix-grow-root).
 
 DIR is the VM state directory containing .omarchy-qemu-storage and disks/current.
-Default: ~/Library/Application Support/Try Roguix/VM/v1/guix
+Default: ~/Library/Application Support/DIRECTORY/VM/v1/guix, DIRECTORY being
+the APPLICATION_SUPPORT_DIRECTORY of the app identity (APP_IDENTITY, or the
+default one; macos/README.md, "App identity").
 Custom VM locations require --state-root; saved app preferences are not read.
 EOF
 }
@@ -23,7 +25,7 @@ fail() {
 }
 
 size_gib=''
-state_root="${HOME:?}/Library/Application Support/Try Roguix/VM/v1/guix"
+state_root=''
 apply=0
 while (($#)); do
   case "$1" in
@@ -33,7 +35,7 @@ while (($#)); do
       shift 2
       ;;
     --state-root)
-      (($# >= 2)) || { usage >&2; exit 64; }
+      (($# >= 2)) && [[ -n $2 ]] || { usage >&2; exit 64; }
       state_root=$2
       shift 2
       ;;
@@ -50,6 +52,11 @@ command -v python3 >/dev/null || fail 'python3 is required'
 [[ ${OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK:-0} == 0 ]] || fail 'development multi-disk workspaces are not supported'
 
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
+if [[ -z $state_root ]]; then
+  app_identity=$(python3 "$script_dir/apps/identity.py" shell) || exit 1
+  eval "$app_identity"
+  state_root="${HOME:?}/Library/Application Support/$APPLICATION_SUPPORT_DIRECTORY/VM/v1/guix"
+fi
 # shellcheck source=qemu-persistent-storage.sh
 source "$script_dir/qemu-persistent-storage.sh"
 

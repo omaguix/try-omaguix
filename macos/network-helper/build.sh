@@ -2,7 +2,8 @@
 set -euo pipefail
 root=$(cd "$(dirname "$0")" && pwd -P)
 out=${1:?output directory required}
-service=${OMARCHY_NETWORK_SERVICE_NAME:-dev.tryroguix.network}
+# The launchd service of the app identity's NETWORK_HELPER_SERVICE.
+service=${2:?networking service name required}
 [[ $service =~ ^[A-Za-z0-9]+([.][A-Za-z0-9-]+)+$ ]] || { echo "Invalid networking service name" >&2; exit 1; }
 mkdir -p "$out"
 /usr/bin/clang -O2 -Wall -Wextra -Werror -mmacosx-version-min=15.0 \

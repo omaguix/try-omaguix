@@ -3,14 +3,14 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/../network-helper" && pwd -P)
 output=$(mktemp -d /private/tmp/omarchy-network-unit.XXXXXX)
 trap 'rm -rf "$output"' EXIT
-bash "$root/build.sh" "$output"
+bash "$root/build.sh" "$output" dev.example.network-test
 /usr/bin/clang -Wall -Wextra -Werror -Wno-deprecated-declarations "$root/payload-check.test.c" -o "$output/payload-check-test"
 "$output/payload-check-test"
 /usr/bin/clang -Wall -Wextra -Werror -mmacosx-version-min=15.0 "$root/stream.test.c" -o "$output/stream-test"
 mkdir -p "$output/Contents/Resources/network" "$output/Contents/MacOS"
 cp "$output/socket_vmnet" "$output/omarchy-network-supervisor" "$output/omarchy-network-client" "$output/Contents/Resources/network/"
 codesign --force --sign - "$output/Contents/Resources/network/omarchy-network-client"
-bash "$root/build-daemon.sh" "$output/Contents"
+bash "$root/build-daemon.sh" "$output/Contents" dev.example.network-test
 if "$output/Contents/MacOS/omarchy-network-daemon"; then
   echo 'network-helper.test: daemon accepted an unprivileged launch' >&2
   exit 1

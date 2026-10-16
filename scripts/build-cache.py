@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -114,16 +115,34 @@ def component_files(root: Path, component: str) -> list[Path]:
             for path in regular_files(macos, {".build", ".swiftpm", "Tests", "patches"})
             if path.relative_to(macos).as_posix() not in excluded_names
         ]
+        identity_file, _, icon = app_identity()
         paths.extend(
             [
                 root / "LICENSE",
                 root / ".build/state/runtime.json",
                 *(root / name for name in GUIX_GUEST_FILES),
+                identity_file,
+                icon,
             ]
         )
         return sorted(paths)
 
     raise CacheError(f"unknown component: {component}")
+
+
+def app_identity() -> tuple[Path, dict[str, str], Path]:
+    """The selected app identity file (APP_IDENTITY; macos/README.md, "App
+    identity"), its values and the icon source beside it."""
+    path = Path(__file__).resolve().parents[1] / "macos/apps/identity.py"
+    spec = importlib.util.spec_from_file_location("app_identity", path)
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    try:
+        selected = identity.selected()
+        values = identity.load(selected)
+    except (OSError, identity.IdentityError) as error:
+        raise CacheError(f"app identity: {error}") from None
+    return selected.resolve(), values, identity.icon(values, selected)
 
 
 def command_output(argv: list[str]) -> str:
@@ -302,11 +321,13 @@ def validate_runtime(root: Path, previous: dict[str, Any] | None) -> dict[str, A
 
 
 def validate_app(root: Path, previous: dict[str, Any] | None) -> dict[str, Any]:
-    app = root / "build/dev.noindex/Try Omaguix.app"
+    _, identity, _ = app_identity()
+    name = identity["APP_NAME"]
+    app = root / f"build/dev.noindex/{name}.app"
     required = [
         app / "Contents/MacOS/omarchy-vm-helper",
-        app / "Contents/Resources/TryOmaguix.icns",
-        app / "Contents/Helpers/Try Omaguix.app/Contents/MacOS/Try Omaguix",
+        app / f"Contents/Resources/{identity['ICON'].removesuffix('.svg')}.icns",
+        app / f"Contents/Helpers/{name}.app/Contents/MacOS/{name}",
         app / "Contents/Resources/guest/disk.raw.zst",
         app / "Contents/Resources/guest/guix-manifest.json",
         app / "Contents/Resources/guest/launch.plist",

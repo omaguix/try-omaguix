@@ -177,8 +177,9 @@ enum GuestStateLayout {
 /// recorded disk without materializing the current app's factory image.
 enum StorageLocationPolicy {
     static let environmentKey = "OMARCHY_QEMU_GPU_STATE_ROOT"
-    // Historical storage name: renaming the product must keep the existing VM.
-    static let workspaceDirectoryName = "Try Roguix"
+    /// The folder name suggested for a workspace on another drive: the app
+    /// identity's Application Support directory.
+    static var workspaceDirectoryName: String { AppIdentity.main.applicationSupportDirectory }
     static let rootMarkerName = ".omarchy-qemu-storage"
 
     /// The marker's only valid contents. Kept byte-identical to

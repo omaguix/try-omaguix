@@ -226,7 +226,7 @@ struct KernelProcessIdentityTests {
                 startSeconds: 100,
                 startMicroseconds: 200
             )
-            #expect(valid.isQEMUSystemProcess)
+            #expect(valid.isQEMUSystemProcess(applicationName: "Try Omaguix"))
         }
 
         for path in [
@@ -243,8 +243,20 @@ struct KernelProcessIdentityTests {
                 startSeconds: 100,
                 startMicroseconds: 200
             )
-            #expect(!invalid.isQEMUSystemProcess)
+            #expect(!invalid.isQEMUSystemProcess(applicationName: "Try Omaguix"))
         }
+    }
+
+    @Test("the app runtime's name comes from the app identity")
+    func followsTheApplicationName() {
+        let runtime = KernelProcessIdentity(
+            processIdentifier: 42,
+            executablePath: "/private/runtime/Try Omabend",
+            startSeconds: 100,
+            startMicroseconds: 200
+        )
+        #expect(runtime.isQEMUSystemProcess(applicationName: "Try Omabend"))
+        #expect(!runtime.isQEMUSystemProcess(applicationName: "Try Omaguix"))
     }
 
     @Test("captures a stable kernel identity for the current process")
@@ -253,6 +265,6 @@ struct KernelProcessIdentityTests {
         #expect(identity != nil)
         #expect(identity?.processIdentifier == getpid())
         #expect(identity?.isStillRunning == true)
-        #expect(identity?.isQEMUSystemProcess == false)
+        #expect(identity?.isQEMUSystemProcess(applicationName: "Try Omaguix") == false)
     }
 }

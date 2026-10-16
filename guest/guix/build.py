@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -30,14 +31,28 @@ def git_environment():
     different repository than SOURCE, silently defeating the pin check.
     """
     return {k: v for k, v in os.environ.items() if k not in GIT_LOCAL_ENV_VARS}
-# The Guix pin, shared with the image (/etc/roguix/guix-commit) and the
-# roguix channel, which must build on the same Guix.
-COMMIT = (Path(__file__).resolve().parent
-          / "modules/roguix/guix-commit").read_text().strip()
 # The system definition and the module directory `guix system image` reads;
 # another app's guest passes its own with --system and --load-path.
 SYSTEM = HERE / "system.scm"
 LOAD_PATH = HERE / "modules"
+
+
+def pin(load_path=LOAD_PATH):
+    """The Guix commit the load path's modules build on: its one
+    `<module directory>/guix-commit` (this repository's
+    modules/roguix/guix-commit, shared with the image's /etc/roguix and the
+    roguix channel)."""
+    load_path = Path(load_path)
+    pins = sorted(load_path.glob("*/guix-commit"))
+    if len(pins) != 1:
+        raise ValueError(f"expected one */guix-commit in the load path {load_path}, "
+                         f"found {len(pins)}")
+    if pins[0].is_symlink() or not pins[0].is_file():
+        raise ValueError(f"the Guix pin is not a regular file: {pins[0]}")
+    commit = pins[0].read_text(encoding="ascii").strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError(f"the Guix pin is not a commit: {pins[0]}")
+    return commit
 
 
 def inputs(system=SYSTEM, load_path=LOAD_PATH):
@@ -84,14 +99,15 @@ def inputs(system=SYSTEM, load_path=LOAD_PATH):
 
 def build(args):
     source = args.source.resolve(strict=True)
+    commit = pin(args.load_path)
     env = git_environment()
     # Git channels consume committed files, not a working-tree overlay.  Refuse
     # tracked edits rather than silently build something other than the source.
     head = subprocess.check_output(
         ["git", "-C", str(source), "rev-parse", "HEAD"], text=True, env=env
     ).strip()
-    if head != COMMIT:
-        raise ValueError(f"Guix checkout must be pinned to {COMMIT}; found {head}")
+    if head != commit:
+        raise ValueError(f"Guix checkout must be pinned to {commit}; found {head}")
     changes = subprocess.check_output(
         ["git", "-C", str(source), "status", "--porcelain", "--untracked-files=no"],
         text=True, env=env,
@@ -124,7 +140,7 @@ def build(args):
         command.remove(f"--root={output}")
         command.insert(-1, "--dry-run")
     if args.dry_run:
-        print(f"Authenticated local channel: {source} at {COMMIT}")
+        print(f"Authenticated local channel: {source} at {commit}")
         print(f"Keyring: {keyring}; official Guix introduction retained")
         print(shlex.join(command))
         return
@@ -148,7 +164,7 @@ def build(args):
             "(use-modules (guix channels))\n"
             "(list (channel (inherit %default-guix-channel)\n"
             f"  (url {json.dumps(channel_source.as_uri())})\n"
-            f"  (commit \"{COMMIT}\")))\n"
+            f"  (commit \"{commit}\")))\n"
         )
         command[2] = f"--channels={channels}"
         if not args.check:

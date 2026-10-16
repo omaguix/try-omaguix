@@ -63,6 +63,12 @@ mkdir -p \
   "$contents/Helpers/Try Omaguix.app/Contents/MacOS" \
   "$resources/scripts" \
   "$shim_dir"
+# The app identity build-app.sh writes into Info.plist (macos/README.md,
+# "App identity").
+/usr/bin/plutil -create xml1 "$contents/Info.plist"
+/usr/bin/plutil -insert RoguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
+/usr/bin/plutil -insert RoguixApplicationSupportDirectory -string 'Try Roguix' "$contents/Info.plist"
+/usr/bin/plutil -insert RoguixNetworkHelperService -string dev.tryroguix.network "$contents/Info.plist"
 
 # The copied launcher must never reap another app's live run directories.
 # Keep the unique prefix directly in /private/tmp for short Unix socket paths.
@@ -874,6 +880,19 @@ run_scenario bridge-ssh-preview 0 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1 \
   OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE=en0 OMARCHY_NETWORK_BRIDGED_SSH=1
 assert_contains "$(<"$test_root/bridge-ssh-preview/stderr")" tryomarchy.ssh_access=1
 run_scenario bridge-invalid 1 '' OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE='../en0'
+# An app identity without the networking helper offers only NAT.
+/usr/bin/plutil -replace RoguixNetworkHelperService -string '' "$contents/Info.plist"
+run_scenario bridge-without-helper 1 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1 \
+  OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE=en0
+assert_contains "$(<"$test_root/bridge-without-helper/stderr")" 'no bridged networking helper'
+[[ ! -e $test_root/bridge-without-helper/qemu.log ]] || fail 'bridged without a helper started QEMU'
+run_scenario nat-without-helper 0 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1
+/usr/bin/plutil -replace RoguixNetworkHelperService -string dev.tryroguix.network "$contents/Info.plist"
+# The VM helper app is named after the identity's app name.
+/usr/bin/plutil -replace RoguixApplicationName -string 'Try Other' "$contents/Info.plist"
+run_scenario other-app-name 1 --ephemeral OMARCHY_QEMU_GPU_DRY_RUN=1
+assert_contains "$(<"$test_root/other-app-name/stderr")" 'Helpers/Try Other.app/Contents/MacOS/Try Other'
+/usr/bin/plutil -replace RoguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
 [[ ! -s $test_root/bridge-invalid/storage.log ]] || fail 'invalid bridge touched storage'
 run_scenario bridge-reset 0 --reset-storage-only \
   OMARCHY_NETWORK_MODE=bridged OMARCHY_NETWORK_INTERFACE=en0 OMARCHY_NETWORK_WIFI_COMPATIBILITY=1

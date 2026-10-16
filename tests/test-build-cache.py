@@ -140,6 +140,19 @@ class BuildCacheTests(unittest.TestCase):
         self.assertNotEqual(0, invalid_release.returncode)
         self.assertNotIn("build-cache.py", invalid_release.stdout)
 
+    def test_guix_package_passes_the_guest_sources(self) -> None:
+        def package(*variables: str) -> str:
+            return subprocess.run(
+                ["make", "-n", "guix-package", "GUIX_IMAGE=/images/image.raw", *variables],
+                cwd=REPOSITORY, check=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, text=True).stdout
+        self.assertIn(
+            f'--system "{REPOSITORY}/guest/guix/system.scm" '
+            f'--load-path "{REPOSITORY}/guest/guix/modules"', package())
+        self.assertIn('--system "/other/system.scm" --load-path "/other/modules"',
+                      package("GUIX_SYSTEM=/other/system.scm",
+                              "GUIX_LOAD_PATH=/other/modules"))
+
     def test_development_app_is_excluded_from_spotlight(self) -> None:
         build_script = (REPOSITORY / "macos/build-app.sh").read_text()
         open_script = (REPOSITORY / "macos/open-qemu-gpu.sh").read_text()
@@ -156,7 +169,7 @@ class BuildCacheTests(unittest.TestCase):
         self.assertIn('rm -rf -- "$legacy_app"', build_script)
         self.assertNotIn(".metadata_never_index", build_script)
         self.assertIn(
-            'app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/Try Omaguix.app"}',
+            'app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/$APP_NAME.app"}',
             open_script,
         )
         # make run uses the same single saved VM as Finder; only
@@ -239,6 +252,55 @@ class BuildCacheTests(unittest.TestCase):
                 build_cache.CacheError, "app bundle is missing or unsafe"
             ):
                 build_cache.validate_app(root, None)
+
+    def test_app_inputs_and_bundle_follow_the_selected_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            identity_file = root / "apps/try-omabend.env"
+            identity_file.parent.mkdir()
+            default = (REPOSITORY / "macos/apps/try-omaguix.env").read_text()
+            identity_file.write_text(
+                default.replace("APP_NAME=Try Omaguix\n", "APP_NAME=Try Omabend\n")
+                .replace("ICON=TryOmaguix.svg", "ICON=TryOmabend.svg"))
+            icon = root / "apps/TryOmabend.svg"
+            icon.write_text("<svg/>\n")
+            with patch.dict(os.environ, {"APP_IDENTITY": str(identity_file)}):
+                paths = build_cache.component_files(REPOSITORY, "app")
+                self.assertIn(identity_file.resolve(), paths)
+                self.assertIn(icon.resolve(), paths)
+                self.assertNotIn(REPOSITORY / "macos/apps/TryOmaguix.svg",
+                                 [p for p in paths if p.parent == root])
+                # The bundle checked is the identity's own.
+                app = root / "build/dev.noindex/Try Omabend.app"
+                for relative in (
+                    "Contents/MacOS/omarchy-vm-helper",
+                    "Contents/Resources/TryOmabend.icns",
+                    "Contents/Helpers/Try Omabend.app/Contents/MacOS/Try Omabend",
+                    "Contents/Resources/guest/disk.raw.zst",
+                    "Contents/Resources/guest/guix-manifest.json",
+                    "Contents/Resources/guest/launch.plist",
+                ):
+                    path = app / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"fixture\n")
+                with self.assertRaisesRegex(
+                    build_cache.CacheError, "invalid code signature"
+                ):
+                    build_cache.validate_app(root, None)
+                # Editing the identity file changes the app's fingerprint.
+                for relative in ("LICENSE", ".build/state/runtime.json",
+                                 *build_cache.GUIX_GUEST_FILES):
+                    path = root / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text("fixture\n")
+                with patch.object(build_cache, "context", return_value={}), \
+                        patch.object(build_cache, "build_version", return_value=None), \
+                        patch.object(build_cache, "app_external_files", return_value=[]):
+                    before = build_cache.fingerprint(root, "app", ["build-app"])
+                    identity_file.write_text(identity_file.read_text().replace(
+                        "LOGS_DIRECTORY=Try Roguix", "LOGS_DIRECTORY=Try Omabend Logs"))
+                    after = build_cache.fingerprint(root, "app", ["build-app"])
+                self.assertNotEqual(before, after)
 
     def test_app_fingerprint_tracks_git_version_without_source_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -42,8 +42,11 @@ if (($#)); then
 fi
 
 repo_dir=$(cd "$macos_dir/.." && pwd -P)
+# The app identity make selects (APP_IDENTITY; macos/README.md, "App identity").
+app_identity=$(python3 "$macos_dir/apps/identity.py" shell) || exit 1
+eval "$app_identity"
 # make run passes the installed copy; by default, the development build.
-app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/Try Omaguix.app"}
+app=${TRY_ROGUIX_APP:-"$repo_dir/build/dev.noindex/$APP_NAME.app"}
 helper="$app/Contents/MacOS/omarchy-vm-helper"
 info_plist="$app/Contents/Info.plist"
 [[ -d $app && ! -L $app ]] || {
@@ -61,7 +64,7 @@ info_plist="$app/Contents/Info.plist"
 bundle_identifier=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$info_plist" 2>/dev/null) || {
   fail "built app has no bundle identifier"
 }
-[[ $bundle_identifier == dev.tryroguix.native.development ]] || {
+[[ $bundle_identifier == "$DEVELOPMENT_BUNDLE_IDENTIFIER" ]] || {
   fail "built app has an unexpected bundle identifier: $bundle_identifier"
 }
 bundle_executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$info_plist" 2>/dev/null) || {

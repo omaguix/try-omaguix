@@ -232,8 +232,7 @@ final class SecureEnclaveAuthorizationSigner: HostAuthorizationSigning, @uncheck
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
             )[0]
-            // Keep the existing enrolled keys across the product rename.
-            .appendingPathComponent("Try Roguix", isDirectory: true)
+            .appendingPathComponent(AppIdentity.main.applicationSupportDirectory, isDirectory: true)
             .appendingPathComponent("Native Authentication Keys", isDirectory: true)
     }
 

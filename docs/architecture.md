@@ -257,7 +257,8 @@ New VMs use the selected capacity when their writable disk is prepared.
 
 Nothing is overwritten while the app runs. The app bundle and packaged factory
 disk remain unchanged. Normal user launches use one private writable disk under
-`~/Library/Application Support/Try Roguix/VM/v1`. The disk metadata retains
+`~/Library/Application Support/<directory>/VM/v1`, the directory being the app
+identity's (`Try Roguix` for Try Omaguix). The disk metadata retains
 the identity of the factory that created it. The VM boots its own firmware
 path, so a new app release can launch the existing VM without decompressing,
 cloning, expanding, or charging free space for its new factory disk.
@@ -301,10 +302,15 @@ unrecognized host files stay untouched, as everywhere else here.
   `make signing-identity` when it exists, ad hoc otherwise; releases are
   signed as `docs/releasing.md` describes (`macos/README.md`, "Development
   signing identity").
-  The app's names, bundle identifiers, data directories, development signing
-  identity and release naming come from one identity file selected with
-  `APP_IDENTITY`, by default `macos/apps/try-omaguix.env`, so a second app
-  can be built from this repository (`macos/README.md`, "App identity").
+  The app's names, bundle identifiers, data directories, icon, bridged-
+  networking helper, development signing identity and release naming come
+  from one identity file selected with `APP_IDENTITY`, by default
+  `macos/apps/try-omaguix.env`, so a second app can be built from this
+  repository (`macos/README.md`, "App identity"). The build writes the values
+  the app and its launcher need at run time into the bundle's `Info.plist`;
+  both read them from there, and a missing key stops them instead of falling
+  back to Try Omaguix's values. An identity without a networking helper
+  builds an app without the privileged LaunchDaemon that offers only NAT.
 - `build/` holds what builds produce: the packaged guest (`build/guix`), the
   development app (`build/dev.noindex`) and the release app
   (`build/release.noindex`). `make install` copies the development app to

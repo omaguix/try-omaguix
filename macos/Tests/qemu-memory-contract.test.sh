@@ -51,6 +51,12 @@ mkdir -p \
   "$contents/Helpers/Try Omaguix.app/Contents/MacOS" \
   "$resources/scripts" \
   "$shim_dir"
+# The app identity build-app.sh writes into Info.plist (macos/README.md,
+# "App identity").
+/usr/bin/plutil -create xml1 "$contents/Info.plist"
+/usr/bin/plutil -insert RoguixApplicationName -string 'Try Omaguix' "$contents/Info.plist"
+/usr/bin/plutil -insert RoguixApplicationSupportDirectory -string 'Try Roguix' "$contents/Info.plist"
+/usr/bin/plutil -insert RoguixNetworkHelperService -string dev.tryroguix.network "$contents/Info.plist"
 
 # The copied launcher must never reap another app's live run directories.
 # Keep the unique prefix directly in /private/tmp for short Unix socket paths.

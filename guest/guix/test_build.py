@@ -25,7 +25,7 @@ class BuildTests(unittest.TestCase):
         self.args = argparse.Namespace(source=self.root, output=self.root / "out/image.raw", dry_run=True, check=False,
                                        system=builder.SYSTEM, load_path=builder.LOAD_PATH)
 
-    def git(self, head=builder.COMMIT, changes=""):
+    def git(self, head=builder.pin(), changes=""):
         return patch.object(builder.subprocess, "check_output", side_effect=[head, changes, "a" * 40])
 
     def test_dry_run_is_read_only_and_pins_local_source_and_architecture(self):
@@ -33,7 +33,7 @@ class BuildTests(unittest.TestCase):
         with self.git(), patch.object(builder.subprocess, "run") as run, contextlib.redirect_stdout(output):
             builder.build(self.args)
         self.assertIn(str(self.root.resolve()), output.getvalue())
-        self.assertIn(builder.COMMIT, output.getvalue())
+        self.assertIn(builder.pin(), output.getvalue())
         self.assertIn("--system=aarch64-linux", output.getvalue())
         self.assertIn("--image-type=efi-raw", output.getvalue())
         self.assertIn("--load-path=" + str(builder.HERE / "modules"), output.getvalue())
@@ -41,7 +41,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(list(self.root.iterdir()), [])
 
     def test_wrong_pin_and_tracked_changes_are_rejected(self):
-        for head, changes in [("0" * 40, ""), (builder.COMMIT, " M gnu.scm")]:
+        for head, changes in [("0" * 40, ""), (builder.pin(), " M gnu.scm")]:
             with self.subTest(head=head, changes=changes), self.git(head, changes):
                 with self.assertRaises(ValueError):
                     builder.build(self.args)
@@ -77,7 +77,7 @@ class BuildTests(unittest.TestCase):
                 return
             channel = Path(command[2].split("=", 1)[1])
             channels.append(channel)
-            self.assertIn(builder.COMMIT, channel.read_text())
+            self.assertIn(builder.pin(), channel.read_text())
             self.assertIn("(inherit %default-guix-channel)", channel.read_text())
             self.assertNotIn("--disable-authentication", command)
             self.assertIn("--root=" + str(self.args.output), command)
@@ -135,7 +135,7 @@ class BuildTests(unittest.TestCase):
             self.assertFalse(any(arg.startswith("--root=") for arg in command))
             return subprocess.CompletedProcess(command, 0)
 
-        with patch.object(builder, "COMMIT", head), \
+        with patch.object(builder, "pin", return_value=head), \
              patch.object(builder.platform, "system", return_value="Linux"), \
              patch.object(builder.shutil, "which", return_value="/bin/guix"), \
              patch.object(builder.subprocess, "run", side_effect=inspect), \

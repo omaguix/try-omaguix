@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="macos/TryOmaguixIcon.svg" width="128" height="128" alt="Try Omaguix icon">
+  <img src="macos/apps/TryOmaguix.svg" width="128" height="128" alt="Try Omaguix icon">
 </p>
 
 <h1 align="center">Try Omaguix</h1>

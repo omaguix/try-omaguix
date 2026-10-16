@@ -4,18 +4,10 @@
 <dict>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
-  <key>CFBundleDisplayName</key>
-  <string>Try Omaguix</string>
   <key>CFBundleExecutable</key>
   <string>omarchy-vm-helper</string>
-  <key>CFBundleIdentifier</key>
-  <string>dev.tryroguix.native</string>
-  <key>CFBundleIconFile</key>
-  <string>TryOmaguix.icns</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
-  <key>CFBundleName</key>
-  <string>Try Omaguix</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -33,17 +25,17 @@
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSDesktopFolderUsageDescription</key>
-  <string>Try Omaguix reads and writes this folder only if you choose to share it with Guix.</string>
+  <string>{APP_NAME} reads and writes this folder only if you choose to share it with Guix.</string>
   <key>NSDocumentsFolderUsageDescription</key>
-  <string>Try Omaguix reads and writes this folder only if you choose to share it with Guix.</string>
+  <string>{APP_NAME} reads and writes this folder only if you choose to share it with Guix.</string>
   <key>NSDownloadsFolderUsageDescription</key>
-  <string>Try Omaguix reads and writes this folder only if you choose to share it with Guix.</string>
+  <string>{APP_NAME} reads and writes this folder only if you choose to share it with Guix.</string>
   <key>NSCameraUsageDescription</key>
-  <string>Try Omaguix uses the Mac camera only while software inside the virtual machine records video.</string>
+  <string>{APP_NAME} uses the Mac camera only while software inside the virtual machine records video.</string>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Try Omaguix uses the Mac microphone only when software inside the virtual machine records audio.</string>
+  <string>{APP_NAME} uses the Mac microphone only when software inside the virtual machine records audio.</string>
   <key>NSRemovableVolumesUsageDescription</key>
-  <string>Try Omaguix stores its virtual machine on this drive only if you choose to keep it there.</string>
+  <string>{APP_NAME} stores its virtual machine on this drive only if you choose to keep it there.</string>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
   <key>NSSupportsAutomaticGraphicsSwitching</key>

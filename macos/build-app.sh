@@ -132,12 +132,14 @@ guest_dir=${guest_dir:-"$repo_dir/build/guix"}
 dependency_bundler="$macos_dir/bundle-macho-dependencies.sh"
 compatibility_verifier="$macos_dir/verify-macos-compatibility.sh"
 package_dmg="$macos_dir/package-dmg.sh"
-app_icon_source="$macos_dir/TryOmaguixIcon.svg"
+# The identity's ICON, an SVG beside the identity file.
+app_icon_source=$(python3 "$macos_dir/apps/identity.py" icon)
+app_icon_name=${ICON%.svg}
 app_icon_renderer_source="$macos_dir/render-app-icon.swift"
 app_icon_packer="$macos_dir/pack-app-icon.py"
 icon_renderer="$macos_dir/.build/app-icon-renderer"
-iconset="$macos_dir/.build/TryOmaguix.iconset"
-generated_icon="$macos_dir/.build/TryOmaguix.icns"
+iconset="$macos_dir/.build/$app_icon_name.iconset"
+generated_icon="$macos_dir/.build/$app_icon_name.icns"
 
 [[ -d $runtime_source && ! -L $runtime_source ]] || {
   echo "build-app: missing staged QEMU runtime; run build-qemu-gpu-runtime.sh first" >&2
@@ -244,42 +246,61 @@ mkdir -p \
   "$contents/Resources/scripts" \
   "$vm_app/Contents/MacOS" \
   "$vm_app/Contents/Resources"
-bash "$macos_dir/network-helper/build.sh" "$contents/Resources/network"
-mkdir -p "$contents/Library/LaunchDaemons"
-install -m 0644 "$macos_dir/network-helper/dev.tryroguix.network.plist" "$contents/Library/LaunchDaemons/dev.tryroguix.network.plist"
-python3 - "$contents/Library/LaunchDaemons/dev.tryroguix.network.plist" <<'PYTHON'
-import os, plistlib, sys
+# Bridged networking needs the privileged helper; an identity without
+# NETWORK_HELPER_SERVICE ships none and offers only NAT.
+if [[ -n $NETWORK_HELPER_SERVICE ]]; then
+  bash "$macos_dir/network-helper/build.sh" "$contents/Resources/network" \
+    "$NETWORK_HELPER_SERVICE"
+  mkdir -p "$contents/Library/LaunchDaemons"
+  python3 - "$macos_dir/network-helper/launch-daemon.plist" \
+    "$contents/Library/LaunchDaemons/$NETWORK_HELPER_SERVICE.plist" \
+    "$NETWORK_HELPER_SERVICE" <<'PYTHON'
+import plistlib, sys
 from pathlib import Path
-path = Path(sys.argv[1])
-service = os.environ.get("OMARCHY_NETWORK_SERVICE_NAME", "dev.tryroguix.network")
-value = plistlib.loads(path.read_bytes())
-value["Label"] = service
-value["MachServices"] = {service: True}
-path.write_bytes(plistlib.dumps(value))
+value = plistlib.loads(Path(sys.argv[1]).read_bytes())
+value["Label"] = sys.argv[3]
+value["MachServices"] = {sys.argv[3]: True}
+Path(sys.argv[2]).write_bytes(plistlib.dumps(value))
 PYTHON
-install -m 0644 "$macos_dir/network-helper/vendor/LICENSE" "$contents/Resources/network/LICENSE.socket_vmnet"
+  chmod 0644 "$contents/Library/LaunchDaemons/$NETWORK_HELPER_SERVICE.plist"
+  install -m 0644 "$macos_dir/network-helper/vendor/LICENSE" "$contents/Resources/network/LICENSE.socket_vmnet"
+fi
 install -m 0755 "$helper" "$contents/MacOS/omarchy-vm-helper"
 install -m 0644 "$macos_dir/Info.plist" "$contents/Info.plist"
 python3 - "$contents/Info.plist" "$bundle_identifier" "$app_display_name" \
-  "$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" <<'PYTHON'
+  "$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" "$APP_NAME" \
+  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" <<'PYTHON'
 import plistlib, sys
 from pathlib import Path
 path = Path(sys.argv[1])
 value = plistlib.loads(path.read_bytes())
 value["CFBundleIdentifier"] = sys.argv[2]
 value["CFBundleName"] = value["CFBundleDisplayName"] = sys.argv[3]
-# The directories under ~/Library/Application Support and ~/Library/Logs that
-# hold this app's VM and logs (macos/README.md, "App identity").
+value["CFBundleIconFile"] = sys.argv[9]
+# The privacy descriptions name the app.
+for key, text in value.items():
+    if key.endswith("UsageDescription"):
+        value[key] = text.replace("{APP_NAME}", sys.argv[6])
+if "{APP_NAME}" in plistlib.dumps(value).decode():
+    raise SystemExit("build-app: Info.plist has an unexpanded {APP_NAME}")
+# The app identity the app and its launcher read at run time
+# (macos/README.md, "App identity"): the directories under
+# ~/Library/Application Support and ~/Library/Logs that hold this app's VM and
+# logs, the app's names (the VM helper app is named after the production
+# name), and the bridged-networking helper's service, empty without one.
 value["RoguixApplicationSupportDirectory"] = sys.argv[4]
 value["RoguixLogsDirectory"] = sys.argv[5]
+value["RoguixApplicationName"] = sys.argv[6]
+value["RoguixDevelopmentApplicationName"] = sys.argv[7]
+value["RoguixNetworkHelperService"] = sys.argv[8]
 path.write_bytes(plistlib.dumps(value))
 PYTHON
 python3 "$repo_dir/scripts/app_version.py" \
   --root "$repo_dir" --plist "$contents/Info.plist"
 install -m 0644 "$macos_dir/Credits.rtf" "$contents/Resources/Credits.rtf"
 install -m 0644 "$repo_dir/LICENSE" "$contents/Resources/LICENSE"
-install -m 0644 "$generated_icon" "$contents/Resources/TryOmaguix.icns"
-install -m 0644 "$generated_icon" "$vm_app/Contents/Resources/TryOmaguix.icns"
+install -m 0644 "$generated_icon" "$contents/Resources/$app_icon_name.icns"
+install -m 0644 "$generated_icon" "$vm_app/Contents/Resources/$app_icon_name.icns"
 # The helper shares the app's version, icon and privacy descriptions; only its
 # executable, identifier and name differ.
 python3 - "$contents/Info.plist" "$vm_app/Contents/Info.plist" "$vm_bundle_identifier" \
@@ -375,9 +396,11 @@ for library in "$contents/Resources/runtime/lib"/*.dylib; do
   codesign "${sign_options[@]}" "$library"
 done
 codesign "${sign_options[@]}" "$contents/Resources/runtime/bin/zstd"
-for network_binary in socket_vmnet omarchy-network-supervisor omarchy-network-client; do
-  codesign "${sign_options[@]}" "$contents/Resources/network/$network_binary"
-done
+if [[ -n $NETWORK_HELPER_SERVICE ]]; then
+  for network_binary in socket_vmnet omarchy-network-supervisor omarchy-network-client; do
+    codesign "${sign_options[@]}" "$contents/Resources/network/$network_binary"
+  done
+fi
 # QEMU's event tap uses the app's Accessibility grant. Its code identifier
 # stays the app's, as it was before the helper bundle, so the code identity
 # privacy grants see does not change; the bundle identifier (Dock, Command-Tab,
@@ -386,8 +409,10 @@ codesign "${sign_options[@]}" --identifier "$bundle_identifier" \
   --entitlements "$macos_dir/qemu-hvf.entitlements" \
   "$vm_app"
 
-bash "$macos_dir/network-helper/build-daemon.sh" "$contents"
-codesign "${sign_options[@]}" "$contents/MacOS/omarchy-network-daemon"
+if [[ -n $NETWORK_HELPER_SERVICE ]]; then
+  bash "$macos_dir/network-helper/build-daemon.sh" "$contents" "$NETWORK_HELPER_SERVICE"
+  codesign "${sign_options[@]}" "$contents/MacOS/omarchy-network-daemon"
+fi
 codesign "${app_sign_options[@]}" \
   --entitlements "$macos_dir/omarchy-vm-helper.entitlements" \
   "$contents/MacOS/omarchy-vm-helper"

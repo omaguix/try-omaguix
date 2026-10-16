@@ -3,6 +3,7 @@
 
 import json
 import os
+import plistlib
 from pathlib import Path
 import subprocess
 import sys
@@ -18,8 +19,13 @@ class PackageDMGTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="package-dmg-test-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.app = self.root / "Try Omaguix.app"
-        self.app.mkdir()
+        # The names come from the packaged app's own Info.plist.
+        self.app = self.root / "Try Omabend.app"
+        (self.app / "Contents").mkdir(parents=True)
+        (self.app / "Contents/Info.plist").write_bytes(plistlib.dumps({
+            "CFBundleDisplayName": "Try Omabend",
+            "CFBundleIdentifier": "dev.example.omabend",
+        }))
         self.log = self.root / "commands.jsonl"
         self.bin = self.root / "bin"
         self.bin.mkdir()
@@ -42,6 +48,17 @@ elif tool == "osascript" and os.environ.get("DMG_TEST_FAIL_LAYOUT"):
         fake.chmod(0o755)
         for tool in ("codesign", "diskutil", "ditto", "hdiutil", "osascript", "sync"):
             (self.bin / tool).symlink_to(fake)
+
+    def test_signed_image_is_identified_by_the_apps_bundle_identifier(self):
+        result = subprocess.run(
+            ["bash", str(ROOT / "macos/package-dmg.sh"), "--sign-identity", "Example",
+             str(self.app), str(self.root / "signed.dmg")],
+            env=dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}",
+                     DMG_TEST_LOG=str(self.log)),
+            capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        sign = next(c for c in self.commands() if c[:3] == ["codesign", "--sign", "Example"])
+        self.assertEqual(sign[sign.index("--identifier") + 1], "dev.example.omabend.disk-image")
 
     def package(self, name, *, fail_layout=False):
         environment = dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}",
@@ -67,12 +84,13 @@ elif tool == "osascript" and os.environ.get("DMG_TEST_FAIL_LAYOUT"):
                 commands = self.commands()
                 create = next(c for c in commands if c[:2] == ["hdiutil", "create"])
                 labels.append(create[create.index("-volname") + 1])
-                self.assertNotEqual(labels[-1], "Try Omaguix")
+                self.assertNotEqual(labels[-1], "Try Omabend")
+                self.assertTrue(labels[-1].startswith("Try Omabend "))
                 attach = next(c for c in commands if c[:2] == ["hdiutil", "attach"])
                 mount = attach[attach.index("-mountpoint") + 1]
                 self.assertEqual(Path(mount).name, labels[-1])
                 layout = next(c for c in commands if c[0] == "osascript")
-                rename = ["diskutil", "rename", mount, "Try Omaguix"]
+                rename = ["diskutil", "rename", mount, "Try Omabend"]
                 self.assertEqual(layout[2:], [mount, self.app.name])
                 self.assertLess(commands.index(layout), commands.index(rename))
                 self.assertLess(commands.index(rename),

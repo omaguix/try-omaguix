@@ -63,7 +63,8 @@ enum QEMUGPUStorageSpaceEstimate {
     static func dataDirectoryURL(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         preference: StorageLocationPreference = .default,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        identity: AppIdentity = .main
     ) -> URL? {
         if let configuredRoot = environment[stateRootEnvironmentKey], !configuredRoot.isEmpty {
             return validatedConfiguredRoot(configuredRoot)
@@ -78,7 +79,7 @@ enum QEMUGPUStorageSpaceEstimate {
             in: .userDomainMask
         ).first else { return nil }
         return applicationSupport
-            .appendingPathComponent("Try Roguix", isDirectory: true)
+            .appendingPathComponent(identity.applicationSupportDirectory, isDirectory: true)
             .standardizedFileURL
     }
 
@@ -89,7 +90,8 @@ enum QEMUGPUStorageSpaceEstimate {
     static func storageRootURL(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         preference: StorageLocationPreference = .default,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        identity: AppIdentity = .main
     ) -> URL? {
         let stateRoot: URL?
         if let configuredRoot = environment[stateRootEnvironmentKey], !configuredRoot.isEmpty {
@@ -99,7 +101,9 @@ enum QEMUGPUStorageSpaceEstimate {
                 StorageLocationPolicy.stateRoot(forContainer: container)
             )
         } else {
-            stateRoot = dataDirectoryURL(environment: environment, fileManager: fileManager)?
+            stateRoot = dataDirectoryURL(
+                environment: environment, fileManager: fileManager, identity: identity
+            )?
                 .appendingPathComponent("VM/v1", isDirectory: true)
                 .standardizedFileURL
         }
@@ -109,12 +113,14 @@ enum QEMUGPUStorageSpaceEstimate {
     static func dataDirectoryDisplayPath(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         preference: StorageLocationPreference = .default,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        identity: AppIdentity = .main
     ) -> String? {
         guard let root = dataDirectoryURL(
             environment: environment,
             preference: preference,
-            fileManager: fileManager
+            fileManager: fileManager,
+            identity: identity
         ) else { return nil }
         let path = root.path
         let home = fileManager.homeDirectoryForCurrentUser.standardizedFileURL.path
@@ -492,15 +498,17 @@ struct QEMUGPULaunchRequest: Equatable {
 }
 
 enum QEMUGPULauncherPath {
-    /// Releases ship as "Try Omaguix.app"; `make install` copies the
-    /// development build to "Try Omaguix Dev.app".
-    static let appNames: Set<String> = ["Try Omaguix.app", "Try Omaguix Dev.app"]
+    /// Releases ship as the identity's app name; `make install` copies the
+    /// development build to its development name.
+    static func appNames(_ identity: AppIdentity) -> Set<String> {
+        ["\(identity.applicationName).app", "\(identity.developmentApplicationName).app"]
+    }
     static let launcherName = "run-qemu-gpu.sh"
 
-    static func resolve(bundleURL: URL) throws -> URL {
+    static func resolve(bundleURL: URL, identity: AppIdentity = .main) throws -> URL {
         let standardizedBundle = bundleURL.standardizedFileURL
         var bundleInformation = stat()
-        guard appNames.contains(standardizedBundle.lastPathComponent),
+        guard appNames(identity).contains(standardizedBundle.lastPathComponent),
               Darwin.lstat(standardizedBundle.path, &bundleInformation) == 0,
               bundleInformation.st_mode & S_IFMT == S_IFDIR else {
             throw HelperError.io("QEMU launch is available only from the built Omaguix app")

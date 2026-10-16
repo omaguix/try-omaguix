@@ -3,7 +3,26 @@ import ServiceManagement
 
 @MainActor
 enum NetworkService {
-    static let service = SMAppService.daemon(plistName: "dev.tryroguix.network.plist")
+    /// Whether this app ships the bridged-networking helper (its identity's
+    /// NETWORK_HELPER_SERVICE); without it, the app offers only NAT and
+    /// nothing below may run.
+    nonisolated static var isAvailable: Bool { AppIdentity.main.networkHelperService != nil }
+
+    private static var plistName: String {
+        guard let service = AppIdentity.main.networkHelperService else {
+            preconditionFailure("This app ships no networking helper")
+        }
+        return "\(service).plist"
+    }
+
+    static var service: SMAppService { SMAppService.daemon(plistName: plistName) }
+
+    /// Fails for an app without the helper, which offers only NAT.
+    nonisolated static func requireAvailable() throws {
+        guard isAvailable else {
+            throw HelperError.io("This app has no bridged networking helper; use NAT.")
+        }
+    }
 
     static var statusText: String {
         switch service.status {
@@ -17,7 +36,7 @@ enum NetworkService {
 
     static func prepare() throws {
         if service.status == .notRegistered || service.status == .notFound {
-            let plist = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/LaunchDaemons/dev.tryroguix.network.plist")
+            let plist = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/LaunchDaemons/\(plistName)")
             guard FileManager.default.fileExists(atPath: plist.path) else {
                 throw HelperError.io("Networking helper is missing from this app.")
             }

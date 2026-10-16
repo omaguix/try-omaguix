@@ -823,7 +823,8 @@ assert test -d "$newline_stage"
 assert test -f "$newline_stage/$newline_entry"
 qemu_persistent_storage_release_lock
 
-# The production default is branded for Try Roguix and never recreates the
+# The production default lives in the app identity's Application Support
+# directory (Try Omaguix's is still "Try Roguix") and never recreates the
 # former Omarchy-only Application Support path.
 saved_state_root=$OMARCHY_QEMU_GPU_STATE_ROOT
 saved_home=$HOME
@@ -844,6 +845,12 @@ chmod 600 "$old_branded_root/sentinel"
 unset OMARCHY_QEMU_GPU_STATE_ROOT
 export HOME=$default_home
 export OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=0
+# Without the launcher's identity there is no default to fall back to.
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY=''
+assert_fails qemu_persistent_storage_select \
+  persistent "$identity_a" "$source_disk" "$source_sha" "$source_bytes" ''
+assert test ! -e "$default_home/Library/Application Support/VM"
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY='Try Roguix'
 qemu_persistent_storage_select \
   persistent "$identity_a" "$source_disk" "$source_sha" "$source_bytes" ''
 assert_eq \
@@ -852,6 +859,15 @@ assert_eq \
 assert test -f "$old_branded_root/sentinel"
 assert test ! -e "$default_home/Library/Application Support/Omarchy"
 qemu_persistent_storage_release_lock
+# Another app identity keeps its VM apart.
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY='Try Other'
+qemu_persistent_storage_select \
+  persistent "$identity_a" "$source_disk" "$source_sha" "$source_bytes" ''
+assert_eq \
+  "$QEMU_SELECTED_DISK" \
+  "$default_home/Library/Application Support/Try Other/VM/v1/guix/disks/current/disk.raw"
+qemu_persistent_storage_release_lock
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY=''
 export HOME=$saved_home
 export OMARCHY_QEMU_GPU_STATE_ROOT=$saved_state_root
 export OMARCHY_QEMU_GPU_DEVELOPMENT_MULTI_DISK=$saved_multi_disk

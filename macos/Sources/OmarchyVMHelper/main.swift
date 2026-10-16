@@ -66,6 +66,9 @@ do {
         exit(0)
     }
 
+    if arguments.first?.hasPrefix("--network-service-") == true {
+        try NetworkService.requireAvailable()
+    }
     if arguments.first == "--network-service-status" {
         print(MainActor.assumeIsolated { NetworkService.statusText })
         exit(0)
@@ -283,11 +286,13 @@ do {
             let controller = VMApplicationController(
                 launcherURL: launcher,
                 initialArguments: launcherArguments,
-                supervisor: QEMUGPUProcessSupervisor(log: LauncherLog(url: LauncherLog.defaultURL()))
+                supervisor: QEMUGPUProcessSupervisor(log: LauncherLog(
+                    url: LauncherLog.defaultURL(), subsystem: AppIdentity.bundleIdentifier
+                ))
             )
             ApplicationPresentation.installMainMenu(
                 in: application,
-                applicationName: "Try Omaguix",
+                applicationName: AppIdentity.main.applicationName,
                 actionsTarget: controller
             )
             application.delegate = controller

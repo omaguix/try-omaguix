@@ -130,6 +130,10 @@ def git(directory, *arguments):
                           env=package.builder.git_environment()).stdout
 
 
+# The other guest's Guix pin, unlike this repository's.
+OTHER_PIN = "b" * 40
+
+
 def guest_sources(root):
     """Another app's guest in a Git repository: a system file and a load path."""
     git(root, "init", "-q")
@@ -139,6 +143,7 @@ def guest_sources(root):
     (load_path / "other/data").mkdir(parents=True)
     (load_path / "other/system.scm").write_text("(define-module (other system))\n")
     (load_path / "other/data/seed").write_text("seed\n")
+    (load_path / "other/guix-commit").write_text(OTHER_PIN + "\n")
     (root / ".gitignore").write_text("__pycache__/\n.DS_Store\n")
     git(root, "add", ".")
     return system, load_path
@@ -164,7 +169,7 @@ class BuildInputsTests(unittest.TestCase):
                                   dry_run=True, check=False,
                                   system=builder.SYSTEM, load_path=builder.LOAD_PATH)
         with patch.object(builder.subprocess, "check_output",
-                          side_effect=[builder.COMMIT, "", "a" * 40]), \
+                          side_effect=[builder.pin(), "", "a" * 40]), \
                 contextlib.redirect_stdout(output):
             builder.build(args)
         command = output.getvalue().splitlines()[-1]
@@ -286,6 +291,27 @@ class PackageTests(unittest.TestCase):
                                    system, load_path)
         self.assertEqual(manifest["source"]["systemFilesSHA256"],
                          package.system_files_sha256(system, load_path))
+        # The Guix commit is the one that load path pins.
+        self.assertEqual(manifest["source"]["guixCommit"], OTHER_PIN)
+        self.assertNotEqual(OTHER_PIN, package.guix_commit())
+
+    def test_the_guix_pin_must_be_one_commit_in_the_load_path(self):
+        sources = self.root / "sources"
+        sources.mkdir()
+        _, load_path = guest_sources(sources)
+        self.assertEqual(package.guix_commit(load_path), OTHER_PIN)
+        (load_path / "other/guix-commit").write_text("main\n")
+        with self.assertRaisesRegex(artifact.ArtifactError, "not a commit"):
+            package.guix_commit(load_path)
+        (load_path / "other/guix-commit").write_text(OTHER_PIN + "\n")
+        (load_path / "second").mkdir()
+        (load_path / "second/guix-commit").write_text(OTHER_PIN + "\n")
+        with self.assertRaisesRegex(artifact.ArtifactError, "found 2"):
+            package.guix_commit(load_path)
+        shutil.rmtree(load_path / "second")
+        (load_path / "other/guix-commit").unlink()
+        with self.assertRaisesRegex(artifact.ArtifactError, "found 0"):
+            package.guix_commit(load_path)
 
     def test_round_trip_records_layout_source_and_checksums(self):
         manifest = self.packaged()

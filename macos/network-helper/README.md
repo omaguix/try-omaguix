@@ -4,9 +4,12 @@ The `vendor` directory contains socket_vmnet v1.2.2 from
 https://github.com/lima-vm/socket_vmnet, commit
 7160c755b3c298f02d8d5d1f1290c4d69a6f26fd. Its Apache-2.0 license is in
 `vendor/LICENSE`. Only its server sources are bundled; QEMU connects using its
-existing Unix stream backend. Build with `bash build.sh OUTPUT_DIRECTORY`.
+existing Unix stream backend. Build with
+`bash build.sh OUTPUT_DIRECTORY SERVICE`.
 
-The app registers `dev.tryroguix.network` with `SMAppService`. macOS approves
+The app registers its service (the app identity's `NETWORK_HELPER_SERVICE`,
+`dev.tryroguix.network` for Try Omaguix; `macos/README.md`, "App identity")
+with `SMAppService`; an identity without one ships no helper. macOS approves
 this launch daemon once; it starts on demand for privileged XPC requests.
 The service remains registered until removed through the networking sheet.
 QEMU and the app remain unprivileged. Repair or removal interrupts an active
@@ -39,12 +42,11 @@ Local changes to the vendored server handle partial stream reads and writes,
 retry interrupted calls, and reject invalid Ethernet frame lengths instead of
 asserting. `vendor/stream.h` contains the added framing helpers.
 
-For isolated development builds, set `OMARCHY_NETWORK_SERVICE_NAME` to a distinct
-reverse-DNS name when running `macos/build-app.sh`. The build uses the same value
-for the launch-daemon label, Mach service, client, and daemon. The default is
-`dev.tryroguix.network`. A separate name prevents test copies from sharing the
-normal app's Service Management registration; it does not validate upgrades or
-relocation of an existing registration.
+The build uses the identity's `NETWORK_HELPER_SERVICE` for the launch-daemon
+label, Mach service, plist name, client and daemon. An isolated build that must
+not share the normal app's Service Management registration uses an identity
+file with its own service name; this does not validate upgrades or relocation
+of an existing registration.
 
 ## Ethernet adapter reconnection
 

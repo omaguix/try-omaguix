@@ -49,7 +49,7 @@ final class HostPowerNotificationObserver {
 final class VMApplicationController: NSObject, NSApplicationDelegate {
     // A Finder launch sends this process's stderr to /dev/null; the unified
     // log keeps the input warnings next to QEMU's launcher log lines.
-    private static let inputLog = Logger(subsystem: "dev.tryroguix.native", category: "input")
+    private static let inputLog = Logger(subsystem: AppIdentity.bundleIdentifier, category: "input")
 
     private let launcherURL: URL
     private let initialArguments: [String]
@@ -323,6 +323,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
                     guard let self else { throw HelperError.io("The VM controller is unavailable.") }
                     return try self.networkIdentityOperation(arguments)
                 }),
+            offersBridgedNetworking: NetworkService.isAvailable,
             immersiveMode: { [weak self] in
                 self?.fullscreenPreferenceStore.load().isImmersive ?? true
             },
@@ -719,6 +720,7 @@ final class VMApplicationController: NSObject, NSApplicationDelegate {
             throw HelperError.io(reason)
         }
         if context.environment[VMNetworkPolicy.modeKey] == VMNetworkMode.bridged.rawValue {
+            try NetworkService.requireAvailable()
             try NetworkService.prepare()
             try NetworkService.verifyConnection()
         }

@@ -288,8 +288,11 @@ symlink, a deleted tracked file, or a missing or symlinked system file or
 load path is refused, so the digest never differs from what was built. The image
 itself is not re-derived. Both scripts default to `system.scm` and
 `modules/`; another app's guest passes its own with `--system` and
-`--load-path` to `build.py` and the same to `package.py`, so its manifest
-digests its own inputs.
+`--load-path` to `build.py` and the same to `package.py` (`make guix-package
+GUIX_SYSTEM=... GUIX_LOAD_PATH=...`), so its manifest digests its own inputs.
+Both read the Guix pin from the load path: its one `*/guix-commit`
+(`modules/roguix/guix-commit` here), so the build checks out and the manifest
+records the commit that guest's modules build on.
 
 `--credentials` records how the guest's account gets its password:
 `first-boot` (the default; the image carries no password, see above) or

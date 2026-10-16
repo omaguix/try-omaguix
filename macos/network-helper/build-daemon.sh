@@ -2,13 +2,14 @@
 set -euo pipefail
 root=$(cd "$(dirname "$0")" && pwd -P)
 contents=${1:?app Contents directory required}
+service=${2:?networking service name required}
 header_dir=$(mktemp -d /private/tmp/omarchy-network-build.XXXXXX)
 trap 'rm -rf "$header_dir"' EXIT
-python3 - "$contents" "$header_dir/network-build.h" <<'PY'
-import hashlib,json,os,re,subprocess,sys
+python3 - "$contents" "$header_dir/network-build.h" "$service" <<'PY'
+import hashlib,json,re,subprocess,sys
 from pathlib import Path
 contents=Path(sys.argv[1])
-service=os.environ.get("OMARCHY_NETWORK_SERVICE_NAME", "dev.tryroguix.network")
+service=sys.argv[3]
 if not re.fullmatch(r"[A-Za-z0-9]+(?:[.][A-Za-z0-9-]+)+", service): raise SystemExit("Invalid networking service name")
 values={"NETWORK_SERVICE_NAME": service}
 for key,path in [('CLIENT_REQUIREMENT',contents/'Resources/network/omarchy-network-client')]:

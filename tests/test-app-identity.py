@@ -36,6 +36,8 @@ DEFAULT = {
     "RELEASE_TAG_PREFIX": "try-roguix-v",
     "RELEASE_DMG": "TryOmaguix.dmg",
     "RELEASE_REPOSITORY": "omaguix/try-omaguix",
+    "ICON": "TryOmaguix.svg",
+    "NETWORK_HELPER_SERVICE": "dev.tryroguix.network",
 }
 
 SECOND = {
@@ -52,12 +54,19 @@ SECOND = {
     "RELEASE_TAG_PREFIX": "try-omabend-v",
     "RELEASE_DMG": "TryOmabend.dmg",
     "RELEASE_REPOSITORY": "example/try-omabend",
+    "ICON": "TryOmabend.svg",
+    # No bridged-networking helper: NAT only.
+    "NETWORK_HELPER_SERVICE": "",
 }
 
 # Scripts that build, sign, release or clean the app: none may carry a value
 # of the default identity outside comments.
 SCRIPTS = ("Makefile", "macos/build-app.sh", "macos/release.sh",
-           "macos/development-signing-identity.sh", "scripts/app_version.py")
+           "macos/development-signing-identity.sh", "scripts/app_version.py",
+           "scripts/build-cache.py", "macos/open-qemu-gpu.sh", "macos/package-dmg.sh",
+           "macos/resize-vm-disk.sh", "macos/network-helper/build.sh",
+           "macos/network-helper/build-daemon.sh", "macos/network-helper/client.c",
+           "macos/Info.plist", "macos/network-helper/launch-daemon.plist")
 
 
 def write_identity(path, values):
@@ -160,10 +169,26 @@ class IdentityTests(unittest.TestCase):
                     if value:
                         self.assertNotIn(value, code, f"{name}:{number}")
         build = (ROOT / "macos/build-app.sh").read_text()
-        # The launcher's data directories reach the bundle for the app to read.
+        # The identity reaches the bundle for the app and the launcher to read.
         self.assertIn('value["RoguixApplicationSupportDirectory"] = sys.argv[4]', build)
         self.assertIn('value["RoguixLogsDirectory"] = sys.argv[5]', build)
-        self.assertIn('"$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY"', build)
+        self.assertIn('value["RoguixApplicationName"] = sys.argv[6]', build)
+        self.assertIn('value["RoguixDevelopmentApplicationName"] = sys.argv[7]', build)
+        self.assertIn('value["RoguixNetworkHelperService"] = sys.argv[8]', build)
+        self.assertIn('"$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" "$APP_NAME" \\\n'
+                      '  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns"',
+                      build)
+
+    def test_icon_lives_beside_the_identity_file(self):
+        default_icon = identity.icon(DEFAULT, identity.DEFAULT)
+        self.assertEqual(default_icon, ROOT / "macos/apps/TryOmaguix.svg")
+        self.assertTrue(default_icon.is_file())
+        self.assertEqual(identity.icon(SECOND, self.second), self.directory.resolve() / "TryOmabend.svg")
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "macos/apps/identity.py"), "icon"],
+            capture_output=True, text=True, env=self.environment(self.second))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), str(self.directory.resolve() / "TryOmabend.svg"))
 
     def test_invalid_identities_are_refused_everywhere(self):
         cases = {
@@ -176,6 +201,9 @@ class IdentityTests(unittest.TestCase):
             "shared bundle identifier": {**SECOND, "DEVELOPMENT_BUNDLE_IDENTIFIER":
                                          SECOND["BUNDLE_IDENTIFIER"]},
             "empty name": {**SECOND, "APP_NAME": ""},
+            "icon in another directory": {**SECOND, "ICON": "../TryOmabend.svg"},
+            "icon not an SVG": {**SECOND, "ICON": "TryOmabend.png"},
+            "invalid service": {**SECOND, "NETWORK_HELPER_SERVICE": "network"},
         }
         for case, values in cases.items():
             with self.subTest(case=case):

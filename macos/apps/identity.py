@@ -9,6 +9,7 @@ quotes, `$`, `#`, backslashes or surrounding whitespace in a value.
   identity.py check   validate the selected file; errors go to stderr
   identity.py shell   print the values as bash assignments, for eval
   identity.py keys    print the key names, for the Makefile's override guard
+  identity.py icon    print the icon's path (ICON, beside the identity file)
 """
 
 import os
@@ -38,6 +39,11 @@ KEYS = {
     "RELEASE_TAG_PREFIX": re.compile(r"[a-z0-9][a-z0-9._-]*-v"),
     "RELEASE_DMG": re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\.dmg"),
     "RELEASE_REPOSITORY": re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+"),
+    # The app icon's SVG source, in the identity file's directory.
+    "ICON": re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\.svg"),
+    # The bridged-networking helper's launchd service; empty for an app
+    # that ships no helper and offers only NAT.
+    "NETWORK_HELPER_SERVICE": re.compile(r"(|[A-Za-z0-9]+(\.[A-Za-z0-9-]+)+)"),
 }
 
 
@@ -83,6 +89,12 @@ def load(path=None):
     return values
 
 
+def icon(values, path=None):
+    """The icon's SVG source, which lives beside the selected identity file."""
+    path = Path(path) if path is not None else selected()
+    return path.resolve().parent / values["ICON"]
+
+
 def main(argv):
     if argv == ["keys"]:
         print(" ".join(KEYS))
@@ -93,11 +105,14 @@ def main(argv):
         sys.exit(f"app-identity: {error}")
     if argv == ["check"]:
         return
+    if argv == ["icon"]:
+        print(icon(values))
+        return
     if argv == ["shell"]:
         for key, value in values.items():
             print(f"{key}={shlex.quote(value)}")
         return
-    sys.exit("usage: identity.py check | shell | keys")
+    sys.exit("usage: identity.py check | shell | keys | icon")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,9 @@ QEMU_PERSISTENT_STORAGE_WORKING_BYTES=''
 # Set by the launcher only after validating the bundled native helper. Direct
 # library callers retain the system-tool fallback; never inherit this path.
 QEMU_PERSISTENT_STORAGE_HELPER=''
+# The app identity's directory under ~/Library/Application Support, set by
+# the launcher from Info.plist; the default state root lives in it.
+QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY=''
 QPS_LEGACY_LOCK_PATH=''
 QPS_METADATA_SCHEMA=''
 QPS_METADATA_IDENTITY=''
@@ -178,7 +181,8 @@ _qps_assert_source_disk() {
 # `df -P` names the device in its first field and `mount` keys its listing on
 # the same device, so matching on the device avoids parsing mount points. Those
 # routinely contain spaces, both for the default location under "Application
-# Support/Try Roguix" and for anything under /Volumes.
+# Support/Try Roguix" (the app identity's directory) and for anything under
+# /Volumes.
 _qps_volume_filesystem() {
   local qps_path=$1
   local qps_device=''
@@ -302,7 +306,11 @@ _qps_prepare_state_root() {
       _qps_fail 'HOME is unavailable; cannot locate Application Support'
       return 1
     }
-    qps_configured_root="$HOME/Library/Application Support/Try Roguix/VM/v1"
+    [[ -n $QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY ]] || {
+      _qps_fail 'the app identity names no Application Support directory'
+      return 1
+    }
+    qps_configured_root="$HOME/Library/Application Support/$QEMU_PERSISTENT_STORAGE_APPLICATION_SUPPORT_DIRECTORY/VM/v1"
   fi
   qps_configured_root="${qps_configured_root%/}/$QPS_STATE_SUBDIRECTORY"
   _qps_assert_safe_root_path "$qps_configured_root" || return 1
