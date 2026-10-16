@@ -45,6 +45,21 @@
   its verify runs only `test-contracts` and `diff-check`. Slice 2: the
   integration (`make test`, `make app` for both apps, signing) in a pane
   worker that the user allows at each launch.
+  Slice 1, run r-2mh55so3: attempt 1 (9adc1347) was reviewed in consult round
+  20261016-151102-9d1a (sol, DeepSeek). It went back for a retry: identity
+  variables given on the make command line bypassed the validation into
+  clean-all's `rm -rf`; a comment ending in `\` swallowed an assignment; an
+  empty `APP_IDENTITY` was handled two ways; and the digest hashed local junk
+  (`__pycache__`) and missed exec bits and symlinked roots. Decided by the
+  coordinator: the second credentials policy is named `preset`, and
+  `LEGACY_APP_NAMES` and the `-v` tag suffix stay.
+  Slice 2 must also: make `scripts/build-cache.py` take the app path and the
+  identity into its fingerprint; make `guix_commit()` follow the selected
+  load path instead of always reading `modules/roguix/guix-commit`; have
+  `make guix-package` pass `--system`/`--load-path`; and parameterize the
+  names still hardcoded in `macos/open-qemu-gpu.sh`, `macos/run-qemu-gpu.sh`,
+  `package-dmg.sh` (the volume name), the `TryOmaguix*` icon, Info.plist's
+  privacy strings and the `dev.tryroguix.network` plist.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
