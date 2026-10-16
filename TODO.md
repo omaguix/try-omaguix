@@ -47,7 +47,10 @@
     actual build inputs instead of `modules/roguix`, allow a credentials
     policy other than `first-boot`, and keep the partition checks.
   Decided by the user 2026-10-16 (d-h723v7ns): approved as the next item,
-  right after the documentation rename.
+  right after the documentation rename. When it lands or is blocked, the
+  coordinator ends that turn with the last line `WORKER-DONE <sha> |
+  t-omabendl landed` (or `WORKER-BLOCKED <reason>`): herdr wakes the
+  guix-bend coordinator on that verdict to start Try Omabend's next slice.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
