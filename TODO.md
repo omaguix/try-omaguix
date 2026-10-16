@@ -2,527 +2,500 @@
 
 ## Next, in order
 
-### Finish and commit the Omaguix documentation rename [t-omadocsr]
+- [ ] Finish and commit the Omaguix documentation rename [t-omadocsr]
+  Queued 2026-10-14 at the user's request ("add to TODO what is still left to
+  do; work through the TODO in order; ask the models", consult round
+  20261014-193606-be7d with sol, MiMo, DeepSeek). Fifteen documentation files
+  (`AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `THIRD_PARTY_NOTICES.md`,
+  `docs/*.md`, `macos/README.md`, `server/README.md`) had uncommitted
+  Roguix-to-Omaguix edits in the checkout. Decided by the user 2026-10-16
+  (d-7jqkrmk7): the coordinator saved them as a patch for the worker and
+  restored the files to `HEAD`. Before committing them, fix five
+  review mismatches against the code and preserved compatibility contracts:
+  1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
+     (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
+     `LauncherLogTests.swift`).
+  2. `macos/README.md:109`: keep the `"Try Roguix Development"` certificate
+     subject name (matches `macos/development-signing-identity.sh:10`; changing
+     it would invalidate existing local TCC Accessibility grants).
+  3. `docs/roguix-signing-keys.md:96`: keep `"Roguix from try-roguix <revision>"`
+     as the channel commit subject to audit (matches `guest/guix/publish-channel:34`
+     and `guest/guix/test_release.py:181`, and covers historical channel commits).
+  4. `docs/releasing.md:26,45`: keep `"The first Try Roguix release, 0.5.0"` and
+     the `"Try Roguix 0.5.0 (...)"` historical example, while using Try Omaguix
+     for new releases.
+  5. `docs/architecture.md:210`: replace the nonexistent
+     `try-roguix-operating-system` identifier with `roguix-operating-system`
+     (`guest/guix/modules/roguix/system.scm`).
 
-Queued 2026-10-14 at the user's request ("add to TODO what is still left to
-do; work through the TODO in order; ask the models", consult round
-20261014-193606-be7d with sol, MiMo, DeepSeek). Fifteen documentation files
-(`AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `THIRD_PARTY_NOTICES.md`,
-`docs/*.md`, `macos/README.md`, `server/README.md`) had uncommitted
-Roguix-to-Omaguix edits in the checkout. Decided by the user 2026-10-16
-(d-7jqkrmk7): the coordinator saved them as a patch for the worker and
-restored the files to `HEAD`. Before committing them, fix five
-review mismatches against the code and preserved compatibility contracts:
-1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
-   (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
-   `LauncherLogTests.swift`).
-2. `macos/README.md:109`: keep the `"Try Roguix Development"` certificate
-   subject name (matches `macos/development-signing-identity.sh:10`; changing
-   it would invalidate existing local TCC Accessibility grants).
-3. `docs/roguix-signing-keys.md:96`: keep `"Roguix from try-roguix <revision>"`
-   as the channel commit subject to audit (matches `guest/guix/publish-channel:34`
-   and `guest/guix/test_release.py:181`, and covers historical channel commits).
-4. `docs/releasing.md:26,45`: keep `"The first Try Roguix release, 0.5.0"` and
-   the `"Try Roguix 0.5.0 (...)"` historical example, while using Try Omaguix
-   for new releases.
-5. `docs/architecture.md:210`: replace the nonexistent
-   `try-roguix-operating-system` identifier with `roguix-operating-system`
-   (`guest/guix/modules/roguix/system.scm`).
+- [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
+  Requested 2026-10-12 by the roguix-vps coordinator, approved by the
+  owner (review of the Roguix repositories, consult round
+  20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
+  d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
+  upgrade path.
+  roguix-update (guest/guix/modules/roguix/omarchy.scm:483) tells users to
+  reset the VM when a release needs a newer Guix. Existing VMs should move to
+  the new pin keeping their settings and data, with a rollback. New users
+  are Try Omaguix Mac app users for now; bare metal is not pursued.
+  Decided by the user 2026-10-12, directly to the upgrade worker: the
+  signed release.json names the new Guix's store path and the VM only
+  substitutes it, without cloning Guix or contacting Codeberg. Nobody
+  uses Omaguix yet, so no older release format needs compatibility.
+  Checked 2026-10-14 (consult round 20261014-193606-be7d): the worker finished
+  two commits (`f3df437a` "docs: upgrade Roguix VMs across Guix pins" and
+  `e24e710d` "guest: roguix-update moves to a new Guix pin", which also covers
+  `[t-omamanif]` below with `guest/guix/test_roguix_update.py`). Before landing
+  them on `main`:
+  1. Decided by the user 2026-10-16 (d-avv7ucxt): `roguix-update` passes
+     `--no-check-forward-update` to `guix system reconfigure` after it
+     authenticates `release.json` and verifies that `P/bin/guix describe`
+     matches `guix-commit`, so moving across Guix pins never clones Guix from
+     Codeberg.
+  2. Rebase both commits onto `main` and update the renamed product and
+     repository references (`Omaguix`, `omaguix/omaguix`, `omaguix/omaguix-channel`).
+  3. Ensure `omaguix/omaguix`'s `.github/workflows/build-desktop.yml` emits
+     `split-<prefix>/guix-profile.txt` and includes that Guix profile in
+     `package-closure.txt` before `e24e710d`'s stricter `release.py` check is
+     used for a release.
 
-### Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
+- [ ] Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
+  Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
+  obsolete now that Omarchy opens menus through Hyprland global shortcuts
+  (https://github.com/omacom/omarchy/pull/13418, merged 2026-09-27, before
+  our PR). Round 20261012-202605-5528 (sol, MiMo, DeepSeek): not obsolete.
+  Global shortcuts only remove the qs IPC launch; on current main
+  openExistingMenu() still runs evaluateGuards() on every open and
+  guardProc.onExited still calls rebuildDisplay() unconditionally (checked
+  in shell/plugins/menu/Menu.qml). A reviewer
+  (https://github.com/omacom/omarchy/pull/14740#issuecomment-6130082381)
+  asked to rebase on https://github.com/omacom/omarchy/pull/15048 (merged)
+  and check the case still reproduces; https://github.com/omacom/omarchy/pull/14993
+  (open) rewrites rebuildDisplay's append. Do: rebase the PR branch on
+  current main, re-run the press-across-guard-exit test with and without the
+  fix opening through the real global shortcut, then reply to the reviewer
+  with the commit and numbers. If it no longer reproduces, say so and close
+  the PR. Placement, round 20261012-202819-4d50: right after the item in
+  progress, before the first release (sol, MiMo; rebase and repro are
+  short, the release takes hours); do not wait for #14993 (open, its
+  timing and shape unknown; DeepSeek alone would wait). Pushing the PR branch and replying are covered by the approved
+  upstream-offer of that item.
 
-Requested 2026-10-12 by the roguix-vps coordinator, approved by the
-owner (review of the Roguix repositories, consult round
-20261012-012022-7047; herdr decisions d-aqilyu75, d-fnkaqv5d, d-fe6dbtq2,
-d-knq7b5mj, d-5m55urp7). Order: trust record, docs, release step,
-upgrade path.
-roguix-update (guest/guix/modules/roguix/omarchy.scm:483) tells users to
-reset the VM when a release needs a newer Guix. Existing VMs should move to
-the new pin keeping their settings and data, with a rollback. New users
-are Try Omaguix Mac app users for now; bare metal is not pursued.
-Decided by the user 2026-10-12, directly to the upgrade worker: the
-signed release.json names the new Guix's store path and the VM only
-substitutes it, without cloning Guix or contacting Codeberg. Nobody
-uses Omaguix yet, so no older release format needs compatibility.
-Checked 2026-10-14 (consult round 20261014-193606-be7d): the worker finished
-two commits (`f3df437a` "docs: upgrade Roguix VMs across Guix pins" and
-`e24e710d` "guest: roguix-update moves to a new Guix pin", which also covers
-`[t-omamanif]` below with `guest/guix/test_roguix_update.py`). Before landing
-them on `main`:
-1. Decided by the user 2026-10-16 (d-avv7ucxt): `roguix-update` passes
-   `--no-check-forward-update` to `guix system reconfigure` after it
-   authenticates `release.json` and verifies that `P/bin/guix describe`
-   matches `guix-commit`, so moving across Guix pins never clones Guix from
-   Codeberg.
-2. Rebase both commits onto `main` and update the renamed product and
-   repository references (`Omaguix`, `omaguix/omaguix`, `omaguix/omaguix-channel`).
-3. Ensure `omaguix/omaguix`'s `.github/workflows/build-desktop.yml` emits
-   `split-<prefix>/guix-profile.txt` and includes that Guix profile in
-   `package-closure.txt` before `e24e710d`'s stricter `release.py` check is
-   used for a release.
+- [ ] First Omaguix release through release.py [t-omarelfs]
+  Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
+  path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
+  `.env`, then run guest/guix/release.py for current try-omaguix main: a
+  signed omaguix-channel commit, omaguix/omaguix's build-desktop.yml
+  dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
+  the closure check, then the signed release.json moves the channel's main.
+  Report the run ids and the release commit; on any failure, main stays.
+  Checked 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
+  DeepSeek): before running `guest/guix/release.py`:
+  1. In `omaguix/omaguix` `.github/workflows/build-desktop.yml`:
+     - Fix `sign-substitutes`'s `if:` gate (`github.actor == github.repository_owner`
+       is false when a maintainer dispatches `workflow_dispatch` in the
+       `omaguix` organization, skipping signing).
+     - Populate `split-<prefix>/release-tag.txt` when `publish.txt` is non-empty
+       (currently `: > split/release-tag.txt` is uploaded empty before
+       `sign-substitutes` computes `RELEASE_TAG`, which `release.py` rejects).
+     - Emit `split-<prefix>/guix-profile.txt` and include the Guix profile in
+       `package-closure.txt` (required by decision 0007 / `[t-omaupgrd]`).
+  2. Complete the `omaguix.org` / `substitutes.omaguix.org` cutover prerequisites
+     (`[t-omabkfil]`, `[t-omaorgdm]`, `[t-omakeyfr]` below) and switch
+     `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
+     and `substitutes.omaguix.org.pub` once signed substitute content is verified.
 
-### Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
+- [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
+  Decided by the user 2026-10-12: "yes, after acceptance". Proposed
+  2026-10-12 by the Metal worker (models: after end-to-end
+  acceptance, to startergo/homebrew-virglrenderer first): offer
+  macos/patches/virgl-angle-multisample.patch upstream once Metal is the
+  default and LibreWolf and Chromium pass (Metal became the default
+  2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
 
-Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
-obsolete now that Omarchy opens menus through Hyprland global shortcuts
-(https://github.com/omacom/omarchy/pull/13418, merged 2026-09-27, before
-our PR). Round 20261012-202605-5528 (sol, MiMo, DeepSeek): not obsolete.
-Global shortcuts only remove the qs IPC launch; on current main
-openExistingMenu() still runs evaluateGuards() on every open and
-guardProc.onExited still calls rebuildDisplay() unconditionally (checked
-in shell/plugins/menu/Menu.qml). A reviewer
-(https://github.com/omacom/omarchy/pull/14740#issuecomment-6130082381)
-asked to rebase on https://github.com/omacom/omarchy/pull/15048 (merged)
-and check the case still reproduces; https://github.com/omacom/omarchy/pull/14993
-(open) rewrites rebuildDisplay's append. Do: rebase the PR branch on
-current main, re-run the press-across-guard-exit test with and without the
-fix opening through the real global shortcut, then reply to the reviewer
-with the commit and numbers. If it no longer reproduces, say so and close
-the PR. Placement, round 20261012-202819-4d50: right after the item in
-progress, before the first release (sol, MiMo; rebase and repro are
-short, the release takes hours); do not wait for #14993 (open, its
-timing and shape unknown; DeepSeek alone would wait). Pushing the PR branch and replying are covered by the approved
-upstream-offer of that item.
+- [ ] roguix-update checks the release manifest [t-omamanif]
+  Follow-up of the release step (decision 0006, done 2026-10-12), decided by
+  the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
+  channel's release.json: it names HEAD's parent (the released commit) and
+  its commit changes nothing but release.json, so modules can only come
+  from a released commit. Needs a guest build. Implemented together with
+  `[t-omaupgrd]` in commit `e24e710d` (`guest/guix/modules/roguix/omarchy.scm`
+  and `guest/guix/test_roguix_update.py`).
 
-### First Omaguix release through release.py [t-omarelfs]
+- [ ] release.py resumes from an existing CI run [t-omaresum]
+  Follow-up of the release step, decided by the user 2026-10-12
+  (d-6ff4fe5q). An option to resume guest/guix/release.py from a finished
+  CI run of the same channel commit, so a failed VPS import or closure
+  check does not need a new multi-hour CI build. No build.
 
-Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
-path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
-`.env`, then run guest/guix/release.py for current try-omaguix main: a
-signed omaguix-channel commit, omaguix/omaguix's build-desktop.yml
-dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
-the closure check, then the signed release.json moves the channel's main.
-Report the run ids and the release commit; on any failure, main stays.
-Checked 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
-DeepSeek): before running `guest/guix/release.py`:
-1. In `omaguix/omaguix` `.github/workflows/build-desktop.yml`:
-   - Fix `sign-substitutes`'s `if:` gate (`github.actor == github.repository_owner`
-     is false when a maintainer dispatches `workflow_dispatch` in the
-     `omaguix` organization, skipping signing).
-   - Populate `split-<prefix>/release-tag.txt` when `publish.txt` is non-empty
-     (currently `: > split/release-tag.txt` is uploaded empty before
-     `sign-substitutes` computes `RELEASE_TAG`, which `release.py` rejects).
-   - Emit `split-<prefix>/guix-profile.txt` and include the Guix profile in
-     `package-closure.txt` (required by decision 0007 / `[t-omaupgrd]`).
-2. Complete the `omaguix.org` / `substitutes.omaguix.org` cutover prerequisites
-   (`[t-omabkfil]`, `[t-omaorgdm]`, `[t-omakeyfr]` below) and switch
-   `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
-   and `substitutes.omaguix.org.pub` once signed substitute content is verified.
+  Note for both: the release step works only after omaguix/omaguix adds the
+  `channel_commit` workflow input and the `split-*` artifacts (sent to the
+  guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
+  `VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: installed at
+  `/usr/local/sbin/vps-import` on root@vps.frolow.dev port 1027, roguix
+  e1e2d64, also on root's PATH as vps-import; the release.py-resume worker
+  sets it in the local `.env`). omaguix/omaguix's side is done (the
+  guix-x86_64-iso-omguix coordinator, 2026-10-12, roguix commit 356d2db1):
+  build-desktop.yml takes `channel_commit`, authenticates the channel,
+  uploads the `split-*` artifacts; not run in CI yet. The channel's main
+  (d610bc0c) lacks %roguix-reference-system, so the first run must be a
+  release.py run with a channel commit from current try-omaguix.
 
-### Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
+- [ ] Send roguix-vps the store paths server/publish.sh published [t-omabkfil]
+  Requested 2026-10-12 by the roguix-vps coordinator, passed on by the user:
+  roguix.frolow.dev moves to static, CI-signed substitutes (roguix decision
+  0001); before guix publish and its key leave the VPS, roguix-vps
+  backfills everything served today into the static tree. server/publish.sh
+  imported aarch64 items on the VPS without GC roots. Send roguix-vps the
+  list of every store path it published that is still meant to be served
+  (the publish.txt of each run, or a command that rebuilds the list), or
+  put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
+  the VPS and say so. Until then nothing is deleted on the VPS.
 
-Decided by the user 2026-10-12: "yes, after acceptance". Proposed
-2026-10-12 by the Metal worker (models: after end-to-end
-acceptance, to startergo/homebrew-virglrenderer first): offer
-macos/patches/virgl-angle-multisample.patch upstream once Metal is the
-default and LibreWolf and Chromium pass (Metal became the default
-2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
+- [ ] Move Omaguix to omaguix.org [t-omaorgdm]
+  The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
+  the organization is `omaguix`, and the public domain is `omaguix.org`.
+  The repositories are now `omaguix/omaguix`, `omaguix/omaguix-channel`,
+  and `omaguix/try-omaguix`; their histories and existing tags are preserved.
+  Porkbun serves the domain's DNS, with the apex and
+  `substitutes.omaguix.org` pointing at the existing VPS. The new substitute
+  key's public half is staged as
+  `guest/guix/modules/roguix/substitutes.omaguix.org.pub`.
+  The earlier plan below uses the superseded domain and filename: current
+  implementation uses `omaguix.org` and `substitutes.omaguix.org.pub`.
+  Do not activate the new guest trust record until HTTPS, signed substitute
+  content and the matching CI signing secret have been verified. Changing
+  the substitute key does not change the independently signed channel's
+  introduction or signer.
 
-### roguix-update checks the release manifest [t-omamanif]
+  The owner instructed the migration to leave the old MacBook alone.
+  On 2026-10-14 a replacement key was generated locally using Guix's
+  libgcrypt generation parameters and checked by signing and verifying a
+  message. Its private half was sent directly from memory to the GitHub
+  `substitute-signing/SUBSTITUTE_SIGNING_KEY` secret, without creating a
+  private file. The current public key's SHA-256 is
+  `5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`.
+  The earlier public key/checksum below is superseded; it must not be used
+  with that secret.
 
-Follow-up of the release step (decision 0006, done 2026-10-12), decided by
-the user 2026-10-12 (d-6ff4fe5q). roguix-update in a VM checks the
-channel's release.json: it names HEAD's parent (the released commit) and
-its commit changes nothing but release.json, so modules can only come
-from a released commit. Needs a guest build. Implemented together with
-`[t-omaupgrd]` in commit `e24e710d` (`guest/guix/modules/roguix/omarchy.scm`
-and `guest/guix/test_roguix_update.py`).
+  Verified 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
+  DeepSeek):
+  - Porkbun NS (`curitiba/fortaleza/maceio/salvador.ns.porkbun.com`) and
+    Let's Encrypt TLS certificates (`2026-10-14` to `2027-01-12`) are live on
+    `https://omaguix.org` and `https://substitutes.omaguix.org` (`A 192.255.242.95`).
+  - Remaining on the VPS (`roguix-vps`): `www.omaguix.org` has a `CNAME` to
+    `omaguix.org.` but is missing from the TLS certificate SANs; `/var/www/omaguix.org/html`
+    is empty (`403 Forbidden`); `/var/lib/roguix-substitutes` is empty
+    (`https://substitutes.omaguix.org/nix-cache-info` returns `404 Not Found`),
+    while `https://roguix.frolow.dev/nix-cache-info` still serves `200 OK`.
+  - Remaining in `omaguix/try-omaguix` (cutover order agreed in round
+    20261014-193606-be7d): once `omaguix/omaguix` CI signing gates are fixed and
+    `https://substitutes.omaguix.org` serves verified substitutes signed by the
+    `5e9b4547...` key, switch `%roguix-trust` in
+    `guest/guix/modules/roguix/trust.scm` from `"https://roguix.frolow.dev"` and
+    `roguix.frolow.dev.pub` to `"https://substitutes.omaguix.org"` and
+    `substitutes.omaguix.org.pub`, remove `guest/guix/modules/roguix/roguix.frolow.dev.pub`,
+    update `guest/guix/test_trust.py` and docs (`AGENTS.md`, `docs/architecture.md`,
+    `guest/guix/README.md`, `server/README.md`), and publish the release commit.
 
-### release.py resumes from an existing CI run [t-omaresum]
+  Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
+  models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
+  the coordinator with the models: the website at roguix.org (GitHub Pages
+  or the VPS), substitutes at substitutes.roguix.org (all three; not a path
+  under the apex, not "cache"). Decided by the user 2026-10-12, overriding the models' 12-month alias:
+  "no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
+  turned off once substitutes.roguix.org serves, and the trust record names
+  only the new URL (no overlap release). Decided by the user 2026-10-12
+  (d-2zft4rjx): the publish key change is a clean cutover too, see "Trust
+  two publish keys during the move off the serving host". Decided by the
+  user 2026-10-12 (d-j2ilgfxy, relayed by the roguix-vps coordinator): a
+  fresh key, held only in GitHub, signs substitutes.roguix.org in CI; new
+  VM images trust only it, and the old key is erased from the VPS and
+  GitHub. So the URL and the key change ship together. Roguix's maintainer
+  (the omguix coordinator) generates the key and hands try-roguix its
+  public key for the trust record. Agreed with the omguix coordinator
+  2026-10-12: roguix's CI verifies the key at roguix-channel
+  modules/roguix/substitutes.roguix.org.pub; since publish-channel
+  regenerates the channel's modules, the file is added in try-roguix as
+  guest/guix/modules/roguix/substitutes.roguix.org.pub, `(roguix trust)`
+  names https://substitutes.roguix.org with it, and roguix.frolow.dev.pub
+  is removed. TLS for both names
+  before the release; CAA limited to the issuing CA; no mail on the domain:
+  null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
+  Needs: DNS records at Porkbun (the owner, or an API key the owner
+  provides), the VPS vhost and certificate (the roguix-vps coordinator,
+  which owns the host and its static-substitutes move), then try-roguix's
+  trust record and docs. App update feeds stay where they are until checked.
 
-Follow-up of the release step, decided by the user 2026-10-12
-(d-6ff4fe5q). An option to resume guest/guix/release.py from a finished
-CI run of the same channel commit, so a failed VPS import or closure
-check does not need a new multi-hour CI build. No build.
+- [ ] Tagline and topics: "Omaguix: Omarchy on Guix System" [t-omatagln]
+  Asked 2026-10-12 (round 20261012-191411-5986; updated for the 2026-10-14
+  Omaguix rename): put "Omaguix: Omarchy on Guix System" in README and in
+  the descriptions of omaguix/try-omaguix, omaguix/omaguix and
+  omaguix/omaguix-channel, with a short "independent, not affiliated with
+  Omarchy" line in README (nominative use, no endorsement implied). Topics:
+  omarchy, guix, guix-system, hyprland on all three; macos and
+  virtual-machine on try-omaguix. Repository descriptions and topics are
+  GitHub settings (gh repo edit); README is a docs commit.
 
-Note for both: the release step works only after omaguix/omaguix adds the
-`channel_commit` workflow input and the `split-*` artifacts (sent to the
-guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
-`VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: installed at
-`/usr/local/sbin/vps-import` on root@vps.frolow.dev port 1027, roguix
-e1e2d64, also on root's PATH as vps-import; the release.py-resume worker
-sets it in the local `.env`). omaguix/omaguix's side is done (the
-guix-x86_64-iso-omguix coordinator, 2026-10-12, roguix commit 356d2db1):
-build-desktop.yml takes `channel_commit`, authenticates the channel,
-uploads the `split-*` artifacts; not run in CI yet. The channel's main
-(d610bc0c) lacks %roguix-reference-system, so the first run must be a
-release.py run with a channel commit from current try-omaguix.
-
-### Send roguix-vps the store paths server/publish.sh published [t-omabkfil]
-
-Requested 2026-10-12 by the roguix-vps coordinator, passed on by the user:
-roguix.frolow.dev moves to static, CI-signed substitutes (roguix decision
-0001); before guix publish and its key leave the VPS, roguix-vps
-backfills everything served today into the static tree. server/publish.sh
-imported aarch64 items on the VPS without GC roots. Send roguix-vps the
-list of every store path it published that is still meant to be served
-(the publish.txt of each run, or a command that rebuilds the list), or
-put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
-the VPS and say so. Until then nothing is deleted on the VPS.
-
-### Move Omaguix to omaguix.org [t-omaorgdm]
-
-The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
-the organization is `omaguix`, and the public domain is `omaguix.org`.
-The repositories are now `omaguix/omaguix`, `omaguix/omaguix-channel`,
-and `omaguix/try-omaguix`; their histories and existing tags are preserved.
-Porkbun serves the domain's DNS, with the apex and
-`substitutes.omaguix.org` pointing at the existing VPS. The new substitute
-key's public half is staged as
-`guest/guix/modules/roguix/substitutes.omaguix.org.pub`.
-The earlier plan below uses the superseded domain and filename: current
-implementation uses `omaguix.org` and `substitutes.omaguix.org.pub`.
-Do not activate the new guest trust record until HTTPS, signed substitute
-content and the matching CI signing secret have been verified. Changing
-the substitute key does not change the independently signed channel's
-introduction or signer.
-
-The owner instructed the migration to leave the old MacBook alone.
-On 2026-10-14 a replacement key was generated locally using Guix's
-libgcrypt generation parameters and checked by signing and verifying a
-message. Its private half was sent directly from memory to the GitHub
-`substitute-signing/SUBSTITUTE_SIGNING_KEY` secret, without creating a
-private file. The current public key's SHA-256 is
-`5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`.
-The earlier public key/checksum below is superseded; it must not be used
-with that secret.
-
-Verified 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
-DeepSeek):
-- Porkbun NS (`curitiba/fortaleza/maceio/salvador.ns.porkbun.com`) and
-  Let's Encrypt TLS certificates (`2026-10-14` to `2027-01-12`) are live on
-  `https://omaguix.org` and `https://substitutes.omaguix.org` (`A 192.255.242.95`).
-- Remaining on the VPS (`roguix-vps`): `www.omaguix.org` has a `CNAME` to
-  `omaguix.org.` but is missing from the TLS certificate SANs; `/var/www/omaguix.org/html`
-  is empty (`403 Forbidden`); `/var/lib/roguix-substitutes` is empty
-  (`https://substitutes.omaguix.org/nix-cache-info` returns `404 Not Found`),
-  while `https://roguix.frolow.dev/nix-cache-info` still serves `200 OK`.
-- Remaining in `omaguix/try-omaguix` (cutover order agreed in round
-  20261014-193606-be7d): once `omaguix/omaguix` CI signing gates are fixed and
-  `https://substitutes.omaguix.org` serves verified substitutes signed by the
-  `5e9b4547...` key, switch `%roguix-trust` in
-  `guest/guix/modules/roguix/trust.scm` from `"https://roguix.frolow.dev"` and
-  `roguix.frolow.dev.pub` to `"https://substitutes.omaguix.org"` and
-  `substitutes.omaguix.org.pub`, remove `guest/guix/modules/roguix/roguix.frolow.dev.pub`,
-  update `guest/guix/test_trust.py` and docs (`AGENTS.md`, `docs/architecture.md`,
-  `guest/guix/README.md`, `server/README.md`), and publish the release commit.
-
-Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
-models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
-the coordinator with the models: the website at roguix.org (GitHub Pages
-or the VPS), substitutes at substitutes.roguix.org (all three; not a path
-under the apex, not "cache"). Decided by the user 2026-10-12, overriding the models' 12-month alias:
-"no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
-turned off once substitutes.roguix.org serves, and the trust record names
-only the new URL (no overlap release). Decided by the user 2026-10-12
-(d-2zft4rjx): the publish key change is a clean cutover too, see "Trust
-two publish keys during the move off the serving host". Decided by the
-user 2026-10-12 (d-j2ilgfxy, relayed by the roguix-vps coordinator): a
-fresh key, held only in GitHub, signs substitutes.roguix.org in CI; new
-VM images trust only it, and the old key is erased from the VPS and
-GitHub. So the URL and the key change ship together. Roguix's maintainer
-(the omguix coordinator) generates the key and hands try-roguix its
-public key for the trust record. Agreed with the omguix coordinator
-2026-10-12: roguix's CI verifies the key at roguix-channel
-modules/roguix/substitutes.roguix.org.pub; since publish-channel
-regenerates the channel's modules, the file is added in try-roguix as
-guest/guix/modules/roguix/substitutes.roguix.org.pub, `(roguix trust)`
-names https://substitutes.roguix.org with it, and roguix.frolow.dev.pub
-is removed. TLS for both names
-before the release; CAA limited to the issuing CA; no mail on the domain:
-null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
-Needs: DNS records at Porkbun (the owner, or an API key the owner
-provides), the VPS vhost and certificate (the roguix-vps coordinator,
-which owns the host and its static-substitutes move), then try-roguix's
-trust record and docs. App update feeds stay where they are until checked.
-
-### Tagline and topics: "Omaguix: Omarchy on Guix System" [t-omatagln]
-
-Asked 2026-10-12 (round 20261012-191411-5986; updated for the 2026-10-14
-Omaguix rename): put "Omaguix: Omarchy on Guix System" in README and in
-the descriptions of omaguix/try-omaguix, omaguix/omaguix and
-omaguix/omaguix-channel, with a short "independent, not affiliated with
-Omarchy" line in README (nominative use, no endorsement implied). Topics:
-omarchy, guix, guix-system, hyprland on all three; macos and
-virtual-machine on try-omaguix. Repository descriptions and topics are
-GitHub settings (gh repo edit); README is a docs commit.
-
-### Publish the fresh substitute key before the first Omaguix CI run [t-omakeyfr]
-
-Requested 2026-10-12 by the omguix coordinator, relayed by the user:
-publish the fresh public key and %roguix-reference-system through
-publish-channel, then send the channel commit to the coordinator before
-the first CI run.
-Updated 2026-10-14: `omaguix/omaguix` commits `45c7613` and `09d6aa1`
-verify `modules/roguix/substitutes.omaguix.org.pub` (`SHA-256:
-5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`,
-Ed25519 public point
-`7A43D7E9EAEE861ABCCDA7F383E16E41EF12CFBB7D402F419CA5ECD1CBDD8E4C`) and
-use `https://substitutes.omaguix.org` (superseding the earlier `AA89E5...` /
-`f59f5813...` key). Candidate channel commit
-`cba50b560a38ac885b3d282f132793fe740345f6` (from `try-omaguix` `8839313d`)
-is signed and pushed to `omaguix/omaguix-channel` as
-`release/cba50b560a38ac885b3d282f132793fe740345f6` with
-`modules/roguix/substitutes.omaguix.org.pub` and `%roguix-reference-system`,
-leaving `main` at `d610bc0c` until the first full `release.py` run succeeds.
+- [ ] Publish the fresh substitute key before the first Omaguix CI run [t-omakeyfr]
+  Requested 2026-10-12 by the omguix coordinator, relayed by the user:
+  publish the fresh public key and %roguix-reference-system through
+  publish-channel, then send the channel commit to the coordinator before
+  the first CI run.
+  Updated 2026-10-14: `omaguix/omaguix` commits `45c7613` and `09d6aa1`
+  verify `modules/roguix/substitutes.omaguix.org.pub` (`SHA-256:
+  5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`,
+  Ed25519 public point
+  `7A43D7E9EAEE861ABCCDA7F383E16E41EF12CFBB7D402F419CA5ECD1CBDD8E4C`) and
+  use `https://substitutes.omaguix.org` (superseding the earlier `AA89E5...` /
+  `f59f5813...` key). Candidate channel commit
+  `cba50b560a38ac885b3d282f132793fe740345f6` (from `try-omaguix` `8839313d`)
+  is signed and pushed to `omaguix/omaguix-channel` as
+  `release/cba50b560a38ac885b3d282f132793fe740345f6` with
+  `modules/roguix/substitutes.omaguix.org.pub` and `%roguix-reference-system`,
+  leaving `main` at `d610bc0c` until the first full `release.py` run succeeds.
 
 ## Proposed
 
-### Parameterize the launcher build and guest packaging for a second app [t-omabendl]
+- [ ] Parameterize the launcher build and guest packaging for a second app [t-omabendl]
+  Requested 2026-10-16 (decision d-4evijsti, "parameterize try-roguix through
+  its coordinator; keep try-omabend thin"; consult round 20261016-095300-4764
+  with sol, MiMo, DeepSeek, Muse Wonder): parameterize the launcher build and
+  guest packaging so a second macOS app (Try Omabend) can be built from this
+  repository without forking it:
+  - app name and bundle identifier;
+  - `Application Support` and `Logs` directory names, so the two apps do not
+    share VM state or logs;
+  - the networking mode, with QEMU user-mode networking as an option so a
+    second privileged LaunchDaemon (such as `dev.tryroguix.network`) is not
+    needed;
+  - the development signing identity name (`macos/development-signing-identity.sh`);
+  - the guest artifact's provenance in `guest/guix/package.py`: hash the
+    actual build inputs instead of `modules/roguix`, allow a credentials
+    policy other than `first-boot`, and keep the partition checks.
 
-Requested 2026-10-16 (decision d-4evijsti, "parameterize try-roguix through
-its coordinator; keep try-omabend thin"; consult round 20261016-095300-4764
-with sol, MiMo, DeepSeek, Muse Wonder): parameterize the launcher build and
-guest packaging so a second macOS app (Try Omabend) can be built from this
-repository without forking it:
-- app name and bundle identifier;
-- `Application Support` and `Logs` directory names, so the two apps do not
-  share VM state or logs;
-- the networking mode, with QEMU user-mode networking as an option so a
-  second privileged LaunchDaemon (such as `dev.tryroguix.network`) is not
-  needed;
-- the development signing identity name (`macos/development-signing-identity.sh`);
-- the guest artifact's provenance in `guest/guix/package.py`: hash the
-  actual build inputs instead of `modules/roguix`, allow a credentials
-  policy other than `first-boot`, and keep the partition checks.
+- [ ] Accept Guix's Ungoogled Chromium on the Metal path
+  Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
+  first"): once omaguix/omaguix's CI builds `ungoogled-chromium` for aarch64
+  (no substitute at the pin; a many-hour build), check it on `gl=es` like
+  LibreWolf (GPU compositing, raster, WebGL 2, no software fallback) and fix
+  what differs. Needs CI to build the package first.
 
-### Accept Guix's Ungoogled Chromium on the Metal path
+- [ ] Let agents click in a VM and see the result: evaluate hypruse first
+  Deferred by the user 2026-10-11: "the rest later" (the coordinator
+  and the supervisor come first).
 
-Split from the Metal item 2026-10-12 by the user's decision ("LibreWolf
-first"): once omaguix/omaguix's CI builds `ungoogled-chromium` for aarch64
-(no substitute at the pin; a many-hour build), check it on `gl=es` like
-LibreWolf (GPU compositing, raster, WebGL 2, no software fallback) and fix
-what differs. Needs CI to build the package first.
+  Asked 2026-10-11: "how can an agent click and watch what shows? ask the
+  models"; decided by the user 2026-10-11: "evaluate hypruse first". Consult
+  round 20261011-202749-4e02 (sol, MiMo, DeepSeek): give agents a small MCP
+  server with screenshot (`grim -c`, PNG), click(x, y), type, key and a wait
+  on a positive signal (Hyprland's socket2 events, e.g. `openwindow`,
+  `activewindow`), reached as an stdio MCP over `ssh` into the guest; type
+  long text through the clipboard (`wl-copy`, Ctrl+V); name the coordinate
+  space in every call and calibrate it (screenshot pixels, Hyprland logical
+  coordinates with scale, the tablet's 0..32767); QMP `input-send-event`
+  with explicit key down/up as the host-side fallback (fixes `send-key`'s
+  repeats); browser pages through DevTools rather than pixels.
+  Step 1: a worker reads hypruse's source (https://pypi.org/project/hypruse/)
+  for what it runs, its dependencies (ydotool needs uinput and a daemon,
+  wlrctl the virtual-pointer protocol) and its license, and tries it in a
+  throwaway test VM from the host through ssh: screenshot, click a known
+  target, type into foot, wait for a window. Report whether to package it in
+  the guest or write our own with the tools above; no guest change yet.
 
-### Let agents click in a VM and see the result: evaluate hypruse first
+  Researched 2026-10-11 at the user's request ("Primeagen was hired by
+  Omarchy for QA; research it with the models"), round 20261011-203239-c145:
+  ThePrimeagen joined Omarchy Core on 2026-09-26 to lead "Agentic QA" with
+  Oligarchy, his harness that boots Omarchy in QEMU from a fresh disk per
+  test, where agents send keys, move and click the mouse and take
+  screenshots, exposed per job as HTTP tool calls ("qemu-http-tools"); its
+  repository now returns 404, so its code cannot be read. Upstream's own
+  acceptance harness (omacom/omarchy-iso bin/omarchy-iso-test,
+  omacom/omarchy test/acceptance.d/base-test.sh) uses plain virtio-vga, QMP
+  screendump with tesseract OCR and QMP send-key before login, then over SSH
+  grim, tesseract and `hyprctl -j` window and layer checks, with polling
+  waits and per-step success/failure PNGs. Decided by the coordinator with
+  the models: keep hypruse first as a bounded evaluation (sol, MiMo;
+  DeepSeek ranked it last); copy upstream's evidence discipline (a PNG per
+  step, `hyprctl -j` state checks, a capture failure reported apart from
+  missing text) and QMP keys for global keybindings, which in-guest wtype
+  does not prove; do not copy fixed polling or a non-GL display (it would
+  test another graphics path). Dismissed: MiMo's and DeepSeek's claim that
+  screendump is black under VirGL (the brief omitted our readback patch).
+  Running upstream's acceptance suite on Roguix is a separate proposal.
 
-Deferred by the user 2026-10-11: "the rest later" (the coordinator
-and the supervisor come first).
+- [ ] Run Omarchy's acceptance suite on Roguix
+  Deferred by the user 2026-10-11: "the rest later" (the coordinator
+  and the supervisor come first).
 
-Asked 2026-10-11: "how can an agent click and watch what shows? ask the
-models"; decided by the user 2026-10-11: "evaluate hypruse first". Consult
-round 20261011-202749-4e02 (sol, MiMo, DeepSeek): give agents a small MCP
-server with screenshot (`grim -c`, PNG), click(x, y), type, key and a wait
-on a positive signal (Hyprland's socket2 events, e.g. `openwindow`,
-`activewindow`), reached as an stdio MCP over `ssh` into the guest; type
-long text through the clipboard (`wl-copy`, Ctrl+V); name the coordinate
-space in every call and calibrate it (screenshot pixels, Hyprland logical
-coordinates with scale, the tablet's 0..32767); QMP `input-send-event`
-with explicit key down/up as the host-side fallback (fixes `send-key`'s
-repeats); browser pages through DevTools rather than pixels.
-Step 1: a worker reads hypruse's source (https://pypi.org/project/hypruse/)
-for what it runs, its dependencies (ydotool needs uinput and a daemon,
-wlrctl the virtual-pointer protocol) and its license, and tries it in a
-throwaway test VM from the host through ssh: screenshot, click a known
-target, type into foot, wait for a window. Report whether to package it in
-the guest or write our own with the tools above; no guest change yet.
+  Decided by the user 2026-10-11: "yes, after hypruse". Proposed
+  2026-10-11 (from the hypruse item's research): run upstream's
+  test/acceptance suite (omacom/omarchy, test/acceptance.d) in a Roguix test
+  VM over SSH, with an adapter where Roguix differs (Guix paths, packages,
+  services) and waits on positive conditions instead of its 1 s polling,
+  as a regression oracle for what Roguix promises to share with Omarchy.
+  Cost: a worker day or two; needs tesseract in the test VM (a guest
+  package or a test-only image); no product change.
 
-Researched 2026-10-11 at the user's request ("Primeagen was hired by
-Omarchy for QA; research it with the models"), round 20261011-203239-c145:
-ThePrimeagen joined Omarchy Core on 2026-09-26 to lead "Agentic QA" with
-Oligarchy, his harness that boots Omarchy in QEMU from a fresh disk per
-test, where agents send keys, move and click the mouse and take
-screenshots, exposed per job as HTTP tool calls ("qemu-http-tools"); its
-repository now returns 404, so its code cannot be read. Upstream's own
-acceptance harness (omacom/omarchy-iso bin/omarchy-iso-test,
-omacom/omarchy test/acceptance.d/base-test.sh) uses plain virtio-vga, QMP
-screendump with tesseract OCR and QMP send-key before login, then over SSH
-grim, tesseract and `hyprctl -j` window and layer checks, with polling
-waits and per-step success/failure PNGs. Decided by the coordinator with
-the models: keep hypruse first as a bounded evaluation (sol, MiMo;
-DeepSeek ranked it last); copy upstream's evidence discipline (a PNG per
-step, `hyprctl -j` state checks, a capture failure reported apart from
-missing text) and QMP keys for global keybindings, which in-guest wtype
-does not prove; do not copy fixed polling or a non-GL display (it would
-test another graphics path). Dismissed: MiMo's and DeepSeek's claim that
-screendump is black under VirGL (the brief omitted our readback patch).
-Running upstream's acceptance suite on Roguix is a separate proposal.
+- [ ] A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
+  Reported 2026-10-10 by another session at the maintainer's request: during a
+  reset, run-qemu-gpu.sh downloads/selects the compressed factory disk (~3 GB)
+  before `qemu_persistent_storage_select` erases the old VM
+  (`_qps_clear_workspace_locked`), so both coexist briefly and a reset on a
+  nearly full disk can still fail for space. Make a reset erase the old VM
+  before the fetch (keeping the keep-saved-VM/archive semantics), so it needs
+  no more room than the old VM already used. Consequence: a failed or
+  interrupted download then leaves no VM, as the dropped 67a8d7a accepted.
+  (67a8d7a itself targeted the pre-0.5 base-image flow and was dropped in the
+  rebase on purpose.)
 
-### Run Omarchy's acceptance suite on Roguix
+- [ ] Test gliff-server in the guest before packaging it [t-sakzbqb5]
+  Postponed 2026-10-10 by the maintainer ("put gliff off for later, many things are more important").
 
-Deferred by the user 2026-10-11: "the rest later" (the coordinator
-and the supervisor come first).
+  Approved 2026-10-10: run this feasibility test first; package nothing yet.
+  Postponed by the maintainer 2026-10-10 (more important work first), during
+  step (a); see "Progress" below for where it stopped and how to resume.
 
-Decided by the user 2026-10-11: "yes, after hypruse". Proposed
-2026-10-11 (from the hypruse item's research): run upstream's
-test/acceptance suite (omacom/omarchy, test/acceptance.d) in a Roguix test
-VM over SSH, with an adapter where Roguix differs (Guix paths, packages,
-services) and waits on positive conditions instead of its 1 s polling,
-as a regression oracle for what Roguix promises to share with Omarchy.
-Cost: a worker day or two; needs tesseract in the test VM (a guest
-package or a test-only image); no product change.
+  Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine"). A
+  disposable check, nothing packaged or shipped: set pass thresholds first
+  (sustained frames per second and encode time per frame at 1080p, typing and
+  scrolling feel), then (a) check that Hyprland's ext-image-copy-capture into a
+  GBM buffer and a CPU map of it work on the VirGL render node, (b) time
+  OpenH264 at 1080p on the guest's vCPUs, and only if both pass (c) run a
+  gliff-server built outside the image against a gliff client on an existing
+  x86_64 Linux with Hyprland, over NAT with a ProxyJump through the Mac, on a
+  wired LAN. Record the numbers; stop at the first failure.
 
-### A reset erases the old VM before fetching the factory disk [t-cpdtxhhy]
+  Pass thresholds, set by the worker on 2026-10-10 before measuring (gliff
+  targets 60 fps; these are the floor for a usable remote desktop, not the
+  target). All at 1920x1080 on the guest's default vCPUs, the Mac otherwise
+  idle:
 
-Reported 2026-10-10 by another session at the maintainer's request: during a
-reset, run-qemu-gpu.sh downloads/selects the compressed factory disk (~3 GB)
-before `qemu_persistent_storage_select` erases the old VM
-(`_qps_clear_workspace_locked`), so both coexist briefly and a reset on a
-nearly full disk can still fail for space. Make a reset erase the old VM
-before the fetch (keeping the keep-saved-VM/archive semantics), so it needs
-no more room than the old VM already used. Consequence: a failed or
-interrupted download then leaves no VM, as the dropped 67a8d7a accepted.
-(67a8d7a itself targeted the pre-0.5 base-image flow and was dropped in the
-rebase on purpose.)
+  - (a) Capture: ext-image-copy-capture of a 1080p Hyprland output into a GBM
+    buffer on the VirGL render node succeeds, and a CPU map of that buffer
+    reads the real screen contents (not zeros); capture plus map plus a
+    full-frame read takes at most 10 ms median and 20 ms p95 per frame.
+  - (b) Encode: BGRA to I420 conversion plus an OpenH264 encode at 1080p
+    (gliff's CPU tier: 4:2:0, up to four threads) takes at most 25 ms median
+    and 40 ms p95 per frame, on content that changes every frame (scrolling
+    text). Capture plus encode together then fit a sustained 30 fps.
+  - (c) End to end, wired LAN: at least 30 fps sustained while scrolling a
+    full-screen terminal or browser page for 30 s, at most 2 % of frames
+    later than 100 ms; typing and scrolling "feel fine" means input-to-frame
+    latency (key or wheel event at the client to the changed frame shown
+    there) at most 60 ms median and 120 ms p95, with no stall over 250 ms.
 
-### Test gliff-server in the guest before packaging it [t-sakzbqb5]
+  Progress 2026-10-10 (worker, stopped by the postponement; no threshold
+  measured yet, nothing packaged): a disposable VM from this tree's app and
+  main's guest build (`run-qemu-gpu.sh --ephemeral` with
+  `OMARCHY_QEMU_GPU_STATE_ROOT` in a scratch directory and
+  `OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2299:22`, 8 vCPUs, 8 GiB, Apple M1 Pro)
+  booted unattended: a script waited for each `roguix-setup: ready STEP` line
+  in the run's `console.log` and answered with QMP `send-key`, then SSH with a
+  password worked through the NAT forward. The guest showed Hyprland 0.56.1 on
+  a 3456x2170 output (the Retina window size), `/dev/dri/renderD128`, and Guix
+  offers rust 1.93.0, libva 2.22.0, mesa 26.0.2 and openh264 2.6.0. gliff
+  v0.3.0 has its own probe, `gliff-probe`, which covers (a) and (b) directly:
+  `capture` (ext-image-copy-capture into a GBM buffer on the render node, CPU
+  map, PNG), `--video cpu roundtrip --single --width 1920 --height 1080`
+  (per-frame encode time), and `stream-bench` against
+  `gliff-server --listen 127.0.0.1:9000 --headless --video cpu` (fps, jitter,
+  latency; with `RUST_LOG=gliff_server=debug` the server logs `read_us` and
+  `enc_us` per frame, and `--headless` gives an exact 1080p output). The
+  build (`guix shell rust rust:cargo pkg-config gcc-toolchain libva mesa
+  wayland libxkbcommon -- cargo build --release -p gliff-server -p
+  gliff-probe`, about 15 minutes, mostly substitute downloads) compiled 111
+  crates, then failed in `libdbus-sys`: `dbus` is missing from that package
+  list. Afterwards the guest's sshd stopped answering (TCP connected, no
+  banner) while QMP reported the VM running; the cause was not investigated.
+  To resume: add `dbus` to the `guix shell` list, find why SSH stopped
+  answering (memory pressure from 8 parallel rustc jobs is one suspect, not
+  verified), then run the probes above in this order.
 
-Postponed 2026-10-10 by the maintainer ("put gliff off for later, many things are more important").
+- [ ] Compare wayvnc as the remote view [t-4vzb5lvt]
+  Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine").
+  wayvnc 0.10.1 is already in Guix at the pinned commit (`gnu/packages/vnc.scm`)
+  and needs no Vulkan or VA-API. Run it in the guest for one boot against the
+  same checks as the gliff test, so a choice is made between measured options.
 
-Approved 2026-10-10: run this feasibility test first; package nothing yet.
-Postponed by the maintainer 2026-10-10 (more important work first), during
-step (a); see "Progress" below for where it stopped and how to resume.
+- [ ] List gliff as not provided at the next Omarchy bump [t-76ot56gb]
+  Proposed 2026-10-10 (see "Background: gliff"). Omarchy 9d48fc402e
+  (2026-10-09) installs gliff by default (`omarchy-base.packages` and a
+  migration) and adds a status-only "Remote session" bar indicator. The pinned
+  Omarchy (c668141, 2026-09-15) predates it. When the pin moves past it, add
+  gliff to `docs/omarchy-packages.md` as not provided (no Guix package; its
+  upstream package is x86_64 only), check that the indicator stays dark and
+  quiet with no `gliff-server` installed, and leave the migration to the seed,
+  which marks shipped migrations done. Docs only, with the bump.
 
-Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine"). A
-disposable check, nothing packaged or shipped: set pass thresholds first
-(sustained frames per second and encode time per frame at 1080p, typing and
-scrolling feel), then (a) check that Hyprland's ext-image-copy-capture into a
-GBM buffer and a CPU map of it work on the VirGL render node, (b) time
-OpenH264 at 1080p on the guest's vCPUs, and only if both pass (c) run a
-gliff-server built outside the image against a gliff client on an existing
-x86_64 Linux with Hyprland, over NAT with a ProxyJump through the Mac, on a
-wired LAN. Record the numbers; stop at the first failure.
+- [ ] Offer Try Omarchy the zero-block punch [t-5wxjylaq]
+  Proposed 2026-10-09 (see "Background: large VM files"): Try Omarchy's
+  fresh working disk allocates about 1.1 GiB of zeros. Offer a small change
+  that punches whole zero blocks in its helper's SHA-256 pass after
+  decoding, framed modestly (initial footprint, contents unchanged), with a
+  measurement on its current main. Contacting upstream needs approval.
 
-Pass thresholds, set by the worker on 2026-10-10 before measuring (gliff
-targets 60 fps; these are the floor for a usable remote desktop, not the
-target). All at 1920x1080 on the guest's default vCPUs, the Mac otherwise
-idle:
+- [ ] omarchy-shell kills non-idempotent calls on a timeout [t-3b46spbn]
+  Proposed 2026-10-09 by the Super+Space worker, raised by sol and MiMo:
+  `omarchy-shell` runs `qs ipc` under `timeout --kill-after=1s 2s` and reports
+  "not responding" when it kills the client, but the call may already have
+  reached the shell, so a toggle is lost or applied late and the caller
+  cannot tell which. Other bindings and scripts still go through it after the
+  #13418 backport. A kill should mean "outcome unknown", never a failure to
+  retry; callers that need a state should ask for it (open or close, not
+  toggle). Check which default callers toggle, and offer it upstream.
 
-- (a) Capture: ext-image-copy-capture of a 1080p Hyprland output into a GBM
-  buffer on the VirGL render node succeeds, and a CPU map of that buffer
-  reads the real screen contents (not zeros); capture plus map plus a
-  full-frame read takes at most 10 ms median and 20 ms p95 per frame.
-- (b) Encode: BGRA to I420 conversion plus an OpenH264 encode at 1080p
-  (gliff's CPU tier: 4:2:0, up to four threads) takes at most 25 ms median
-  and 40 ms p95 per frame, on content that changes every frame (scrolling
-  text). Capture plus encode together then fit a sustained 30 fps.
-- (c) End to end, wired LAN: at least 30 fps sustained while scrolling a
-  full-screen terminal or browser page for 30 s, at most 2 % of frames
-  later than 100 ms; typing and scrolling "feel fine" means input-to-frame
-  latency (key or wheel event at the client to the changed frame shown
-  there) at most 60 ms median and 120 ms p95, with no stall over 250 ms.
+- [ ] The shutdown screen shows Hyprland's startup log [t-5nrn7cv4]
+  Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
+  the bold console font: at shutdown tty1 still shows the Roguix logo and
+  Hyprland's startup log, which `start-hyprland` printed there, and the
+  shutdown lines are written over its last line. Clearing tty1 when Hyprland
+  exits (or not printing the log there) would leave only the shutdown text.
 
-Progress 2026-10-10 (worker, stopped by the postponement; no threshold
-measured yet, nothing packaged): a disposable VM from this tree's app and
-main's guest build (`run-qemu-gpu.sh --ephemeral` with
-`OMARCHY_QEMU_GPU_STATE_ROOT` in a scratch directory and
-`OMARCHY_QEMU_GPU_PORT_FORWARDS=tcp:2299:22`, 8 vCPUs, 8 GiB, Apple M1 Pro)
-booted unattended: a script waited for each `roguix-setup: ready STEP` line
-in the run's `console.log` and answered with QMP `send-key`, then SSH with a
-password worked through the NAT forward. The guest showed Hyprland 0.56.1 on
-a 3456x2170 output (the Retina window size), `/dev/dri/renderD128`, and Guix
-offers rust 1.93.0, libva 2.22.0, mesa 26.0.2 and openh264 2.6.0. gliff
-v0.3.0 has its own probe, `gliff-probe`, which covers (a) and (b) directly:
-`capture` (ext-image-copy-capture into a GBM buffer on the render node, CPU
-map, PNG), `--video cpu roundtrip --single --width 1920 --height 1080`
-(per-frame encode time), and `stream-bench` against
-`gliff-server --listen 127.0.0.1:9000 --headless --video cpu` (fps, jitter,
-latency; with `RUST_LOG=gliff_server=debug` the server logs `read_us` and
-`enc_us` per frame, and `--headless` gives an exact 1080p output). The
-build (`guix shell rust rust:cargo pkg-config gcc-toolchain libva mesa
-wayland libxkbcommon -- cargo build --release -p gliff-server -p
-gliff-probe`, about 15 minutes, mostly substitute downloads) compiled 111
-crates, then failed in `libdbus-sys`: `dbus` is missing from that package
-list. Afterwards the guest's sshd stopped answering (TCP connected, no
-banner) while QMP reported the VM running; the cause was not investigated.
-To resume: add `dbus` to the `guix shell` list, find why SSH stopped
-answering (memory pressure from 8 parallel rustc jobs is one suspect, not
-verified), then run the probes above in this order.
+- [ ] Give the builder a disposable scratch disk for builds [t-4brvu3it]
+  Proposed 2026-10-09; weigh it after the cleanup step above. The image
+  derivations copy the closure into a temporary root, an ext4
+  `partition.img` and a genimage temporary in guix-daemon's build directory.
+  Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
+  build would free those at once instead of waiting for gc and trim. It adds
+  no capacity (same APFS volume) and changes how the builder is started.
 
-### Compare wayvnc as the remote view [t-4vzb5lvt]
+- [ ] Let the export drop every old image root [t-edvvmbii]
+  Proposed 2026-10-09 by the builder cleanup worker: `build.py --export`
+  removes only the exported image's GC root, so an older `/root/*.raw` root
+  kept a previous image pinned (the builder stayed at 39 GiB until it was
+  removed by hand). The export could also remove the other `/root/*.raw`
+  roots that point to a `-disk-image` store item.
 
-Proposed 2026-10-10 (see "Background: Roguix as a gliff remote machine").
-wayvnc 0.10.1 is already in Guix at the pinned commit (`gnu/packages/vnc.scm`)
-and needs no Vulkan or VA-API. Run it in the guest for one boot against the
-same checks as the gliff test, so a choice is made between measured options.
+- [ ] Recheck Venus on macOS at the next virglrenderer release [t-zb7efvcb]
+  Approved 2026-10-10; waits for the next virglrenderer release.
 
-### List gliff as not provided at the next Omarchy bump [t-76ot56gb]
+  Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"). When a
+  virglrenderer release after 1.3.0 contains the macOS Venus series (!1600,
+  !1601, !1602, !1635), check read-only whether it also settles host memory
+  on KosmicKrisp (!1685), whether Guix's Mesa has reached 26.2.4 or later,
+  and whether UTM still keeps the Linux desktop on VirGL; then update the
+  background and ask again. No runtime change.
 
-Proposed 2026-10-10 (see "Background: gliff"). Omarchy 9d48fc402e
-(2026-10-09) installs gliff by default (`omarchy-base.packages` and a
-migration) and adds a status-only "Remote session" bar indicator. The pinned
-Omarchy (c668141, 2026-09-15) predates it. When the pin moves past it, add
-gliff to `docs/omarchy-packages.md` as not provided (no Guix package; its
-upstream package is x86_64 only), check that the indicator stays dark and
-quiet with no `gliff-server` installed, and leave the migration to the seed,
-which marks shipped migrations done. Docs only, with the bump.
+- [ ] A time-boxed Venus experiment on a throwaway runtime [t-gh4i2jvb]
+  Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if
+  Vulkan apps become a goal. A development runtime with virglrenderer main
+  (plus !1685 if still open), a bundled Vulkan loader and KosmicKrisp
+  (macOS 26) or MoltenVK (macOS 15), `venus=on,blob=on,hostmem=...` on the
+  existing device, and a guest Mesa with "venus: honor the virtio-gpu blob
+  alignment". Pass when: `vulkaninfo` shows the Venus device, vkcube in a
+  Hyprland window does not lose Hyprland's GL context, the hostmem BAR fits
+  on an M1 or M2 (36-bit guest addresses), and a guest-triggered device loss
+  leaves the Mac and the VirGL desktop working. Record numbers against
+  VirGL; ship nothing from it.
 
-### Offer Try Omarchy the zero-block punch [t-5wxjylaq]
-
-Proposed 2026-10-09 (see "Background: large VM files"): Try Omarchy's
-fresh working disk allocates about 1.1 GiB of zeros. Offer a small change
-that punches whole zero blocks in its helper's SHA-256 pass after
-decoding, framed modestly (initial footprint, contents unchanged), with a
-measurement on its current main. Contacting upstream needs approval.
-
-### omarchy-shell kills non-idempotent calls on a timeout [t-3b46spbn]
-
-Proposed 2026-10-09 by the Super+Space worker, raised by sol and MiMo:
-`omarchy-shell` runs `qs ipc` under `timeout --kill-after=1s 2s` and reports
-"not responding" when it kills the client, but the call may already have
-reached the shell, so a toggle is lost or applied late and the caller
-cannot tell which. Other bindings and scripts still go through it after the
-#13418 backport. A kill should mean "outcome unknown", never a failure to
-retry; callers that need a state should ask for it (open or close, not
-toggle). Check which default callers toggle, and offer it upstream.
-
-### The shutdown screen shows Hyprland's startup log [t-5nrn7cv4]
-
-Found 2026-10-07 by the shutdown-font worker and seen again 2026-10-09 with
-the bold console font: at shutdown tty1 still shows the Roguix logo and
-Hyprland's startup log, which `start-hyprland` printed there, and the
-shutdown lines are written over its last line. Clearing tty1 when Hyprland
-exits (or not printing the log there) would leave only the shutdown text.
-
-### Give the builder a disposable scratch disk for builds [t-4brvu3it]
-
-Proposed 2026-10-09; weigh it after the cleanup step above. The image
-derivations copy the closure into a temporary root, an ext4
-`partition.img` and a genimage temporary in guix-daemon's build directory.
-Pointing the daemon's `TMPDIR` at a second qcow2 that is deleted after the
-build would free those at once instead of waiting for gc and trim. It adds
-no capacity (same APFS volume) and changes how the builder is started.
-
-### Let the export drop every old image root [t-edvvmbii]
-
-Proposed 2026-10-09 by the builder cleanup worker: `build.py --export`
-removes only the exported image's GC root, so an older `/root/*.raw` root
-kept a previous image pinned (the builder stayed at 39 GiB until it was
-removed by hand). The export could also remove the other `/root/*.raw`
-roots that point to a `-disk-image` store item.
-
-### Recheck Venus on macOS at the next virglrenderer release [t-zb7efvcb]
-
-Approved 2026-10-10; waits for the next virglrenderer release.
-
-Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"). When a
-virglrenderer release after 1.3.0 contains the macOS Venus series (!1600,
-!1601, !1602, !1635), check read-only whether it also settles host memory
-on KosmicKrisp (!1685), whether Guix's Mesa has reached 26.2.4 or later,
-and whether UTM still keeps the Linux desktop on VirGL; then update the
-background and ask again. No runtime change.
-
-### A time-boxed Venus experiment on a throwaway runtime [t-gh4i2jvb]
-
-Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if
-Vulkan apps become a goal. A development runtime with virglrenderer main
-(plus !1685 if still open), a bundled Vulkan loader and KosmicKrisp
-(macOS 26) or MoltenVK (macOS 15), `venus=on,blob=on,hostmem=...` on the
-existing device, and a guest Mesa with "venus: honor the virtio-gpu blob
-alignment". Pass when: `vulkaninfo` shows the Venus device, vkcube in a
-Hyprland window does not lose Hyprland's GL context, the hostmem BAR fits
-on an M1 or M2 (36-bit guest addresses), and a guest-triggered device loss
-leaves the Mac and the VirGL desktop working. Record numbers against
-VirGL; ship nothing from it.
-
-### Hardware H.264 encoding through VA-API and VideoToolbox [t-3fkebvn4]
-
-Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if CPU
-encoding (OpenH264, gliff) is measured too slow in the guest. The route
-independent of Vulkan: guest VA-API (Guix's Mesa builds its VA driver with
-`-Dvideo-codecs=all`) over virgl's video protocol to a virglrenderer
-patched to encode with VideoToolbox, as OmacVM does (#48). Needs
-`-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
+- [ ] Hardware H.264 encoding through VA-API and VideoToolbox [t-3fkebvn4]
+  Proposed 2026-10-10 (see "Background: KosmicKrisp and Venus"); only if CPU
+  encoding (OpenH264, gliff) is measured too slow in the guest. The route
+  independent of Vulkan: guest VA-API (Guix's Mesa builds its VA driver with
+  `-Dvideo-codecs=all`) over virgl's video protocol to a virglrenderer
+  patched to encode with VideoToolbox, as OmacVM does (#48). Needs
+  `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
 
