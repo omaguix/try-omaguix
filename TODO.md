@@ -377,6 +377,12 @@
   base image, and creates `exports/`. Still to do after it: make
   builder-vm's export share configurable and fail closed without the
   volume, and stream exports as `.zst`.
+  Step 1 done 2026-10-16: `guix-images.tar` staged on the SSD with matching
+  sha256 (8a348db0...57e2), plus `trash-1000.staging` (the pendrive's
+  .Trash-1000). The erase (`diskutil eraseDisk APFS omaguix-images GPT
+  disk4`) was blocked by the auto-mode classifier as an irreversible
+  deletion; per the rules it is not retried. The user runs it, then the
+  worker (wD4:p3J) resumes from step 3.
 
 ## Proposed
 
