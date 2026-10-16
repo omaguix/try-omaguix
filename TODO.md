@@ -28,6 +28,11 @@
   introduction and `v0.5.0`. The domain goes through [t-omaorgdm]. Update
   `docs/architecture.md:3-8`, the AGENTS.md section, the identity file's
   comments and decision records.
+  Started 2026-10-16 with the user's grant (d-p7wai4ci): pane worker
+  omaguix-rename (wD4:p33), worktree ../try-roguix-rename, branch
+  omaguix-rename; wait job 20261016-214642-c573. Host follow-ups after landing (coordinator):
+  the Karabiner exemption matches `dev.tryroguix.native(.development)?.vm`
+  and must follow the new bundle ids.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
@@ -307,6 +312,24 @@
   there (and pass `--credentials`). Python and Make: a headless worker.
   Decided by the user 2026-10-16 (d-6spz6nsu): approved.
 
+- [ ] `build.py --check` evaluates the whole system [t-fxujivca]
+  Follow-up of [t-omamanif] (builder check 2026-10-16): `build.py --check`
+  exits 0 after Guix's dry run stops at the first graft build needed during
+  evaluation, so it never reaches most of the system (here, the new
+  `computed-file`). A full `system image --dry-run --no-grafts` did evaluate
+  it. Make `--check` evaluate everything, for example by adding
+  `--no-grafts` to the check; it changes what `--check` proves, so say so in
+  the README.
+  Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
+
+- [ ] `vm-run` drops lines of the guest log [t-gmgkzhns]
+  Found 2026-10-16 by the [t-omamanif] worker: the host-side log lacked lines
+  24-40 of the guest's own log, and a short grep through `vm-run` exited 0
+  but printed nothing. That is a lost event in vm-run's streaming (the guest
+  log is complete), not a timing problem: find where the stream loses bytes
+  and fix the producer or the reader (Rule 10).
+  Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
+
 ## Proposed
 
 - [ ] Accept Guix's Ungoogled Chromium on the Metal path [t-wgeohswx]
@@ -555,22 +578,6 @@
   Decided by the user 2026-10-16 (d-q55wvgua): not now, there is space for
   now. Redo the plan when space runs short (the `macbook-2010` skill covers
   the move).
-
-- [ ] `build.py --check` evaluates the whole system [t-fxujivca]
-  Follow-up of [t-omamanif] (builder check 2026-10-16): `build.py --check`
-  exits 0 after Guix's dry run stops at the first graft build needed during
-  evaluation, so it never reaches most of the system (here, the new
-  `computed-file`). A full `system image --dry-run --no-grafts` did evaluate
-  it. Make `--check` evaluate everything, for example by adding
-  `--no-grafts` to the check; it changes what `--check` proves, so say so in
-  the README.
-
-- [ ] `vm-run` drops lines of the guest log [t-gmgkzhns]
-  Found 2026-10-16 by the [t-omamanif] worker: the host-side log lacked lines
-  24-40 of the guest's own log, and a short grep through `vm-run` exited 0
-  but printed nothing. That is a lost event in vm-run's streaming (the guest
-  log is complete), not a timing problem: find where the stream loses bytes
-  and fix the producer or the reader (Rule 10).
 
 ## Needs a decision
 
