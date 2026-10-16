@@ -337,6 +337,19 @@
   pendrive is a 119 GiB exFAT USB volume (105 GiB free) that also holds
   another session's `m1-archive/`. exFAT has no sparse files. Consult round
   in progress.
+  Consult round 20261016-224530-961e (all five): the pendrive holds only
+  finished exports and archives; the live builder qcow2 stays on the SSD;
+  exports are written as `.zst` through a `.partial` file with sha256
+  before the rename; scripts refuse to run when the pendrive is missing.
+  Decided by the user 2026-10-16: reformat the pendrive as APFS; the herdr
+  coordinator confirmed that `m1-archive/guix-images.tar` (18 GB) is the
+  only copy of the former `~/personal_projects/guix/images` and stopped
+  writing there. A pane worker (pendrive-apfs, wD4:p3J, wait job 20261016-224823-cd17)
+  stages the tar on the SSD with sha256, erases disk4 as APFS
+  `omaguix-images`, copies the tar back with sha256, restores the builder's
+  base image, and creates `exports/`. Still to do after it: make
+  builder-vm's export share configurable and fail closed without the
+  volume, and stream exports as `.zst`.
 
 ## Proposed
 
