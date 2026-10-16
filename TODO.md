@@ -51,6 +51,10 @@
   coordinator ends that turn with the last line `WORKER-DONE <sha> |
   t-omabendl landed` (or `WORKER-BLOCKED <reason>`): herdr wakes the
   guix-bend coordinator on that verdict to start Try Omabend's next slice.
+  Asked by the user 2026-10-16 (d-jesazvuk), since `herdr todo run` starts
+  only headless workers and AGENTS.md sends `make test`/`make app` items to
+  pane workers: "make it so headless can run make test/make app? change
+  AGENTS.md? ask the models".
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
