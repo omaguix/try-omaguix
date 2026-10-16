@@ -46,6 +46,10 @@
     sha256, before the rename;
   - keep the live `builder.qcow2` on the SSD.
   It goes before the new guest image that the rename [t-xzufmvj7] needs.
+  On APFS sparse files work, so the existing sparse raw export is fine and
+  the `.zst` streaming advised for exFAT is not needed. Run r-hwc6hp2w
+  (headless; test-contracts, diff-check; wait job 20261016-230954-49e6): `BUILDER_EXPORT`
+  for builder-vm's export share, fail closed when it is missing.
 
 - [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
   Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
