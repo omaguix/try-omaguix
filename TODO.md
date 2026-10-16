@@ -547,7 +547,8 @@
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
   the user's decision there (its TODO item 29; consult rounds
-  20261016-152300-7ecb and 20261016-152343-e8b2; review 20261016-184929-d03b):
+  20261016-152300-7ecb, 20261016-152343-e8b2 and 20261016-155613-830a; reviews
+  20261016-184929-b5d2 and 20261016-184929-d03b):
   two x86_64-only packages, so that `guix install claude-code-x86-64-v1` gives
   a working `claude` on Core 2 CPUs.
   1. `x86-64-v2-sigill-shim` 0.1.0, GPL-3.0-or-later, from
