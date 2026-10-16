@@ -14,6 +14,9 @@
   When it lands, send the commit in one line to the guix-bend coordinator
   (session guix-bend-60, pane wCX:p97): Try Omabend's app build waits only
   on this item.
+  Started 2026-10-16 with the user's grant for this launch: pane worker
+  update-checker (wD4:p1X), worktree ../try-roguix-lu4, branch
+  update-checker-identity; wait job 20261016-163509-d350.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
