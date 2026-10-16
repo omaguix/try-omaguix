@@ -2,33 +2,6 @@
 
 ## Next, in order
 
-- [ ] Package OpenAI Codex CLI in the omaguix channel [t-fjlrfmnx]
-  Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
-  the user's decision there (its TODO item 28, consult round
-  20261016-143228-dbe3): package Codex CLI (github.com/openai/codex,
-  Apache-2.0) as the official static release binary pinned by hash with
-  `copy-build-system`, clearly labelled as a binary package (nothing is
-  compiled, so no substitutes are needed), with Codex's self-updater off
-  (the store is read-only), and release it through the one release step
-  (decision 0006). Facts relayed, to check before use: release `rust-v0.163.0`
-  (2026-10-15), asset `codex-x86_64-unknown-linux-musl.tar.gz`, sha256
-  `beb339e8ecd9ba057a6bb2dc81ad8ca474812edfbf0fc5056ca818797648dde4`,
-  unpacking to one static-pie binary (297 MB); aarch64 assets exist too.
-  Untested: `codex exec` and its sandbox (releases also ship
-  `bwrap-x86_64-unknown-linux-musl`). Tell the requesting session the
-  released channel commit.
-  Decided by the user 2026-10-16 (d-ekffmmrt): approved for x86_64 and
-  aarch64, next after [t-omabendl]; it is released with the first channel
-  release ([t-omarelfs]).
-  Started 2026-10-16 with the user's grant for this launch: pane worker
-  codex-package (wD4:p1D), worktree ../try-roguix-codex, branch
-  codex-package; wait job 20261016-161354-38c7.
-  Attempt 1 (20c5b8da) reviewed in consult round 20261016-162136-a9e2 (all
-  five models): the build ran the target binary (no x86_64 build), and the
-  -c override claim and TLS roots were unverified. Sent back to the same
-  worker. Decided by the user 2026-10-16 (d-5gqofwk2): codex-bin brings
-  Guix's bubblewrap on its PATH.
-
 - [ ] The update checker follows the app identity [t-lu4f36td]
   Follow-up of [t-omabendl] (review rounds 20261016-160156-dde6 and
   20261016-160157-dae4, sol): `AppRelease.swift` and `AppReleaseChecker.swift`
@@ -118,6 +91,11 @@
      (`[t-omabkfil]`, `[t-omaorgdm]`, `[t-omakeyfr]` below) and switch
      `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
      and `substitutes.omaguix.org.pub` once signed substitute content is verified.
+  This release carries `codex-bin` 0.163.0 (5ba9227a, [t-fjlrfmnx], closed):
+  send its released channel commit to the guix-x86_64-iso-omguix session
+  (guix-x86-64-iso-omguix-86), which asked for it. Its x86_64 build was not
+  run on the aarch64 builder (no emulation), so CI builds it first here;
+  untested: the sandbox inside an Omaguix guest and `codex exec` after login.
 
 - [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
   Decided by the user 2026-10-12: "yes, after acceptance". Proposed
