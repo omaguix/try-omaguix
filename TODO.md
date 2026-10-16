@@ -72,7 +72,12 @@
   (a headless slice testable in the sandbox; integration and `make app` in a
   pane worker), make the shell tests sandbox-friendly, and isolate the verify
   (scrubbed environment or a separate user, no keychain, harness pinned).
-  Open question in "Needs a decision" below.
+  Decided by the user 2026-10-16 (d-3m46d4ab): split it. Slice 1, a
+  headless worker through `herdr todo run`: the parameterization with tests
+  that run in its sandbox (Python contracts, resolved-configuration tests);
+  its verify runs only `test-contracts` and `diff-check`. Slice 2: the
+  integration (`make test`, `make app` for both apps, signing) in a pane
+  worker that the user allows at each launch.
 
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
@@ -535,12 +540,6 @@
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
-
-### How to run `[t-omabendl]` given the verify's trust gap
-
-How should `[t-omabendl]` run, given that the driver's verify runs the worker's Makefile and tests outside the sandbox with the coordinator's environment?
-Options: split it: a headless slice whose verify runs only `test-contracts` and `diff-check`, then integration (`make test`, `make app`) in a pane worker you allow per launch | accept the verify running `make test` (not `make app`) with the coordinator's environment for this item | wait until herdr isolates the verify and enforces host operations | headless with `make test` and `make app` both in the verify
-Checked 2026-10-16: herdr's headless sandbox denies Unix sockets and network and its capability adapter enforces nothing yet (herdr `src/workers/mod.rs:228-290`, `src/workers/capabilities.rs:361-398`); the verify runs outside the sandbox with the caller's environment (herdr `src/workers/verify.rs:1-8,509-530`); `make test` binds AF_UNIX sockets, runs `codesign --sign -` and `/bin/ps` and writes to `/private/tmp`; `make app` downloads sources and unlocks the development keychain (`macos/development-signing-identity.sh:26-47`). Consult round 20261016-144120-c88a above.
 
 ### Background: renaming to Omaguix (2026-10-12)
 
