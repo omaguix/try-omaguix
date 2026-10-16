@@ -67,6 +67,11 @@
   command), stops when the Mac has less than 15 GiB free, then runs
   `make guix-package`, `make app` and `make test`; wait job 20261016-231627-5459. Next: the
   models review the diff, then it lands.
+  Step 2 progress 2026-10-16: rebased as 2bab963d, make test-contracts ok;
+  builder gc+fstrim 47G to 14G; the Mac has 74 GiB free. The image build
+  (build.py via vm-run, the sources copied to the pendrive) was blocked by
+  the auto-mode classifier ("Modify Shared Resources"); not retried. It waits
+  for the user to allow that one build in the worker's pane wD4:p33.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
