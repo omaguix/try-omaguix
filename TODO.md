@@ -66,6 +66,11 @@
   worker omabendl-slice2 (wD4:pX), worktree ../try-roguix-omabendl2, branch
   omabendl-slice2; wait job 20261016-153231-aa50. The coordinator reviews
   and lands it with git merge --ff-only.
+  Slice 2: 1436112d by the pane worker, reviewed in rounds
+  20261016-160156-dde6 and 20261016-160157-dae4 (sol, DeepSeek; no blocker),
+  rebased as 1d24187f and fast-forwarded onto main. Decided by the user
+  2026-10-16 (d-eq7s75zp): the development build logs under
+  dev.tryroguix.native.development.
 
 - [ ] Package OpenAI Codex CLI in the omaguix channel [t-fjlrfmnx]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
@@ -337,6 +342,41 @@
   Omaguix's own packages") describes the pre-Omarchy Roguix image, so it
   should say Roguix.
   Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
+
+- [ ] The update checker follows the app identity [t-lu4f36td]
+  Follow-up of [t-omabendl] (review rounds 20261016-160156-dde6 and
+  20261016-160157-dae4, sol): `AppRelease.swift` and `AppReleaseChecker.swift`
+  hardcode the repository `omaguix/try-omaguix`, the `try-roguix-v` tag prefix
+  and the DMG names, so a second app would offer Try Omaguix updates. Write
+  `RELEASE_REPOSITORY`, `RELEASE_TAG_PREFIX` and `RELEASE_DMG` into Info.plist
+  and read them there; Try Omaguix keeps accepting its historical
+  `TryRoguix*.dmg` names. Swift and `make test`: a pane worker.
+  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
+
+- [ ] UI strings name the app from its identity [t-5gcnv3af]
+  Follow-up of [t-omabendl] (worker open point): windows and alerts say
+  "Try Omaguix"/"Omaguix" in any app, including the bridged-session message
+  that `macos/network-helper/supervisor.c` prints and `Networking.swift`
+  matches. Take the name from the identity; the shared QEMU runtime's Cocoa
+  menus (`patches/`) keep theirs unless that is cheap. Swift and `make test`:
+  a pane worker.
+  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
+
+- [ ] The start menu guards NAT-only apps explicitly [t-3bi2zglk]
+  Follow-up of [t-omabendl] (round 20261016-160156-dde6, DeepSeek): the
+  start menu avoids `NetworkService`'s `preconditionFailure` in an app
+  without the bridged helper only because `VMNetworkPreferences()` defaults
+  to NAT (`StartMenuWindow.swift:839-842`). Guard on
+  `offersBridgedNetworking` explicitly and add a test. Swift: a pane worker.
+  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
+
+- [ ] Guest selection moves into the app identity file [t-d2xuz6pd]
+  Follow-up of [t-omabendl] (round 20261016-160157-dae4, DeepSeek): the
+  guest's `GUIX_SYSTEM`, `GUIX_LOAD_PATH` and the credentials policy are
+  separate make variables, so a second app must set them consistently by
+  hand. Put them in the identity file and have `make guix-package` read them
+  there (and pass `--credentials`). Python and Make: a headless worker.
+  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
 
 ## Proposed
 
