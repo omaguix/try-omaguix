@@ -12,7 +12,12 @@
   (d-7jqkrmk7): the coordinator saved them as a patch for the worker and
   restored the files to `HEAD`. Asked by the user 2026-10-16: review the
   worker's commit with the models before approving it, since the edits may
-  have been made by DeepSeek and be messy. Before committing them, fix five
+  have been made by DeepSeek and be messy. Done 2026-10-16: round
+  20261016-143529-9786; commit a33cf1e4 on run r-scr4gxwa waits for approval.
+  Decided by the user 2026-10-16 (d-hgimrsal): approving it pushes `main`,
+  so first review the unpushed product commits from 2026-10-14 (`599ae36a`
+  to `512520a1`) with the models for secrets and bugs. Before committing
+  them, fix five
   review mismatches against the code and preserved compatibility contracts:
   1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
      (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
