@@ -2,23 +2,6 @@
 
 ## Next, in order
 
-- [ ] The update checker follows the app identity [t-lu4f36td]
-  Follow-up of [t-omabendl] (review rounds 20261016-160156-dde6 and
-  20261016-160157-dae4, sol): `AppRelease.swift` and `AppReleaseChecker.swift`
-  hardcode the repository `omaguix/try-omaguix`, the `try-roguix-v` tag prefix
-  and the DMG names, so a second app would offer Try Omaguix updates. Write
-  `RELEASE_REPOSITORY`, `RELEASE_TAG_PREFIX` and `RELEASE_DMG` into Info.plist
-  and read them there; Try Omaguix keeps accepting its historical
-  `TryRoguix*.dmg` names. Swift and `make test`: a pane worker.
-  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
-  When it lands, send the commit in one line to the guix-bend coordinator
-  (session guix-bend-60, pane wCX:p97): Try Omabend's app build waits only
-  on this item.
-  Started 2026-10-16 with the user's grant for this launch: pane worker
-  update-checker (wD4:p1X), worktree ../try-roguix-lu4, branch
-  update-checker-identity; wait job 20261016-163544-4801 (the first start
-  failed, herdr report r-96).
-
 - [ ] Upgrade existing VMs across Guix pin bumps [t-omaupgrd]
   Requested 2026-10-12 by the roguix-vps coordinator, approved by the
   owner (review of the Roguix repositories, consult round
