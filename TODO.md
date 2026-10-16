@@ -284,6 +284,9 @@
   menus (`patches/`) keep theirs unless that is cheap. Swift and `make test`:
   a pane worker.
   Decided by the user 2026-10-16 (d-6spz6nsu): approved.
+  Also (from [t-lu4f36td]'s worker): the update messages ("Try Omaguix X is
+  available", "No stable Try Omaguix release...") and the update request's
+  User-Agent `Try-Roguix-Release-Check`.
 
 - [ ] The start menu guards NAT-only apps explicitly [t-3bi2zglk]
   Follow-up of [t-omabendl] (round 20261016-160156-dde6, DeepSeek): the
