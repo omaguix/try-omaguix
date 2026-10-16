@@ -2,14 +2,16 @@
 
 ## Next, in order
 
-### Finish and commit the Omaguix documentation rename [t-omadocs1]
+### Finish and commit the Omaguix documentation rename [t-omadocsr]
 
 Queued 2026-10-14 at the user's request ("add to TODO what is still left to
 do; work through the TODO in order; ask the models", consult round
 20261014-193606-be7d with sol, MiMo, DeepSeek). Fifteen documentation files
 (`AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `THIRD_PARTY_NOTICES.md`,
-`docs/*.md`, `macos/README.md`, `server/README.md`) have uncommitted
-Roguix-to-Omaguix edits in the checkout. Before committing them, fix five
+`docs/*.md`, `macos/README.md`, `server/README.md`) had uncommitted
+Roguix-to-Omaguix edits in the checkout. Decided by the user 2026-10-16
+(d-7jqkrmk7): the coordinator saved them as a patch for the worker and
+restored the files to `HEAD`. Before committing them, fix five
 review mismatches against the code and preserved compatibility contracts:
 1. `macos/README.md:166`: keep `~/Library/Logs/Try Roguix/launcher.log`
    (matches `macos/Sources/OmarchyVMHelper/LauncherLog.swift:26-29` and
@@ -47,8 +49,11 @@ two commits (`f3df437a` "docs: upgrade Roguix VMs across Guix pins" and
 `e24e710d` "guest: roguix-update moves to a new Guix pin", which also covers
 `[t-omamanif]` below with `guest/guix/test_roguix_update.py`). Before landing
 them on `main`:
-1. Resolve the open `check-forward-update` Codeberg clone question in "Needs a
-   decision" below.
+1. Decided by the user 2026-10-16 (d-avv7ucxt): `roguix-update` passes
+   `--no-check-forward-update` to `guix system reconfigure` after it
+   authenticates `release.json` and verifies that `P/bin/guix describe`
+   matches `guix-commit`, so moving across Guix pins never clones Guix from
+   Codeberg.
 2. Rebase both commits onto `main` and update the renamed product and
    repository references (`Omaguix`, `omaguix/omaguix`, `omaguix/omaguix-channel`).
 3. Ensure `omaguix/omaguix`'s `.github/workflows/build-desktop.yml` emits
@@ -56,7 +61,7 @@ them on `main`:
    `package-closure.txt` before `e24e710d`'s stricter `release.py` check is
    used for a release.
 
-### Rebase and re-test the Omarchy menu-rows PR [t-omamenu1]
+### Rebase and re-test the Omarchy menu-rows PR [t-omamenup]
 
 Asked 2026-10-12 whether https://github.com/omacom/omarchy/pull/14740 is
 obsolete now that Omarchy opens menus through Hyprland global shortcuts
@@ -79,7 +84,7 @@ short, the release takes hours); do not wait for #14993 (open, its
 timing and shape unknown; DeepSeek alone would wait). Pushing the PR branch and replying are covered by the approved
 upstream-offer of that item.
 
-### First Omaguix release through release.py [t-omarel01]
+### First Omaguix release through release.py [t-omarelfs]
 
 Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
 path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
@@ -100,7 +105,7 @@ DeepSeek): before running `guest/guix/release.py`:
    - Emit `split-<prefix>/guix-profile.txt` and include the Guix profile in
      `package-closure.txt` (required by decision 0007 / `[t-omaupgrd]`).
 2. Complete the `omaguix.org` / `substitutes.omaguix.org` cutover prerequisites
-   (`[t-omabkfil]`, `[t-omaorg01]`, `[t-omakey01]` below) and switch
+   (`[t-omabkfil]`, `[t-omaorgdm]`, `[t-omakeyfr]` below) and switch
    `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
    and `substitutes.omaguix.org.pub` once signed substitute content is verified.
 
@@ -155,7 +160,7 @@ list of every store path it published that is still meant to be served
 put them under a GC root such as /var/guix/gcroots/try-roguix/<name> on
 the VPS and say so. Until then nothing is deleted on the VPS.
 
-### Move Omaguix to omaguix.org [t-omaorg01]
+### Move Omaguix to omaguix.org [t-omaorgdm]
 
 The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
 the organization is `omaguix`, and the public domain is `omaguix.org`.
@@ -242,7 +247,7 @@ omarchy, guix, guix-system, hyprland on all three; macos and
 virtual-machine on try-omaguix. Repository descriptions and topics are
 GitHub settings (gh repo edit); README is a docs commit.
 
-### Publish the fresh substitute key before the first Omaguix CI run [t-omakey01]
+### Publish the fresh substitute key before the first Omaguix CI run [t-omakeyfr]
 
 Requested 2026-10-12 by the omguix coordinator, relayed by the user:
 publish the fresh public key and %roguix-reference-system through
@@ -263,7 +268,7 @@ leaving `main` at `d610bc0c` until the first full `release.py` run succeeds.
 
 ## Proposed
 
-### Parameterize the launcher build and guest packaging for a second app [t-omabend1]
+### Parameterize the launcher build and guest packaging for a second app [t-omabendl]
 
 Requested 2026-10-16 (decision d-4evijsti, "parameterize try-roguix through
 its coordinator; keep try-omabend thin"; consult round 20261016-095300-4764
@@ -359,16 +364,6 @@ no more room than the old VM already used. Consequence: a failed or
 interrupted download then leaves no VM, as the dropped 67a8d7a accepted.
 (67a8d7a itself targeted the pre-0.5 base-image flow and was dropped in the
 rebase on purpose.)
-
-### Register checks for herdr todo run [t-atkjktc5]
-
-Proposed 2026-10-10 by the herdr coordinator: `herdr todo run` (verify,
-cherry-pick, install, push) needs this repository's checks and install
-registered in `.herdr/checks.toml`: `make test` as the check, `make install`
-as the install step (only with the maintainer's go, since it replaces the
-installed app), and what a guest build needs. Until then the coordinator
-runs headless workers with `herdr worker start`, `wait`, `verify` and
-cherry-picks by hand.
 
 ### Test gliff-server in the guest before packaging it [t-sakzbqb5]
 
@@ -530,18 +525,6 @@ patched to encode with VideoToolbox, as OmacVM does (#48). Needs
 `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
 ## Needs a decision
-
-### Register `.herdr/checks.toml` (`[t-atkjktc5]`) to unblock `herdr todo run`
-
-Approve `[t-atkjktc5]` and have the coordinator commit `.herdr/checks.toml` so `herdr todo run` can dispatch workers?
-Options: approve `[t-atkjktc5]` and let the coordinator commit `.herdr/checks.toml` (`test-contracts` and `git diff --check`; no automatic `make install`) | approve `[t-atkjktc5]` with `make test` and `make install` in `.herdr/checks.toml` | keep `.herdr/checks.toml` unconfigured for now
-Checked 2026-10-14: the coordinator workflow requires dispatching TODO workers through `herdr todo run` (which enforces the subscription usage gate and reads `.herdr/checks.toml`), and `.herdr/checks.toml` does not exist yet on `main` (`[t-atkjktc5]` is in "Proposed"), blocking worker dispatch for `[t-omadocs1]` and subsequent items.
-
-### Avoid `check-forward-update`'s Codeberg clone when moving across Guix pins (`[t-omaupgrd]`)
-
-How should `roguix-update` handle `guix system reconfigure`'s `check-forward-update` clone of Guix from Codeberg when moving a VM to a new Guix pin (decision 0007)?
-Options: pass `--no-check-forward-update` in `roguix-update` after `roguix-update` authenticates `release.json` and verifies `P/bin/guix describe` matches `guix-commit` | pre-seed `/root/.cache/guix/checkouts` for Guix in the image and release | leave `check-forward-update` cloning from Codeberg
-Checked 2026-10-14 (upgrade worker commits `f3df437a` and `e24e710d`, consult round 20261014-193606-be7d with sol, MiMo, DeepSeek): `guix system reconfigure` runs `check-forward-update`, which clones Guix's channel URL from Codeberg into root's cache to relate the running system's provenance commit to the new one (in VM testing, Codeberg reset the connection twice and a local libgit2 mirror clone took 8224 s); `roguix-update` already authenticates the signed channel release commit and verifies `P/bin/guix describe` before invoking `reconfigure`.
 
 ### Background: renaming to Omaguix (2026-10-12)
 

@@ -1,0 +1,11 @@
+# Checks `herdr todo run --check NAME...` runs on a worker's commit, in the
+# worker's folder, without a shell. The driver reads this file from the shared
+# checkout at preflight, so a worker's commit cannot change its own check.
+
+[checks]
+# Whitespace errors in the worker's one commit (documentation-only items).
+diff-check = ["git", "diff", "--check", "HEAD~1", "HEAD"]
+# Python contract tests only (fast, no Swift build).
+test-contracts = ["make", "test-contracts"]
+# The full suite AGENTS.md asks for before finishing a code change.
+test = ["make", "test"]
