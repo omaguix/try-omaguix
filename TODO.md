@@ -2,6 +2,51 @@
 
 ## Next, in order
 
+- [ ] Keep VM images on the pendrive [t-lbtv3hc2]
+  Asked by the user 2026-10-16, after the rename worker's image build grew
+  the builder disk to 63 GB and left a 11 GB export, which filled the Mac's
+  disk: "export to the pendrive, keep the images there; ask the models". The
+  pendrive is a 119 GiB exFAT USB volume (105 GiB free) that also holds
+  another session's `m1-archive/`. exFAT has no sparse files. Consult round
+  in progress.
+  Consult round 20261016-224530-961e (all five): the pendrive holds only
+  finished exports and archives; the live builder qcow2 stays on the SSD;
+  exports are written as `.zst` through a `.partial` file with sha256
+  before the rename; scripts refuse to run when the pendrive is missing.
+  Decided by the user 2026-10-16: reformat the pendrive as APFS; the herdr
+  coordinator confirmed that `m1-archive/guix-images.tar` (18 GB) is the
+  only copy of the former `~/personal_projects/guix/images` and stopped
+  writing there. A pane worker (pendrive-apfs, wD4:p3J, wait job 20261016-224823-cd17)
+  stages the tar on the SSD with sha256, erases disk4 as APFS
+  `omaguix-images`, copies the tar back with sha256, restores the builder's
+  base image, and creates `exports/`. Still to do after it: make
+  builder-vm's export share configurable and fail closed without the
+  volume, and stream exports as `.zst`.
+  Step 1 done 2026-10-16: `guix-images.tar` staged on the SSD with matching
+  sha256 (8a348db0...57e2), plus `trash-1000.staging` (the pendrive's
+  .Trash-1000). The erase (`diskutil eraseDisk APFS omaguix-images GPT
+  disk4`) was blocked by the auto-mode classifier as an irreversible
+  deletion; per the rules it is not retried. The user runs it, then the
+  worker (wD4:p3J) resumes from step 3.
+  Done 2026-10-16. The user formatted the pendrive as APFS, volume
+  `Samsung128GB` (GPT, case-insensitive). The worker then moved:
+  - `archive/guix-images.tar` (18823987200 bytes, sha256 8a348db0...57e2,
+    the same in all three copies);
+  - `archive/exfat-Trash-1000`.
+  It created an empty `exports/`, restored the builder's base image to
+  `~/personal_projects/guix/images/` (the backing chain resolves; checked
+  by the coordinator), deleted the SSD copies after the match and updated
+  `images-MOVED-TO-PENDRIVE.txt`.
+  Left in this item:
+  - make `guest/guix/builder-vm`'s export share configurable, pointing at
+    `/Volumes/Samsung128GB/exports` (an environment value, not a path
+    written into the repository), and refuse to start when it is not a
+    mounted APFS volume;
+  - write exports compressed (`.zst`) through a `.partial` file, with a
+    sha256, before the rename;
+  - keep the live `builder.qcow2` on the SSD.
+  It goes before the new guest image that the rename [t-xzufmvj7] needs.
+
 - [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
   Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
   more names like that left unchanged? Ask the models." The rename kept the
@@ -356,33 +401,6 @@
   log is complete), not a timing problem: find where the stream loses bytes
   and fix the producer or the reader (Rule 10).
   Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
-
-- [ ] Keep VM images on the pendrive [t-lbtv3hc2]
-  Asked by the user 2026-10-16, after the rename worker's image build grew
-  the builder disk to 63 GB and left a 11 GB export, which filled the Mac's
-  disk: "export to the pendrive, keep the images there; ask the models". The
-  pendrive is a 119 GiB exFAT USB volume (105 GiB free) that also holds
-  another session's `m1-archive/`. exFAT has no sparse files. Consult round
-  in progress.
-  Consult round 20261016-224530-961e (all five): the pendrive holds only
-  finished exports and archives; the live builder qcow2 stays on the SSD;
-  exports are written as `.zst` through a `.partial` file with sha256
-  before the rename; scripts refuse to run when the pendrive is missing.
-  Decided by the user 2026-10-16: reformat the pendrive as APFS; the herdr
-  coordinator confirmed that `m1-archive/guix-images.tar` (18 GB) is the
-  only copy of the former `~/personal_projects/guix/images` and stopped
-  writing there. A pane worker (pendrive-apfs, wD4:p3J, wait job 20261016-224823-cd17)
-  stages the tar on the SSD with sha256, erases disk4 as APFS
-  `omaguix-images`, copies the tar back with sha256, restores the builder's
-  base image, and creates `exports/`. Still to do after it: make
-  builder-vm's export share configurable and fail closed without the
-  volume, and stream exports as `.zst`.
-  Step 1 done 2026-10-16: `guix-images.tar` staged on the SSD with matching
-  sha256 (8a348db0...57e2), plus `trash-1000.staging` (the pendrive's
-  .Trash-1000). The erase (`diskutil eraseDisk APFS omaguix-images GPT
-  disk4`) was blocked by the auto-mode classifier as an irreversible
-  deletion; per the rules it is not retried. The user runs it, then the
-  worker (wD4:p3J) resumes from step 3.
 
 ## Proposed
 
