@@ -234,9 +234,12 @@ def main():
                         help="print the plan without running Guix")
     parser.add_argument("--check", action="store_true",
                         help="run pinned Guix to evaluate the image without building it")
+    # The builder shares its export directory (BUILDER_EXPORT on the host,
+    # guest/guix/builder-vm) at /mnt/export, so PATH is usually under it.
     parser.add_argument("--export", type=Path, metavar="PATH",
-                        help="copy the built --output image to PATH, verify it, then "
-                             "remove its GC root, collect garbage and trim the disk")
+                        help="copy the built --output image to PATH (usually under "
+                             "/mnt/export), verify it, then remove its GC root, "
+                             "collect garbage and trim the disk")
     args = parser.parse_args()
     try:
         if args.export:

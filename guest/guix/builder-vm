@@ -6,7 +6,8 @@
 # Runs QEMU with HVF in the foreground until the guest powers off, so start it
 # in its own terminal tab. The serial console and QMP sockets are the ones
 # guest/guix/vm-run expects; the project is shared read-only as `project` and
-# .build/guix-validation/export read-write as `export`.
+# the export directory read-write as `export` (the guest mounts it at
+# /mnt/export).
 #
 # Knobs (environment):
 #   BUILDER_DISK      qcow2 disk (default .build/guix-validation/builder.qcow2)
@@ -14,6 +15,14 @@
 #   BUILDER_MEMORY    memory in MiB (default 6144)
 #   BUILDER_FIRMWARE  UEFI code (default edk2-aarch64-code.fd from the QEMU
 #                     on PATH)
+#   BUILDER_EXPORT    host directory shared as `export` (default
+#                     .build/guix-validation/export, created when missing).
+#                     A set directory is never created: it must exist and be
+#                     writable, so a missing mount cannot fall back to the
+#                     checkout's disk.
+#   BUILDER_EXPORT_OTHER_VOLUME
+#                     when 1, BUILDER_EXPORT must also be on a mounted volume
+#                     other than the one holding the checkout.
 # --dry-run prints the command instead of running it.
 set -eu
 
@@ -24,6 +33,7 @@ cpus=${BUILDER_CPUS:-4}
 memory=${BUILDER_MEMORY:-6144}
 qemu=$(command -v qemu-system-aarch64 || echo qemu-system-aarch64)
 firmware=${BUILDER_FIRMWARE:-$(dirname "$qemu")/../share/qemu/edk2-aarch64-code.fd}
+export_dir=${BUILDER_EXPORT:-$state/export}
 
 dry_run=
 case ${1-} in
@@ -31,6 +41,21 @@ case ${1-} in
   '') ;;
   *) echo "usage: $0 [--dry-run]" >&2; exit 2 ;;
 esac
+
+# The mount point of the volume holding a path.
+mount_point() { df -P "$1" | awk 'NR == 2 { print $NF }'; }
+
+if [ -n "${BUILDER_EXPORT-}" ]; then
+  refuse() { echo "builder-vm: BUILDER_EXPORT=$BUILDER_EXPORT $1; not starting" >&2; exit 1; }
+  case $export_dir in /*) ;; *) refuse "is not an absolute path" ;; esac
+  [ -d "$export_dir" ] || refuse "is not an existing directory (is its volume mounted?)"
+  if [ "${BUILDER_EXPORT_OTHER_VOLUME-}" = 1 ]; then
+    volume=$(mount_point "$export_dir")
+    [ -n "$volume" ] && [ "$volume" != "$(mount_point "$root")" ] ||
+      refuse "is on the checkout's volume, and BUILDER_EXPORT_OTHER_VOLUME=1 asks for another"
+  fi
+  [ -w "$export_dir" ] || refuse "is not writable"
+fi
 
 set -- "$qemu" \
   -machine virt,accel=hvf -cpu host -smp "$cpus" -m "$memory" \
@@ -42,7 +67,7 @@ set -- "$qemu" \
   -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
   -device virtio-rng-pci \
   -virtfs "local,path=$root,mount_tag=project,security_model=none,readonly=on" \
-  -virtfs "local,path=$state/export,mount_tag=export,security_model=none"
+  -virtfs "local,path=$export_dir,mount_tag=export,security_model=none"
 
 if [ -n "$dry_run" ]; then
   printf '%s\n' "$*"
@@ -51,5 +76,5 @@ fi
 
 [ -f "$disk" ] || { echo "builder-vm: no disk at $disk (guest/guix/README.md, \"Builder VM\")" >&2; exit 1; }
 [ -f "$firmware" ] || { echo "builder-vm: no UEFI firmware at $firmware; set BUILDER_FIRMWARE" >&2; exit 1; }
-mkdir -p "$state/export"
+[ -n "${BUILDER_EXPORT-}" ] || mkdir -p "$export_dir"
 exec "$@"

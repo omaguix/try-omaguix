@@ -539,6 +539,13 @@ since vm-run otherwise looks for the socket in the worktree's own `.build/`
 and exits 125. Put the `env` inside the `herdr-job run` command: a job's tab
 does not inherit the caller's exported variables.
 
+The builder's exports (`/mnt/export` in the guest) land in the main
+checkout's `.build/guix-validation/export`, or in `BUILDER_EXPORT` when the
+builder was started with it; `builder-vm` then refuses to start while that
+directory is missing or read-only and never creates it. Take an exported
+image's host path from there, and never write the maintainer's
+`BUILDER_EXPORT` value into the repository.
+
 `make run-isolated` opens the start menu and waits for a click on **Launch
 Omaguix**, so an unattended check must not leave it waiting: start the VM in
 a way that needs no click, or say that the in-app step stayed unchecked.

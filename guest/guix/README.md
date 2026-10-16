@@ -94,7 +94,16 @@ The builder is defined by `guest/guix/builder-vm`: QEMU with HVF, 4 CPUs and
 6 GiB by default (`BUILDER_CPUS`, `BUILDER_MEMORY`), the disk
 `.build/guix-validation/builder.qcow2` (`BUILDER_DISK`), the console and QMP
 sockets `vm-run` uses, and the checkout shared as `project` (read-only) and
-`.build/guix-validation/export` as `export`. `--dry-run` prints the command.
+the export directory as `export`. `--dry-run` prints the command.
+The export directory is `.build/guix-validation/export`, created when
+missing, unless `BUILDER_EXPORT` names another absolute host directory, for
+example one on an external volume so images do not fill the Mac's disk. A set
+`BUILDER_EXPORT` is never created: `builder-vm` (`--dry-run` too) refuses to
+start unless it exists and is writable, so an unmounted volume cannot fall
+back to the internal disk; with `BUILDER_EXPORT_OTHER_VOLUME=1` it must also be
+on a mounted volume other than the checkout's. The guest sees the share at
+`/mnt/export` either way, so the commands below do not change; on the Mac,
+exports land in `BUILDER_EXPORT`.
 It runs in the foreground until the guest powers off, so start it in its own
 tab, from the main checkout (a worktree's copy would share the worktree and
 look for its own `.build/`). To create its disk from the official Guix VM
@@ -169,7 +178,8 @@ herdr-job run --name "Export image" -- guest/guix/vm-run \
 ```
 
 A failed copy or comparison stops before the root is removed. An existing
-export path is refused. Other GC roots stay, including older image roots under
+export path is refused. On the Mac the image is in the export directory
+(`BUILDER_EXPORT` when set). Other GC roots stay, including older image roots under
 `/root`, each pinning an image and its `partition.img`: check
 `guix gc --list-roots` and remove the ones already exported.
 
@@ -271,6 +281,10 @@ guest pair, built without systemd/UWSM like the upstream package. Notes:
 ```sh
 make guix-package GUIX_IMAGE=/absolute/path/to/image.raw
 ```
+
+For an image the builder exported to `/mnt/export/NAME.raw`, `GUIX_IMAGE` is
+`.build/guix-validation/export/NAME.raw` in the main checkout, or
+`$BUILDER_EXPORT/NAME.raw` when the builder ran with `BUILDER_EXPORT`.
 
 `package.py` accepts only the exact `efi-raw` layout: a protective MBR,
 identical primary and backup GPT headers with valid CRCs, partition 1 an EFI
