@@ -550,6 +550,16 @@
   patched to encode with VideoToolbox, as OmacVM does (#48). Needs
   `-Dvideo=true` and a carried patch; measure CPU, latency and copies first.
 
+- [ ] Decide which remaining Roguix names become Omaguix [t-xzufmvj7]
+  Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
+  more names like that left unchanged? Ask the models." The rename kept the
+  Guix modules and commands, the channel name, the guest paths, the domain
+  and the macOS identifiers (`docs/architecture.md:3-8`), calling them
+  contracts with existing guests and installed host components, although
+  nobody uses Omaguix yet (decision 0007, d-t2jjk3yw). The repository has
+  about 1200 `roguix` occurrences. Consult round in progress; then the user
+  decides.
+
 ## Needs a decision
 
 ### Background: renaming to Omaguix (2026-10-12)
