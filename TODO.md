@@ -1331,6 +1331,18 @@ builds decide when) | free space now by deleting a cache or tree the user
 names, which the coordinator then announces to the sessions that use it |
 offload a set the user picks to the 2010 MacBook | park the rename and go on
 with [t-dopemmpz], which needs the MacBook and no local disk.
+Decided by the user 2026-10-18: offload to the 2010 MacBook (the third
+option), leaving the set to the coordinator. Doing, in pane worker
+`omaguix-build` (pane wD4:p43, task /tmp/omaguix-build-task2.md): the M1's
+old packaged Roguix guest (3 files under `build/guix`) and the app's guest
+disk `try-roguix-app-disk.raw` on the pendrive (68 GB apparent, 42 GB on
+disk) go to `~/m1-archive/` on the MacBook over port 42022, verified with
+an rsync checksum pass and a SHA-256 cross-check before the local copy is
+deleted; then the image build runs with the builder disk and the export
+both on the pendrive, so the M1 only needs `make guix-package` and
+`make app` (about 7 GB). The guix-x86_64-iso-omguix coordinator was told
+the machine will be used for the transfer. Guards unchanged: 15 GiB free
+on the M1, 5 GiB on the pendrive.
 Checked 2026-10-18: `df -h /`, `du -sh ~/.cache/huggingface` twice 45 s
 apart, `du -sh ~/personal_projects/herdr-worktrees`, and
 `/Volumes/Samsung128GB` at 34 GiB free.
