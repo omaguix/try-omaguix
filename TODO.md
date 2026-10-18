@@ -1343,6 +1343,30 @@ both on the pendrive, so the M1 only needs `make guix-package` and
 `make app` (about 7 GB). The guix-x86_64-iso-omguix coordinator was told
 the machine will be used for the transfer. Guards unchanged: 15 GiB free
 on the M1, 5 GiB on the pendrive.
+Asked the models 2026-10-18 (round 20261018-122501-1ff8: sol, MiMo, Argon)
+whether the pendrive archive is needed and which images it should keep.
+Acted on, all three agreeing: never delete the app's guest disk before a
+verified second copy exists; the pendrive keeps the builder disk and its
+growth allowance and nothing else of ours; the image export goes straight
+to the M1 (the running builder already does: its export share is the
+worktree's `.build/guix-validation/export`, checked in the QEMU command
+line); free space is checked at build, export and package boundaries.
+Acted on from MiMo alone: inspect the guest disk before any deletion; no
+e2fsprogs on the M1, so the archive is the cheaper way to keep it.
+Dismissed: Argon's claim that runtime writes to a zstd qcow2 "easily blow
+past 34 GiB" (the growth is the bytes the guest writes, the compression
+only makes the base smaller), and its ballast file, which reserves space
+by taking it from other sessions.
+Decided by the coordinator on that basis: do not archive the app disk while
+the build runs, because it shares the USB stick with the builder's disk and
+a 42 GB read next to the VM's writes risks stalling the guest; the build
+and export go first, then the archive with the checksum pass and a SHA-256
+cross-check, then deleting the pendrive copy. If the pendrive drops below
+8 GiB free, stop the build at a step boundary, archive and delete the app
+disk, and resume (the store keeps finished derivations). The stale
+`exports/src-omaguix-rename` copy (828 KB) is deleted; the main checkout's
+`build/guix` stays; `try-omabend-builder.qcow2` is another project's and is
+not touched.
 Checked 2026-10-18: `df -h /`, `du -sh ~/.cache/huggingface` twice 45 s
 apart, `du -sh ~/personal_projects/herdr-worktrees`, and
 `/Volumes/Samsung128GB` at 34 GiB free.
