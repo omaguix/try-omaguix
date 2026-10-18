@@ -131,7 +131,14 @@ grows and exits with the command's own exit code (124 on timeout, 125 when
 the console stays unreachable). After the builder reboots, its console waits at
 a login prompt and the 9p shares are unmounted, so `vm-run` sees no shell: log
 in as root on the console and mount `project` (read-only) at `/mnt/project` and
-`export` at `/mnt/export` first. A builder disk made as a qcow2 overlay
+`export` at `/mnt/export` first. Bring that console up once after every boot
+before any `vm-run`: connect to the serial socket, read until `gnu login:`
+appears, log in as root, then mount both shares. A `vm-run` attempt made while
+GRUB's menu is still counting down keeps the guest in the menu, because GRUB
+reads the sent line as keystrokes, resets its countdown and spins polling the
+UART, so nothing boots and no marker ever answers; and the boot output printed
+before a connection attaches is dropped, so a console followed late looks
+silent too. A builder disk made as a qcow2 overlay
 depends on its backing file (`qemu-img info` names it); deleting that file to
 free space leaves the builder unbootable until the same file is restored,
 for the official Guix VM image from ftp.gnu.org with its signature checked.
