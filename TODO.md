@@ -1284,6 +1284,7 @@ compressed builder has to be converted back first: `qemu-img convert -O qcow2
 try-roguix-builder-compressed.qcow2 builder.qcow2`, which needs about 80 GB of
 free space). The pendrive is an APFS volume and must be mounted; it was not
 mounted by the time the copy started, so the first copy wrote a non-sparse
-81 GB file and filled it — the compressed copy replaces it. This note is here
-because the move was done by the lang-for-ai coordinator, not by this
-repository's; nothing else about this project changed.
+81 GB file and filled it — the compressed copy replaces it. The pendrive directory holds a `MANIFEST.txt` with the same table and the restore steps.
+This note is here because the move was done by the lang-for-ai coordinator, not by
+this repository's; nothing else about this project changed. After the move the M1
+has 77 GB free instead of 27 GB.
