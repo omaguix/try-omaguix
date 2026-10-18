@@ -94,6 +94,22 @@
   VM items here: the gated `herdr todo run` starts headless workers only,
   and its usage gate covers no pane worker, so a VM item cannot be
   dispatched through it.
+  Step 2 dispatched 2026-10-18 on the user's "rób": pane worker
+  `omaguix-build` (pi) in the worktree ../try-roguix-rename, pane wD4:p43,
+  task /tmp/omaguix-build-task.md, wake job 20261018-121450-d44a. Disk
+  plan changed from the note above because free space fell from 58 to
+  42 GiB while other sessions were working (a Hugging Face download and
+  herdr build trees grew): the builder runs straight on the pendrive's
+  qcow2 through `BUILDER_DISK`, with no 9.3 GB copy and no
+  `qemu-img convert`, and the export goes to the worktree's default
+  `.build/guix-validation/export` on the M1. Freed first: the worktree's
+  stale `build/guix` (the 2026-10-10 Roguix guest package, 2.8 GB, which
+  `package.py` refuses to overwrite anyway). Guards: stop below 15 GiB
+  free on the M1 and below 5 GiB on the pendrive, which holds the
+  archived VM disks. The user's "rób" also answers the pane-worker
+  question: pane (TUI) workers stay the path for VM items here, as decided
+  2026-10-10, and the coordinator starts them itself because the gated
+  driver cannot.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
