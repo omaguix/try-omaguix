@@ -1313,6 +1313,28 @@ rows are rebuilt only when a guard result changed (d833b4e), and offered
 upstream as https://github.com/omacom/omarchy/pull/14740; drop the
 substitution once Omarchy takes it.
 
+### Where does the space for the renamed guest image come from?
+
+Asked 2026-10-18 by the coordinator. [t-xzufmvj7] step 2 needs a guest image:
+the builder takes its disk from the pendrive, so about 27 GB of store growth
+stays there, but the export (a 16 GiB raw image), `make guix-package` (about
+4 GB in `build/guix`) and `make app` (about 4 GB) land on the M1 and need
+about 24 GB of its free space. Between 12:00 and 12:20 the M1's free space
+fell from 58 GiB to 22 GiB and kept falling about 2 GB per minute, because
+another session is downloading into `~/.cache/huggingface` (45 GB to 48 GB
+in 45 seconds, `du` measured), while herdr's own worktrees hold 28 GB of
+build trees. The pane worker `omaguix-build` (pane wD4:p43) is held before
+the build for that reason. Nothing here is this repository's data.
+Options: hold the build until the M1 has about 40 GiB free again (the
+coordinator re-checks before each heavy step; other sessions' downloads and
+builds decide when) | free space now by deleting a cache or tree the user
+names, which the coordinator then announces to the sessions that use it |
+offload a set the user picks to the 2010 MacBook | park the rename and go on
+with [t-dopemmpz], which needs the MacBook and no local disk.
+Checked 2026-10-18: `df -h /`, `du -sh ~/.cache/huggingface` twice 45 s
+apart, `du -sh ~/personal_projects/herdr-worktrees`, and
+`/Volumes/Samsung128GB` at 34 GiB free.
+
 ## Disk offload 2026-10-18
 
 The M1's disk reached 94% used (27 GB free), so three VM disks were moved off
