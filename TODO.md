@@ -77,6 +77,23 @@
   off and leave branch omaguix-rename (2bab963d) in ../try-roguix-rename.
   Resume: rerun the image build with the export on the pendrive, then make
   guix-package, make app, make test, a model review, landing.
+  Step 2 rechecked 2026-10-18 by the coordinator: the builder and app VM
+  disks were moved off the M1 to the pendrive by another session
+  ("Disk offload 2026-10-18" below), so the builder disk is
+  `try-roguix-builder-compressed.qcow2` (a qcow2 with zstd clusters, 9.3 GiB
+  on disk, 90 GiB virtual, 21 GB used inside) and has to be copied back
+  before the builder starts. The build needs roughly 9.3 GB for that copy,
+  about 27 GB of builder-disk growth (21 GB to the ~48 GB used a full build
+  and export reach), ~4 GB for the packaged image in `build/guix` and ~4 GB
+  for `make app`, so about 45 GB against the M1's 58 GiB free: below the
+  15 GiB floor of AGENTS.md once `make test` runs a VM. Asked the user
+  2026-10-18 whether to free space first (the "Free disk space on the Mac"
+  proposal, which is not approved yet), to try the build now and stop at
+  15 GiB free, or to leave the rename and go on with the list; waiting for
+  the answer. Also asked whether pane workers are a standing approval for
+  VM items here: the gated `herdr todo run` starts headless workers only,
+  and its usage gate covers no pane worker, so a VM item cannot be
+  dispatched through it.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
@@ -156,6 +173,19 @@
   Gate from [t-omaupgrd] (d-qqlris3g): omaguix/omaguix's workflow builds
   P from upstream G plus try-roguix's forward-check patch, and the release
   names the patched commit.
+  Both waiting coordinators rechecked it on 2026-10-18 and were answered:
+  guix-x86_64-iso-omguix (pane w6R:p6W) waits for the released channel
+  commit for its items 28 (Codex CLI) and 29 (Claude Code through the
+  shim); roguix-vps (pane w1E:p42) reports substitutes.omaguix.org serving
+  HTTPS with a valid Let's Encrypt certificate and a 404 `nix-cache-info`
+  because `/var/lib/roguix-substitutes` is empty, with the old
+  roguix.frolow.dev still serving 200 from `guix publish`. Both need main
+  to move, which this item does; nothing on the VPS changes before the
+  first release run. The substitutes public key they need is already
+  published: `guest/guix/modules/roguix/substitutes.omaguix.org.pub`
+  (SHA-256 5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a)
+  on try-omaguix main and in the signed channel branch
+  `release/cba50b560a38ac885b3d282f132793fe740345f6`.
   x86_64 verified 2026-10-16 on the 2010 MacBook (pane worker codex-x86):
   `codex-bin` built under the Roguix pin 7e74121a
   (/gnu/store/wq2s2lnl...-codex-0.163.0), `codex --version` prints
