@@ -1367,6 +1367,20 @@ disk, and resume (the store keeps finished derivations). The stale
 `exports/src-omaguix-rename` copy (828 KB) is deleted; the main checkout's
 `build/guix` stays; `try-omabend-builder.qcow2` is another project's and is
 not touched.
+Builder diagnosis 2026-10-18 (coordinator, while the worker's first attempt
+sat at "console not up"): the builder disk and the pendrive are fine
+(`qemu-img check` on it: no errors). The guest stops at a login prompt with
+the 9p shares unmounted, which `guest/guix/README.md:131-135` documents for
+a builder boot after a power-off, and every `vm-run` attempt made while
+GRUB's menu was still counting down kept the guest in that menu: GRUB reads
+the sent line as keystrokes, resets its countdown and polls the UART, so a
+vCPU spins in `pl011_read` (sampled) and the guest never boots (a serial log
+of the same disk with no client shows GRUB, fsck and `gnu login:`). The
+stuck builder was stopped through QMP `quit`; the recovery handed to the
+worker is: start the builder, read the console once until `gnu login:`,
+log in as root, mount `project` (read-only) and `export`, then run
+`vm-run`. The worker also adds that trap and its avoidance to the
+README's "Builder VM" section.
 Checked 2026-10-18: `df -h /`, `du -sh ~/.cache/huggingface` twice 45 s
 apart, `du -sh ~/personal_projects/herdr-worktrees`, and
 `/Volumes/Samsung128GB` at 34 GiB free.
