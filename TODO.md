@@ -1266,3 +1266,24 @@ Fixed 2026-10-09 by substituting Omarchy's `Menu.qml` at build time so the
 rows are rebuilt only when a guard result changed (d833b4e), and offered
 upstream as https://github.com/omacom/omarchy/pull/14740; drop the
 substitution once Omarchy takes it.
+
+## Disk offload 2026-10-18
+
+The M1's disk reached 94% used (27 GB free), so three VM disks were moved off
+it to the pendrive at `/Volumes/Samsung128GB/exports/20261018-disk-offload/`
+(the M1 paths are now empty):
+
+| what | where it was | where it is now |
+| --- | --- | --- |
+| try-roguix builder disk | `personal_projects/guix/try-roguix/.build/guix-validation/builder.qcow2` | `try-roguix-builder-compressed.qcow2` (zstd-compressed qcow2) |
+| the app's guest disk | `~/Library/Application Support/Try Roguix/VM/v1/guix/disks/current/disk.raw` | `try-roguix-app-disk.raw` |
+| try-omabend builder disk | `personal_projects/guix/try-omabend/build/builder/builder.qcow2` | `try-omabend-builder.qcow2` |
+
+Restore with `rsync -aHS --whole-file --partial` back to the same path (the
+compressed builder has to be converted back first: `qemu-img convert -O qcow2
+try-roguix-builder-compressed.qcow2 builder.qcow2`, which needs about 80 GB of
+free space). The pendrive is an APFS volume and must be mounted; it was not
+mounted by the time the copy started, so the first copy wrote a non-sparse
+81 GB file and filled it — the compressed copy replaces it. This note is here
+because the move was done by the lang-for-ai coordinator, not by this
+repository's; nothing else about this project changed.
