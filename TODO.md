@@ -2,114 +2,31 @@
 
 ## Next, in order
 
-- [ ] Rename the remaining Roguix names to Omaguix in one cutover [t-xzufmvj7]
-  Asked by the user 2026-10-16: "roguix-update? Not omaguix-update? Are there
-  more names like that left unchanged? Ask the models." The rename kept the
-  Guix modules and commands, the channel name, the guest paths, the domain
-  and the macOS identifiers (`docs/architecture.md:3-8`), calling them
-  contracts with existing guests and installed host components, although
-  nobody uses Omaguix yet (decision 0007, d-t2jjk3yw). The repository has
-  about 1200 `roguix` occurrences. Consult round in progress; then the user
-  decides.
-  Consult round 20261016-172829-f1c0 (sol, MiMo, DeepSeek, Argon, Muse
-  Wonder): rename before the first release in one cutover after
-  [t-omaupgrd] lands; keep git history, the channel introduction and the
-  v0.5.0 tag. Costs: every Omaguix substitute is rebuilt, since store hashes
-  change; TCC grants are reset; the old `dev.tryroguix.network` daemon must
-  be unloaded; validate on a clean host and with a fresh authenticated
-  `guix pull` of the renamed channel. DeepSeek alone says that renaming the
-  channel needs a new introduction; check it.
-  Decided by the user 2026-10-16 (d-n6eajaie): everything, modules included.
-  That means guest commands, services and agents, guest paths (`/etc`,
-  `/var/lib`, `/run`, the gcroots), environment variables, the
-  `(omaguix ...)` modules and the channel name, the macOS bundle ids, the
-  LaunchDaemon, data and log directories, the signing identity, the
-  Info.plist keys and the tag prefix. Kept: git history, the channel
-  introduction and `v0.5.0`. The domain goes through [t-omaorgdm]. Update
-  `docs/architecture.md:3-8`, the AGENTS.md section, the identity file's
-  comments and decision records.
-  Started 2026-10-16 with the user's grant (d-p7wai4ci): pane worker
-  omaguix-rename (wD4:p33), worktree ../try-roguix-rename, branch
-  omaguix-rename; wait job 20261016-214642-c573. Host follow-ups after landing (coordinator):
-  the Karabiner exemption matches `dev.tryroguix.native(.development)?.vm`
-  and must follow the new bundle ids.
-  Worker result 2026-10-16: 70d92104 on branch omaguix-rename (138 files).
-  `make test` passes; `build.py --check` and a full no-grafts dry run with
-  the channel's main d610bc0c evaluate (122 derivations, no `roguix`).
-  The worker checked the pinned `guix/channels.scm:149-159,401-452`: the
-  introduction is the first signed commit plus the key fingerprint, and the
-  name takes no part in authentication, so DeepSeek's claim is false.
-  Its image build went beyond the task and filled the Mac's disk; it was
-  stopped and removed.
-  Not landed yet:
-  - `make app` fails until a new guest image is built and packaged, because
-    `build/guix`'s manifest kind is still `roguix-guest-artifacts`. Landing
-    it alone would break main's `make app`. Build the image after the
-    pendrive item, with exports going to the pendrive.
-  - omaguix/omaguix's workflow and scripts read `modules/roguix` and
-    `(roguix system)`; they must follow before the next release
-    ([t-omarelfs]).
-  - The channel repository's README and `.guix-channel` comment still say
-    Roguix.
-  Host follow-ups after landing (coordinator):
-  - Karabiner's exemption: `dev.tryomaguix.native(.development)?.vm`.
-  - The old keychain and `~/.config/try-roguix/`.
-  - `~/Library/Application Support|Logs/Try Roguix` and the old plists.
-  - The local channel checkout `../roguix-channel` and its `~/.config` GnuPG
-    home.
-  - TCC is reset.
-  The dev.tryroguix.network LaunchDaemon is not installed. The first
-  try-omaguix-v tag must be above 0.5.1.
-  Step 2, allowed by the user 2026-10-16: the same worker (wD4:p33) rebases
-  onto main, frees the builder (old roots, guix gc, fstrim), builds the
-  renamed image with the export on the pendrive
-  (`BUILDER_EXPORT=/Volumes/Samsung128GB/exports`, set only in the job
-  command), stops when the Mac has less than 15 GiB free, then runs
-  `make guix-package`, `make app` and `make test`; wait job 20261016-231627-5459. Next: the
-  models review the diff, then it lands.
-  Step 2 progress 2026-10-16: rebased as 2bab963d, make test-contracts ok;
-  builder gc+fstrim 47G to 14G; the Mac has 74 GiB free. The image build
-  (build.py via vm-run, the sources copied to the pendrive) was blocked by
-  the auto-mode classifier ("Modify Shared Resources"); not retried. It waits
-  for the user to allow that one build in the worker's pane wD4:p33.
-  Stopped 2026-10-17 at the user's request (subscription tokens running out),
-  during the image build of step 2: the worker was told to power the builder
-  off and leave branch omaguix-rename (2bab963d) in ../try-roguix-rename.
-  Resume: rerun the image build with the export on the pendrive, then make
-  guix-package, make app, make test, a model review, landing.
-  Step 2 rechecked 2026-10-18 by the coordinator: the builder and app VM
-  disks were moved off the M1 to the pendrive by another session
-  ("Disk offload 2026-10-18" below), so the builder disk is
-  `try-roguix-builder-compressed.qcow2` (a qcow2 with zstd clusters, 9.3 GiB
-  on disk, 90 GiB virtual, 21 GB used inside) and has to be copied back
-  before the builder starts. The build needs roughly 9.3 GB for that copy,
-  about 27 GB of builder-disk growth (21 GB to the ~48 GB used a full build
-  and export reach), ~4 GB for the packaged image in `build/guix` and ~4 GB
-  for `make app`, so about 45 GB against the M1's 58 GiB free: below the
-  15 GiB floor of AGENTS.md once `make test` runs a VM. Asked the user
-  2026-10-18 whether to free space first (the "Free disk space on the Mac"
-  proposal, which is not approved yet), to try the build now and stop at
-  15 GiB free, or to leave the rename and go on with the list; waiting for
-  the answer. Also asked whether pane workers are a standing approval for
-  VM items here: the gated `herdr todo run` starts headless workers only,
-  and its usage gate covers no pane worker, so a VM item cannot be
-  dispatched through it.
-  Step 2 dispatched 2026-10-18 on the user's "rób": pane worker
-  `omaguix-build` (pi) in the worktree ../try-roguix-rename, pane wD4:p43,
-  task /tmp/omaguix-build-task.md, wake job 20261018-121450-d44a. Disk
-  plan changed from the note above because free space fell from 58 to
-  42 GiB while other sessions were working (a Hugging Face download and
-  herdr build trees grew): the builder runs straight on the pendrive's
-  qcow2 through `BUILDER_DISK`, with no 9.3 GB copy and no
-  `qemu-img convert`, and the export goes to the worktree's default
-  `.build/guix-validation/export` on the M1. Freed first: the worktree's
-  stale `build/guix` (the 2026-10-10 Roguix guest package, 2.8 GB, which
-  `package.py` refuses to overwrite anyway). Guards: stop below 15 GiB
-  free on the M1 and below 5 GiB on the pendrive, which holds the
-  archived VM disks. The user's "rób" also answers the pane-worker
-  question: pane (TUI) workers stay the path for VM items here, as decided
-  2026-10-10, and the coordinator starts them itself because the gated
-  driver cannot.
+- [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
+  Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
+  the parts that live outside the repository. In the renamed app's own
+  settings or the owning app, not by hand where the app manages them:
+  - Karabiner's Emacs exemption: done 2026-10-19, the pattern now matches
+    `dev.tryomaguix.native(.development)?.vm` (dotfiles commit ab82695), but
+    the grabber was not running, so the behavior it protects (Emacs keys
+    inside the VM) is unchecked until the app next runs.
+  - Unload and remove the old `dev.tryroguix.network` LaunchDaemon if any
+    host ever installed it (it was never installed on the M1: check).
+  - The old development signing identity and its keychain entry
+    (`Try Roguix`), then `make signing-identity` for the new one, so builds
+    stop signing ad hoc.
+  - The old data and log directories `~/Library/Application Support/Try
+    Roguix` and `~/Library/Logs/Try Roguix` and the old plists; the renamed
+    app reads `Try Omaguix` and its own identifiers.
+  - `~/.config/try-roguix/` and the local channel checkout `../roguix-channel`
+    with its GnuPG home (`publish-channel` now defaults to
+    `../omaguix-channel` and `~/.config/omaguix-channel/gnupg`).
+  - The macOS privacy grants (TCC) start from scratch under the new bundle
+    ids: grant Screen Recording and Accessibility to the new app.
+  The first `try-omaguix-v` tag must be above 0.5.1 (the kept tags
+  `v0.5.0` and `try-roguix-v0.5.1` do not match the new prefix).
+  Check: `make app` builds from a clean tree and the app launches its guest
+  under the new identity.
 
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
@@ -670,6 +587,35 @@
   the move).
 
 ## Needs a decision
+
+- [ ] The pinned virglrenderer tarball changed under us: re-pin or pin a stable artifact? [t-u6g6m27m]
+  Found 2026-10-19 while verifying the landed rename. `make app` on a clean
+  checkout fails in the runtime build:
+  `virglrenderer patches and regression tests checksum mismatch: expected
+  950273fbba46905b6112ee2bd0598c1da706c25319a7347058cbc52f04ba96dd, got
+  43831461ece8c8bc821e717632a9d3c297010338ceb50738bc1c88b1d8c02f02`
+  (`macos/build-qemu-gpu-runtime.sh` pins `virgl_tap_sha256` for
+  `https://codeload.github.com/startergo/homebrew-virglrenderer/tar.gz/refs/tags/v1.0.42`).
+  The cause is upstream: tag `v1.0.42` now points at commit
+  `de31b78a88b2f9eea04dff32438e6283b400edf7` (`ci: use Homebrew/actions@main
+  after master branch removal`), committed 2026-10-18T18:21Z, hours after
+  this tree's last successful `make app` (2026-10-18 17:50). A re-download
+  today gives the new hash, so the pin is simply dead, not a corrupt
+  download; the failure hits any tree, before or after the rename.
+  Nothing is known yet about what changed inside the tarball beyond the CI
+  commit: the patch files the formula applies were not compared with the
+  old bytes (no copy of the old tarball survives here).
+  Options: compare the new tarball's content against the old one (fetch the
+  old object from codeload by its commit if it still resolves) and, if only
+  CI metadata changed, re-pin to the new hash with that evidence in a
+  decision record; or pin an artifact we control (a checksummed archive in
+  the project's own storage, or a commit tarball plus its verified content
+  manifest) so a moved tag cannot break a clean build again; or pin the
+  previous release tag if it is still obtainable and newer than 1.0.42 is
+  not needed.
+  Checked 2026-10-19: `make test-contracts` passes on the landed main;
+  `make app` fails only at that download; `git ls-remote --tags` and the
+  GitHub commit API give the commit and its date above.
 
 ### Background: renaming to Omaguix (2026-10-12)
 
