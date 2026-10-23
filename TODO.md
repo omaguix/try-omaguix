@@ -2,32 +2,6 @@
 
 ## Next, in order
 
-- [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
-  Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
-  the parts that live outside the repository. In the renamed app's own
-  settings or the owning app, not by hand where the app manages them:
-  - Karabiner's Emacs exemption: done 2026-10-19, the pattern now matches
-    `dev.tryomaguix.native(.development)?.vm` (dotfiles commit ab82695), but
-    the grabber was not running, so the behavior it protects (Emacs keys
-    inside the VM) is unchecked until the app next runs.
-  - Unload and remove the old `dev.tryroguix.network` LaunchDaemon if any
-    host ever installed it (it was never installed on the M1: check).
-  - The old development signing identity and its keychain entry
-    (`Try Roguix`), then `make signing-identity` for the new one, so builds
-    stop signing ad hoc.
-  - The old data and log directories `~/Library/Application Support/Try
-    Roguix` and `~/Library/Logs/Try Roguix` and the old plists; the renamed
-    app reads `Try Omaguix` and its own identifiers.
-  - `~/.config/try-roguix/` and the local channel checkout `../roguix-channel`
-    with its GnuPG home (`publish-channel` now defaults to
-    `../omaguix-channel` and `~/.config/omaguix-channel/gnupg`).
-  - The macOS privacy grants (TCC) start from scratch under the new bundle
-    ids: grant Screen Recording and Accessibility to the new app.
-  The first `try-omaguix-v` tag must be above 0.5.1 (the kept tags
-  `v0.5.0` and `try-roguix-v0.5.1` do not match the new prefix).
-  Check: `make app` builds from a clean tree and the app launches its guest
-  under the new identity.
-
 - [ ] Package the x86-64-v2 SIGILL shim and Claude Code for x86-64-v1 CPUs [t-dopemmpz]
   Requested 2026-10-16 by the guix-x86_64-iso-omguix coordinator, relaying
   the user's decision there (its TODO item 29; consult rounds
@@ -616,6 +590,49 @@
   Checked 2026-10-19: `make test-contracts` passes on the landed main;
   `make app` fails only at that download; `git ls-remote --tags` and the
   GitHub commit API give the commit and its date above.
+
+- [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
+  Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
+  the parts that live outside the repository. In the renamed app's own
+  settings or the owning app, not by hand where the app manages them:
+  - Karabiner's Emacs exemption: done 2026-10-19, the pattern now matches
+    `dev.tryomaguix.native(.development)?.vm` (dotfiles commit ab82695), but
+    the grabber was not running, so the behavior it protects (Emacs keys
+    inside the VM) is unchecked until the app next runs.
+  - Unload and remove the old `dev.tryroguix.network` LaunchDaemon if any
+    host ever installed it (it was never installed on the M1: check).
+  - The old development signing identity and its keychain entry
+    (`Try Roguix`), then `make signing-identity` for the new one, so builds
+    stop signing ad hoc.
+  - The old data and log directories `~/Library/Application Support/Try
+    Roguix` and `~/Library/Logs/Try Roguix` and the old plists; the renamed
+    app reads `Try Omaguix` and its own identifiers.
+  - `~/.config/try-roguix/` and the local channel checkout `../roguix-channel`
+    with its GnuPG home (`publish-channel` now defaults to
+    `../omaguix-channel` and `~/.config/omaguix-channel/gnupg`).
+  - The macOS privacy grants (TCC) start from scratch under the new bundle
+    ids: grant Screen Recording and Accessibility to the new app.
+  The first `try-omaguix-v` tag must be above 0.5.1 (the kept tags
+  `v0.5.0` and `try-roguix-v0.5.1` do not match the new prefix).
+  Check: `make app` builds from a clean tree and the app launches its guest
+  under the new identity.
+  May a worker delete the old Roguix host leftovers for the landed rename, and
+  do you grant the macOS privacy permissions yourself?
+  Options: the worker deletes the old data and log directories, the old plists
+  and `~/.config/try-roguix`, moves `../roguix-channel` to `../omaguix-channel`,
+  and runs `make signing-identity` for the new identity, but leaves the old
+  `Try Roguix` keychain entry for you to remove, and you click the Screen
+  Recording and Accessibility prompts when it says the app is installed
+  (recommended) | the worker also removes the old keychain entry through
+  `security delete-identity` | nothing is deleted, you do all of it yourself |
+  list the exceptions you want.
+  Checked 2026-10-23: the app's old VM disk is archived on the MacBook
+  (`MANIFEST.txt` in `exports/20261018-disk-offload/`, SHA-256 verified before
+  the local copy was deleted), so the old data directory holds no unique guest
+  state; `~/.config/try-roguix` and `../roguix-channel` exist, the old
+  `dev.tryroguix.network` LaunchDaemon is not loaded (`launchctl list` shows
+  nothing with that label), and `make app` now fails earlier for an unrelated
+  reason ([t-u6g6m27m]).
 
 ### Background: renaming to Omaguix (2026-10-12)
 
