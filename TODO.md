@@ -661,6 +661,22 @@
   Checked 2026-10-19: `make test-contracts` passes on the landed main;
   `make app` fails only at that download; `git ls-remote --tags` and the
   GitHub commit API give the commit and its date above.
+  Checked further 2026-10-24 by the coordinator: the current tag tarball is
+  `43831461ece8c8bc821e717632a9d3c297010338ceb50738bc1c88b1d8c02f02`, it
+  contains the usual 46 files (`homebrew-virglrenderer-1.0.42/`, the formula
+  and the four patch files), and against the tag's parent commit
+  `e7daef144d249a38d6206153e6146539f893eae2` the only difference in content is
+  `.github/workflows/bottle.yml` (`Homebrew/actions/*@master` to `@main`).
+  The parent's own tarball hashes `6954b95a…`, so the pinned `950273fb…`
+  matches neither the current tag nor its parent: GitHub's generated tarballs
+  are not stable over time, which is the real defect of this pin, not one
+  upstream commit. A content manifest (per-file sha256 of the extracted tree)
+  would make the next move diffable, and a checksummed archive we host would
+  remove the dependency on GitHub's archive generation.
+  Recommendation: re-pin to `43831461…` now, with the per-file content
+  manifest recorded next to the pin, so the tree is verifiable as content
+  rather than as one gzip byte string; then move the archive into our own
+  storage when the release work touches the runtime build anyway.
 
 - [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
   Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
