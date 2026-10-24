@@ -22,6 +22,15 @@ off Codex's startup update check with a command-line override, which
 `~/.codex/config.toml` cannot undo but a later `-c` of the user's can;
 `codex update` cannot replace a store path and only says to update by hand.
 
+Exception, decided with TODO item t-dopemmpz (2026-10-16): the channel also
+offers `x86-64-v2-sigill-shim` (GPL-3.0-or-later), built from source with its
+tests and ordinary substitutes, and `claude-code-x86-64-v1`, Anthropic's
+non-free npm binary for x86_64 run through that shim so it also works on
+x86-64-v1 CPUs. The Claude Code package is labelled experimental and
+unsupported, has no substitutes (`#:substitutable? #f`), and is not in the
+reference system, so CI publishes nothing for it. This is the only non-free
+package; Obsidian and the rest below stay out.
+
 Not provided: Pinta (.NET), LocalSend (Flutter), Signal and Obsidian
 (Electron, Obsidian non-free), and LibreOffice, which Guix packages but has
 no aarch64 substitutes for (hours to build).
@@ -41,4 +50,6 @@ no aarch64 substitutes for (hours to build).
   `apps.scm`.
 - The packages support `aarch64-linux` and `x86_64-linux`, one upstream
   release each; they have no `source`, since the release depends on the
-  system the package is built for, which only thunked fields see.
+  system the package is built for, which only thunked fields see. The
+  x86-64-v1 pair ships one release for its only system and pins an ordinary
+  `source` each.

@@ -313,14 +313,25 @@ class ProjectModuleTests(unittest.TestCase):
         for name in packages:
             with self.subTest(package=name):
                 body = next(d for d in definitions if d.startswith(f"(define {name}\n"))
+                self.assertNotIn("(source (origin", body)
                 if name == "cliamp-bin":
                     body = next(d for d in definitions if d.startswith("(define %cliamp-releases"))
+                    self.assertNotIn("(source (origin", body)
                 releases = re.findall(r'"(aarch64-linux|x86_64-linux)"\s+"(https://[^"]+)"\s+"([0-9a-z]{52})"', body)
                 self.assertEqual([system for system, _, _ in releases], ["aarch64-linux", "x86_64-linux"])
                 arm, x86 = (url for _, url, _ in releases)
                 self.assertRegex(arm, r"arm64|aarch64")
                 self.assertRegex(x86, r"x86_64|amd64")
-        self.assertNotIn("(source (origin", apps.split("(define fastfetch-without-zfs")[0])
+
+    def test_x86_64_v1_sources_stay_the_reviewed_ones(self):
+        # The x86-64-v1 pair ships one release for its only system, so it pins
+        # ordinary sources; Guix records base32 hashes and the reviewed hex
+        # digests are kept alongside (test_source_hashes_stay_the_reviewed_ones
+        # pins packages.scm's the same way).
+        apps = (self.MODULES / "apps.scm").read_text()
+        for digest in ("9de757924fd00589541d014363d37bd76225efd18cb97d29257a0c6e905b8c65",
+                       "a7ffd61e7784e6dda864a31e934cececc050f106015201cb3db4abb59c781c57"):
+            self.assertIn(f"SHA-256 {digest}", apps)
 
 
 if __name__ == "__main__":

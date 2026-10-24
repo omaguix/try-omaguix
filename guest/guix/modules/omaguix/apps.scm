@@ -4,14 +4,19 @@
 ;;; binaries instead of building from source
 ;;; (docs/decisions/0003-upstream-binary-packages.md). Each source is pinned by
 ;;; its SHA-256; the builder signs the result and roguix.frolow.dev serves it
-;;; like any other Omaguix item.
+;;; like any other Omaguix item. The x86-64-v1 pair is that decision's one
+;;; exception: a shim built from source, and Anthropic's non-free x86_64
+;;; binary wrapped with it, experimental, without substitutes and outside CI
+;;; publication.
 (define-module (omaguix apps)
   #:use-module (guix packages)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module (guix gexp)
   #:use-module (guix utils)
   #:use-module (ice-9 match)
   #:use-module (guix build-system copy)
+  #:use-module (guix build-system gnu)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages admin)
   #:use-module (gnu packages base)
@@ -27,6 +32,8 @@
             dua-bin
             cliamp-bin
             codex-bin
+            x86-64-v2-sigill-shim
+            claude-code-x86-64-v1
             fastfetch-without-zfs
             obs-without-vlc
             fcitx5-qt6))
@@ -208,6 +215,160 @@ exec ~a -c check_for_update_on_startup=false \"$@\"~%"
                             "--version"))))))))
       (inputs (modify-inputs (package-inputs base)
                 (append bash-minimal bubblewrap))))))
+
+;; A Core 2 CPU dies on the x86-64-v2 instructions Claude Code's Bun
+;; executable runs unconditionally; this preloaded SIGILL handler traps and
+;; emulates them. Its make check compares the emulation with the real
+;; instructions where the host has them (skipped on a v1 host), runs the trap
+;; tests natively where the host has no POPCNT (the x86_64 build) and skips
+;; them on a v2 substitute builder without QEMU. The Makefile takes CC,
+;; PREFIX, LIBDIR and LDSO from the environment; the phases below point them
+;; at this build's libc, the same gnu-build-system "libc" input the launcher
+;; of claude-code-x86-64-v1 bakes in. Source: tag v0.1.0 of its own repository.
+;; SHA-256 9de757924fd00589541d014363d37bd76225efd18cb97d29257a0c6e905b8c65.
+(define x86-64-v2-sigill-shim
+  (package
+    (name "x86-64-v2-sigill-shim")
+    (version "0.1.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/omaguix/x86-64-v2-sigill-shim")
+                    (commit "917cb04cb05a6d84d667ca9f924467dd7136a1b0")))
+              (file-name (string-append "x86-64-v2-sigill-shim-" version
+                                        "-checkout"))
+              (sha256
+               (base32
+                "0rccbf86w33s4llpvfccs7pjaqnpgg9n6hq13ma8j1fh9y95grwx"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list
+      #:phases
+      #~(modify-phases %standard-phases
+          ;; No ./configure script; the Makefile is the build.
+          (delete 'configure)
+          (add-before 'build 'make-environment
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+              (setenv "CC" "gcc")
+              (setenv "PREFIX" (assoc-ref outputs "out"))
+              (setenv "LIBDIR"
+                      (string-append
+                       (dirname (search-input-file inputs "lib/libc.so.6"))
+                       "/"))
+              (setenv "LDSO"
+                      (search-input-file inputs
+                                         "lib/ld-linux-x86-64.so.2")))))))
+    (supported-systems '("x86_64-linux"))
+    (home-page "https://github.com/omaguix/x86-64-v2-sigill-shim")
+    (synopsis "Emulate x86-64-v2 instructions on x86-64-v1 CPUs")
+    (description "This library runs x86-64-v2 programs on an x86-64-v1 CPU
+such as a Core 2 Duo.  A SIGILL handler decodes and emulates the few v2
+instructions such programs execute unconditionally: POPCNT, PCMPGTQ,
+PCMPESTRI, PCMPESTRM and PCLMULQDQ, at about 2.3 microseconds per trap on a
+Core 2 Duo P8600.  It does not emulate AVX, BMI, AES-NI or CRC32; programs
+must pick those through CPUID dispatch, which sees the real CPU.  Preload it
+into the program, or run the program through the launcher @command{make install}
+places in @file{share/x86-64-v2-sigill-shim}, which keeps
+@code{argv[0]} and answers @file{/proc/self/exe}.  It also answers simdutf's
+implementation override from its own environment, so child processes keep
+their own CPU detection.")
+    (license license:gpl3+)))
+
+;; Claude Code on x86-64-v1 CPUs (decision 0003's non-free exception):
+;; Anthropic's npm binary for linux-x64 is a Bun-compiled executable that needs
+;; x86-64-v2, so bin/claude is the shim's launcher compiled with the store
+;; paths of the shim, the loader and the library path baked in (patchelf cannot
+;; rewrite Bun's executable, which is why the launcher exists). The launcher
+;; keeps argv[0] (Claude Code re-executes itself as ugrep and bfs) and the
+;; three paths come from one glibc: the build's "libc" input, which also links
+;; the shim. DISABLE_AUTOUPDATER=1 turns off the updater (update with Guix),
+;; and the simdutf override goes through the shim, never to child processes.
+;; Experimental and unsupported: #:substitutable? #f, and it is not in the
+;; reference system, so CI publishes nothing for it.
+;; SHA-256 a7ffd61e7784e6dda864a31e934cececc050f106015201cb3db4abb59c781c57.
+(define claude-code-x86-64-v1
+  (package
+    (name "claude-code-x86-64-v1")
+    (version "2.1.301")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://registry.npmjs.org/@anthropic-ai/"
+                                  "claude-code-linux-x64/-/claude-code-"
+                                  "linux-x64-" version ".tgz"))
+              (sha256
+               (base32
+                "0mqwg2fbbaxl7p5h2lh10vqm1h7cxi6967m3cjldvrl4fwgddzx7"))))
+    (build-system gnu-build-system)
+    (arguments
+     (list
+      ;; Upstream's binary is not linked the Guix way and is stripped already.
+      #:strip-binaries? #f
+      #:validate-runpath? #f
+      #:substitutable? #f
+      ;; The npm package ships no tests; 'smoke-test below runs the program.
+      #:tests? #f
+      #:phases
+      #~(modify-phases %standard-phases
+          (replace 'unpack
+            (lambda _
+              ;; The npm tarball holds one "package" directory.
+              (invoke "tar" "xf" #$source)
+              (chdir "package")))
+          (delete 'configure)
+          (replace 'build
+            (lambda* (#:key inputs #:allow-other-keys)
+              (let ((ldso (search-input-file inputs
+                                             "lib/ld-linux-x86-64.so.2"))
+                    (libdir (dirname (search-input-file inputs
+                                                        "lib/libc.so.6")))
+                    (shim (search-input-file
+                           inputs "lib/x86-64-v2-sigill-shim.so"))
+                    (target (string-append #$output "/libexec/claude")))
+                (invoke "gcc" "-O2" "-Wall" "-o" "claude-launcher"
+                        (string-append "-DLDSO=\"" ldso "\"")
+                        (string-append "-DLIBDIR=\"" libdir "\"")
+                        (string-append "-DSHIM=\"" shim "\"")
+                        (string-append "-DTARGET=\"" target "\"")
+                        ;; The shim answers simdutf's getenv with this; the
+                        ;; environment carries no SIMDUTF_FORCE_IMPLEMENTATION.
+                        "-DSIMDUTF_FORCE=\"westmere\""
+                        "-DEXTRA_ENV=\"DISABLE_AUTOUPDATER=1\""
+                        (search-input-file
+                         inputs "share/x86-64-v2-sigill-shim/launcher.c")))))
+          (replace 'install
+            (lambda _
+              (mkdir-p (string-append #$output "/libexec"))
+              (mkdir-p (string-append #$output "/bin"))
+              (copy-file "claude" (string-append #$output "/libexec/claude"))
+              (chmod (string-append #$output "/libexec/claude") #o555)
+              (copy-file "claude-launcher"
+                         (string-append #$output "/bin/claude"))
+              (chmod (string-append #$output "/bin/claude") #o555)))
+          (add-after 'install 'smoke-test
+            (lambda _
+              ;; Runs the binary, so not when cross-compiling. On the x86_64
+              ;; build this traps the shim's instructions end to end.
+              (unless #$(%current-target-system)
+                (invoke (string-append #$output "/bin/claude")
+                        "--version")))))))
+    (inputs (list x86-64-v2-sigill-shim))
+    (supported-systems '("x86_64-linux"))
+    (home-page "https://github.com/anthropics/claude-code")
+    (synopsis "Anthropic's coding agent (non-free upstream binary)")
+    (description "Claude Code is Anthropic's coding agent for the terminal.
+This package installs @code{claude-code-linux-x64}, the non-free binary
+Anthropic publishes on npm.  It comes with no source, so the package is
+experimental and unsupported.  @command{claude} runs it through
+x86-64-v2-sigill-shim, which emulates the x86-64-v2 instructions the
+executable executes unconditionally, so it also works on x86-64-v1 CPUs such
+as a Core 2 Duo.  The auto-updater is off; update the package with Guix.
+Anthropic's legal agreements apply:
+@url{https://code.claude.com/docs/en/legal-and-compliance}.")
+    (license
+     (license:license
+      "Proprietary"
+      "https://code.claude.com/docs/en/legal-and-compliance"
+      "Anthropic PBC, all rights reserved; no source is available."))))
 
 ;; cliamp's release binary links glibc and ALSA dynamically. patchelf breaks
 ;; this Go binary (the loader segfaults), so bin/cliamp runs the untouched
