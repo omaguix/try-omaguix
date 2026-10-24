@@ -356,6 +356,31 @@
   goes into the image closure or a separately published one, and the MacBook's
   memory headroom; the lang-for-ai coordinator waits for the released channel
   commit and needs no reply before then.
+  Correction and checks 2026-10-24 (the lang-for-ai coordinator pointed at the
+  two repositories; I read them):
+  - `omaguix/omaguix`'s `.github/workflows/build-desktop.yml` builds exactly
+    `(@ (roguix system) %roguix-reference-system)` with
+    `guix ... system build --no-grafts`, then takes
+    `guix gc -R $(cat outputs.txt)` as the closure and runs
+    `scripts/desktop-split`, which publishes the package outputs inside that
+    closure to substitutes.omaguix.org (not roguix.frolow.dev) for
+    aarch64-linux and x86_64-linux. Local clones: `~/personal_projects/guix/roguix`
+    at 09d6aa1 and `~/personal_projects/guix/omaguix-w31` at be56772.
+  - `%omaguix-reference-system` is `(settings-operating-system '())`
+    (`guest/guix/modules/omaguix/system.scm:410-411`), and
+    `settings-operating-system` takes `#:packages` (line 145). So odin gets
+    substitutes on both architectures by adding it to the reference system's
+    `#:packages` in the channel module, with no CI change; the coordinator's
+    alternative, an explicit extra package list in that workflow and
+    `desktop-split`, is the more invasive route. Which one to take is a design
+    choice for this item: the reference system's meaning changes if extra
+    packages live inside it.
+  - `desktop-split` refuses to publish unfree items, so the Claude Code
+    package can never be substituted and stays out of CI publication, as
+    decided; the shim and Odin are free and can be.
+  - Both clones still use the old names (`(roguix system)`), so
+    `omaguix/omaguix`'s workflow and scripts must move to the renamed modules
+    before any of this can be released ([t-omarelfs]).
 
 ## Proposed
 
