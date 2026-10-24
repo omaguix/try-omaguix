@@ -311,6 +311,52 @@
   and fix the producer or the reader (Rule 10).
   Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
 
+- [ ] Add Odin to Omaguix with substitutes for both architectures [t-sk47ymxd]
+  Requested by the user 2026-10-24, relayed by the lang-for-ai coordinator
+  (pane wDC:pJ2): "Omaguix needs this odin package, with substitutes for both
+  architectures. Ask the models."
+  Why it is wanted: lang-for-ai's task set (its item 0A.10, [t-rxiq9hvl])
+  needs `odin check` and `odin test` in a pinned Guix environment on aarch64
+  (its gate guest) and x86_64 (the 2010 MacBook). Upstream Guix has no odin
+  package (`guix show: error: odin: package not found` at Guix dda91ea6).
+  Consult round 20261024-142009-4b69 (sol, MiMo, DeepSeek, Argon; all four
+  agree except where named), to check against this repository when the item
+  starts:
+  1. Package one pinned Odin `dev-YYYY-MM` release tarball (sha256), chosen so
+     the LLVM major its build script supports matches the llvm/clang at
+     Omaguix's pin (`guest/guix/modules/omaguix/guix-commit`, 7e74121a; check
+     with `guix time-machine --commit=7e74121a -- show llvm`). Do not patch
+     Odin's LLVM version check. If no release matches, either package the
+     matching LLVM in the channel (sol, DeepSeek) or move Omaguix's pin (MiMo);
+     that choice is the user's. Install `core/`, `vendor/` and `base/` under
+     `$out/share/odin`, wrap `bin/odin` with `ODIN_ROOT` (Argon: also clang,
+     lld and libc on PATH, since `odin test` links). Check phase: `odin check`
+     and `odin test` on a tiny package from another directory.
+  2. Publication is the hard part: Odin would not be in the reference
+     system's closure, so it needs substitutes built for x86_64-linux and
+     aarch64-linux and published with the release. Verify per architecture
+     with `guix weather odin --substitute-urls=https://roguix.frolow.dev` and
+     `guix build --max-jobs=0 odin` in a clean store that trusts only this
+     channel's key. Argon warns that an LLVM-heavy Odin build may run out of
+     memory on the 2010 MacBook.
+  3. Upstream Guix only after it works in Omaguix on both architectures.
+  Checked 2026-10-24 against the repository: extra packages live in
+  `guest/guix/modules/omaguix/apps.scm` (module `(omaguix packages)`, export
+  list at line 29, `codex-bin` defined at 163), and the guest's
+  `/etc/config.scm` template takes extra packages between the
+  `;; BEGIN omaguix packages` and `;; END omaguix packages` markers
+  (`system.scm:108-111`), which puts them in the image closure. Neither
+  `guest/guix/release.py` nor `guest/guix/publish-channel` has an "extra
+  package list", so the release step cannot publish an arbitrary closure
+  today; the cheap route is to put odin into the image's closure, which the
+  existing release already builds and signs substitutes for on both
+  architectures ([t-omarelfs]). Decision 0003 (upstream binaries) does not
+  apply: Odin is free software.
+  When it starts: settle the LLVM match, where the package lands, whether it
+  goes into the image closure or a separately published one, and the MacBook's
+  memory headroom; the lang-for-ai coordinator waits for the released channel
+  commit and needs no reply before then.
+
 ## Proposed
 
 - [ ] Accept Guix's Ungoogled Chromium on the Metal path [t-wgeohswx]
