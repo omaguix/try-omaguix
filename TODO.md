@@ -181,6 +181,15 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   try-omaguix-release-3.log in the maintainer's state directory). Check:
   `gh run view 40203328029 -R omaguix/omaguix`; if a step after CI fails,
   run `release.py --resume 40203328029` again.
+  Reviewed 2026-10-25 in consult round 20261025-154257-8595 (sol, MiMo,
+  DeepSeek, Argon), after the user called it tangled: all four keep the
+  running release of b0672e97; all four call manual dispatch plus
+  `--resume` a one-off, not the supported path (follow-up t-relcommit).
+  Checked against the code: `--resume` waits with `gh run watch` and
+  requires workflow build-desktop and conclusion success; the commit comes
+  from the run's channel-commit.txt and must still be on release/C;
+  `git diff 3c872035 HEAD -- guest/guix` is empty; the channel key signs
+  without a passphrase prompt (gpg --batch --pinentry-mode error).
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
@@ -563,6 +572,23 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   full runtime build), then merge.
 
 ## Proposed
+
+- [ ] release.py: release an already published channel commit [t-relcommit]
+  From t-omarelfs (consult round 20261025-154257-8595): release.py always
+  makes a new channel commit, so a commit already published, checked and
+  pinned downstream (b0672e97) could be released only by dispatching CI by
+  hand and `--resume`. Either `release.py --commit C` (sol, MiMo: explicit;
+  checks C is on release/C, signed, its tree equal to current guest/guix,
+  then the normal dispatch and finish) or publish-channel reusing an
+  unreleased release/C whose parent is main and whose tree matches
+  (DeepSeek, Argon: idempotent, no new flag). Cost: release.py or
+  publish-channel and their tests, decision 0006 updated; no build.
+- [ ] Delete the channel's stale release/* branches [t-relprune]
+  From t-omarelfs: release/72b55436, release/892311c4, release/9404d6d1
+  (does not compile as a channel) and release/cba50b56 remain from
+  cancelled or abandoned attempts and are never released. Delete them on
+  omaguix-channel after checking that no downstream pins them (lang-for-ai
+  pins b0672e97). Cost: four remote branch deletions; no build.
 
 - [ ] static-tree: a prune without downloads, and a free-space check [t-stprune]
   Asked 2026-10-25 by omaguix-vps (its consult round
