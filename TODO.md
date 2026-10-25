@@ -189,6 +189,19 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   round 20261025-160940-92a5 (sol, MiMo, DeepSeek, Argon: all four for one new
   `--resume` now; the first had died in the wait, before any download or
   import, and no release.py process remained). Follow-up t-relwait.
+  CI run 40203328029 then failed (both build jobs, Build step):
+  (omaguix system) fell back to (current-guix) with OMAGUIX_GUIX unset,
+  rebuilding Guix from P's channel file:///home/runner/.../guix.git, which
+  exists only on the guix-profile job's runner. Fixed in omaguix/omaguix
+  377d659 (pushed to main as a fast-forward): the build job exports
+  OMAGUIX_GUIX=P, as omaguix-update does in a VM. Checked: YAML, shellcheck
+  of every run block, unittest; diff reviewed in round 20261025-162859-125d
+  by sol and DeepSeek (Argon refused the brief, MiMo is out of diff
+  reviews). New CI run
+  https://github.com/omaguix/omaguix/actions/runs/40207256066 with
+  `release.py --resume 40207256066` in the background (log
+  try-omaguix-release-5.log). Check: `gh run view 40207256066 -R
+  omaguix/omaguix`.
   Reviewed 2026-10-25 in consult round 20261025-154257-8595 (sol, MiMo,
   DeepSeek, Argon), after the user called it tangled: all four keep the
   running release of b0672e97; all four call manual dispatch plus
