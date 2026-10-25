@@ -300,7 +300,7 @@ class ProjectModuleTests(unittest.TestCase):
         exports = re.search(r"#:export \(([^)]*)\)", system).group(1).split()
         self.assertIn("%omaguix-reference-system", exports)
         self.assertIn("(define %omaguix-reference-system\n"
-                      "  (settings-operating-system '()))", system)
+                      "  (settings-operating-system '() #:packages '(\"odin\")))", system)
         self.assertEqual(system.count("(read-machine-settings)"), 1)
 
     def test_upstream_binaries_cover_both_reference_systems(self):

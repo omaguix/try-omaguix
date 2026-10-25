@@ -403,9 +403,12 @@ image's defaults."
                                        config))))
                              config)))))))
 
-;; The image's system with no extra packages and the default host settings,
-;; independent of any machine's settings file: what omaguix/omaguix's CI
-;; builds substitutes for, the same derivation wherever it is evaluated.
+;; The image's system with the default host settings, independent of any
+;; machine's settings file: what omaguix/omaguix's CI builds substitutes for,
+;; the same derivation wherever it is evaluated. Its extra packages are those
+;; Omaguix publishes substitutes for without putting them in the image:
+;; Odin, (omaguix odin), requested for lang-for-ai's checks on both
+;; architectures. Names, as in /etc/config.scm.
 ;; Defined last: it calls the procedures above when the module loads.
 (define %omaguix-reference-system
-  (settings-operating-system '()))
+  (settings-operating-system '() #:packages '("odin")))

@@ -151,6 +151,8 @@
   https://github.com/omaguix/omaguix/actions/runs/40195990260. Check:
   `gh run view 40195990260 -R omaguix/omaguix`; if CI succeeds and a later
   step fails, `release.py --resume 40195990260`.
+  Cancelled 2026-10-25 at its G' step, by the user's decision to include
+  Odin's substitutes (t-sk47ymxd); release/892311c4 stays unreleased.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
@@ -366,8 +368,20 @@
   default target is x86-64-v2, so on x86-64-v1 CPUs (the requester's x86_64
   host is this MacBook) every `odin test`/`odin build` needs
   `-microarch:native` or an explicit older microarch.
-  Remaining: the x86_64 build and test (the 2010 MacBook), then substitutes
-  for both architectures with a release.
+  Also reported by lang-for-ai [t-odinguix] as t-odinx86p (2026-10-25,
+  folded in here): it blocks their x86_64 Check until a channel commit
+  carries the fix. Done 2026-10-25: on x86_64 the installed check passes
+  -microarch:x86-64, the baseline lang-for-ai also uses; built with the check
+  on the Core 2 Duo P8600 (run t-sk47ymxd-x86), and in `guix shell --pure`
+  `odin version`, `odin check` and `odin test -microarch:x86-64` pass.
+  Decided by the user 2026-10-25: Odin's substitutes come with the first
+  release, through the reference system (`#:packages '("odin")`, not the
+  image), so the first run was cancelled and restarted. Its x86_64 system
+  evaluates with Odin in the closure (`system build -d --no-grafts` on the
+  MacBook). Review round 20261025-141108-a74e (sol, deepseek, argon): no
+  defect; the reference system's derivation now differs from the image's
+  (noted, the owner's chosen route). Remaining: the release, then send
+  lang-for-ai the released channel commit.
 
 - [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
   Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
@@ -494,27 +508,6 @@
   --keep N` re-downloads before it deletes, so it needs the most disk when
   disk is short. omaguix-vps waits for the commit. Cost: Python and tests in
   omaguix/omaguix; no build.
-
-- [ ] Odin's check phase fails on x86_64 hosts without POPCNT [t-odinx86p]
-  Reported by lang-for-ai [t-odinguix] 2026-10-25; the user chose to file
-  it here. On the x86_64 Guix host (2010 MacBook, Core 2 Duo: no POPCNT,
-  no SSE4.2), with guix dda91ea6 and omaguix-channel 72b55436,
-  /gnu/store/93qj1ih6q474z94cb8sl05jxiyfnyvm5-odin-2026-10.drv builds and
-  installs, then phase `check-installed` fails: `odin test sum` exits 1
-  with "Error: Try using '-microarch:native' as Odin defaults to x86-64-v2
-  (close to Nehalem), and your CPU seems to be older." Designed upstream
-  behaviour (Odin dev-2026-10 src/main.cpp:4399-4409 and
-  src/build_cpuid.cpp:22-35: without POPCNT, `odin run` and `odin test`
-  refuse unless a non-default -microarch is given), so the package's build
-  result depends on the build machine's CPU. Suggested fix (the owner
-  decides): the check phase passes an explicit microarch on x86_64 (e.g.
-  -microarch:x86-64). lang-for-ai's own x86_64 runs pass
-  -microarch:x86-64 (decided by the user 2026-10-25). Full log:
-  ~/personal_projects/lang-for-ai/build/odinguix/x86-odin-build.log (the
-  failure is its last 6 lines). Blocks lang-for-ai [t-odinguix], whose
-  Check now runs on both architectures; it needs the new channel commit.
-  Cost: one phase change, an x86_64 build on the MacBook; part of
-  [t-sk47ymxd]'s x86_64 work.
 
 - [ ] Tell try-omabend what its identity file needs at its next pin bump [t-omabidk]
   try-omabend clones this repository at a pinned commit (its

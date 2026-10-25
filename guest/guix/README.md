@@ -661,8 +661,9 @@ and is part of the system configuration:
   in `modules/omaguix/trust.scm`.
 
 For CI that builds these substitutes, `(omaguix system)` exports
-`%omaguix-reference-system`: the image's system with no extra packages and the
-default host settings, which never reads the first-start settings file, so its
+`%omaguix-reference-system`: the image's system with the default host
+settings plus the packages Omaguix publishes substitutes for without putting
+them in the image (today Odin, `(omaguix odin)`), which never reads the first-start settings file, so its
 derivation is the same on any machine (`test_build.py`). From `guest/guix`,
 evaluate it with the pinned Guix and an absolute load path, which `local-file`
 needs:

@@ -9,6 +9,7 @@
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (guix gexp)
+  #:use-module ((guix utils) #:select (target-x86-64?))
   #:use-module (guix build-system gnu)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module ((gnu packages base) #:select (which))
@@ -115,7 +116,13 @@ adds :: proc(t: ^testing.T) {
                                                   #$version))
                             (error "unexpected version" line)))
                         (invoke odin "check" "sum" "-no-entry-point")
-                        (invoke odin "test" "sum")))
+                        ;; Odin defaults to x86-64-v2 and refuses to run
+                        ;; tests on an older CPU, such as a builder without
+                        ;; POPCNT; the test names the baseline instead.
+                        (apply invoke odin "test" "sum"
+                               '#$(if (target-x86-64?)
+                                      '("-microarch:x86-64")
+                                      '()))))
                     (lambda () (setenv "PATH" path))))))))))
     (native-inputs (list which))
     (inputs (list bash-minimal clang-toolchain-22 llvm-22))
