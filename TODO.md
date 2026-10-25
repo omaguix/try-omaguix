@@ -79,6 +79,38 @@
   change (30c's design) in a worktree of omaguix/omaguix, has the models
   review the diff, pushes it and tells the guix-x86_64-iso-omguix
   coordinator; then the release runs.
+  Done 2026-10-25: omaguix/omaguix 5cb6692 ("ci: publish the patched Guix
+  profile a release names", pushed with [skip ci], no run started): the
+  guix-profile job (G' a54c94c5 at today's pin, deterministic across
+  clones; `guix pull -p` from a shallow local clone checked with a dry run
+  on the 2010 MacBook), the build with P/bin/guix, desktop-split
+  --guix-profile/--release-tag, the sign job's checks (it makes G' again),
+  the channel paths renamed to modules/omaguix, and the dispatch gate
+  narrowed to the maintainer's account. Reviewed in consult round
+  20261025-124251-a485 (sol, deepseek; argon refused the brief). The
+  guix-x86_64-iso-omguix coordinator was not running: tell it that 30c
+  (t-guixprof) landed as 5cb6692 and the omaguix-w31 clone is obsolete.
+  Not yet run in CI: the first run is release.py's dispatch.
+  Which trust record does the first release's channel commit carry?
+  Options: switch trust.scm to substitutes.omaguix.org before the run, so
+  main moves only after CI signed with the key matching the .pub, the VPS
+  imported it and the coverage check found every item (one run;
+  recommended) | release with roguix.frolow.dev first and switch in a
+  second release (two multi-hour runs; the first one's guests cannot
+  verify the new substitutes) | first a CI dispatch that does not move
+  main, verify a signed narinfo by hand, then release.py.
+  Checked: trust.scm still names roguix.frolow.dev and its key; release.py
+  checks coverage against trust.scm's URL; t-omaorgdm asks for verified
+  signed content before the trust record changes.
+  May the guix-profile job fetch G from Codeberg by its commit id instead
+  of authenticating Guix's history?
+  Options: accept the pin by commit id (G comes from the authenticated
+  channel; Git checks every object's hash; recommended) | authenticate G
+  with `guix git authenticate` on a full Guix clone in that job (minutes
+  per run, full history download).
+  Checked: consult round 20261025-124251-a485 (sol) noted that
+  time-machine authenticated Guix's signed history, which the local
+  file:// pull with --disable-authentication no longer does.
 
 - [ ] Move Omaguix to omaguix.org [t-omaorgdm]
   The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,

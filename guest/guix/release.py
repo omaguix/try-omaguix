@@ -125,7 +125,7 @@ def read_builds(directory, commit, pin, patch_sha256):
                  for name in ARTIFACT_LISTS}
         if not lists["package-closure.txt"]:
             raise ReleaseError(f"split-{prefix}/package-closure.txt is empty")
-        # The Guix profile CI's `guix time-machine --commit=PIN' ran: VMs
+        # The Guix profile whose guix built the system in CI: VMs
         # on another pin substitute it (docs/decisions/0007), so it is
         # checked and served like the packages.
         guix_path = artifact / "guix-profile.txt"

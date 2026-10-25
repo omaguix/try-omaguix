@@ -34,10 +34,10 @@ check, which the patch lets it skip.
    channel commit, adds `--no-check-forward-update` to `guix system
    reconfigure`. Without the option nothing changes: `check-forward-update`
    runs and aborts a downgrade.
-2. CI commits G plus that patch as G', builds the reference system with
-   `guix time-machine` at G', and, for each architecture, publishes that
-   time-machine's Guix profile P (its canonical store path) and P's closure
-   like the packages. Its artifact names P (`guix-profile.txt`), G'
+2. CI commits G plus that patch as G', pulls G' into a fresh profile P
+   (`guix pull -p`), builds the reference system with `P/bin/guix`, and,
+   for each architecture, publishes P (its canonical store path) and P's
+   closure like the packages. Its artifact names P (`guix-profile.txt`), G'
    (`guix-patched-commit.txt`, what `P/bin/guix describe` reports) and the
    patch's SHA-256 (`guix-patch-sha256.txt`).
 3. `release.py` requires P to be a store item inside the package closure it
