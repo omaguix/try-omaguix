@@ -102,6 +102,8 @@
   Checked: trust.scm still names roguix.frolow.dev and its key; release.py
   checks coverage against trust.scm's URL; t-omaorgdm asks for verified
   signed content before the trust record changes.
+  Decided by the user 2026-10-25: switch trust.scm to
+  substitutes.omaguix.org before the run (the first option).
   May the guix-profile job fetch G from Codeberg by its commit id instead
   of authenticating Guix's history?
   Options: accept the pin by commit id (G comes from the authenticated
