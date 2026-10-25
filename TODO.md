@@ -225,14 +225,6 @@
 
 
 
-- [ ] `vm-run` drops lines of the guest log [t-gmgkzhns]
-  Found 2026-10-16 by the [t-omamanif] worker: the host-side log lacked lines
-  24-40 of the guest's own log, and a short grep through `vm-run` exited 0
-  but printed nothing. That is a lost event in vm-run's streaming (the guest
-  log is complete), not a timing problem: find where the stream loses bytes
-  and fix the producer or the reader (Rule 10).
-  Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
-
 - [ ] Add Odin to Omaguix with substitutes for both architectures [t-sk47ymxd]
   Requested by the user 2026-10-24, relayed by the lang-for-ai coordinator
   (pane wDC:pJ2): "Omaguix needs this odin package, with substitutes for both

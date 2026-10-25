@@ -26,6 +26,10 @@ SOCKET = Path(os.environ.get(
     'VM_RUN_SOCKET',
     Path(__file__).resolve().parents[2] / '.build/guix-validation/serial.sock'))
 BEGIN, END = '__VMRUN_BEGIN__', '__VMRUN_END__'
+# The most log bytes one poll takes: the serial console moves about 11 KB/s
+# and console() takes the reply it has after 15 s.
+CHUNK = 32768
+GUEST_DIR = '/root/vm-run'
 
 
 def console(command, wait=15.0, attempts=12):
@@ -69,13 +73,13 @@ def main():
     args = parser.parse_args()
 
     job = f"{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
-    base = f'/root/vm-run/{job}'
+    base = f'{GUEST_DIR}/{job}'
     # pipefail: a failing command piped into another (`build | tail`) must
     # fail the job, not report the last command's success.
     script = base64.b64encode(
         ("set -o pipefail\n" + args.command + "\n").encode()).decode()
     started = console(
-        f"mkdir -p /root/vm-run && echo {script} | base64 -d > {base}.sh && "
+        f"mkdir -p {GUEST_DIR} && echo {script} | base64 -d > {base}.sh && "
         f"(setsid bash -c 'bash {base}.sh > {base}.log 2>&1; "
         f"echo $? > {base}.status' < /dev/null > /dev/null 2>&1 &) && "
         f"echo started")
@@ -88,14 +92,19 @@ def main():
     offset, deadline = 0, time.monotonic() + args.timeout
     last_seen = time.monotonic()
     while True:
-        # Size first, so the tail never skips output written in between.
+        # The status before the size: once the status exists the log is
+        # complete, so everything up to that size gets printed before
+        # vm-run returns. A poll takes at most CHUNK bytes, and offset
+        # moves by exactly what it took.
         reply = console(
-            f"s=$(stat -c %s {base}.log 2>/dev/null || echo 0); "
-            f"echo size=$s; echo status=$(cat {base}.status 2>/dev/null); "
-            f"tail -c +{offset + 1} {base}.log 2>/dev/null | "
-            f"head -c $((s - {offset})) | tr '\\r' '\\n' | "
-            f"grep -a -v '^ *$' | tail -n 40")
+            f"st=$(cat {base}.status 2>/dev/null); "
+            f"s=$(wc -c < {base}.log 2>/dev/null || echo 0); "
+            f"n=$((s - {offset})); if [ $n -gt {CHUNK} ]; then n={CHUNK}; fi; "
+            f"echo status=$st; echo size=$((s)); echo take=$n; "
+            f"tail -c +{offset + 1} {base}.log 2>/dev/null | head -c $n | "
+            f"tr '\\r' '\\n' | grep -a -v '^ *$'")
         now = time.monotonic()
+        pending = False
         if reply is None:
             if now - last_seen > 600:
                 print('vm-run: console unreachable for 10 minutes',
@@ -103,21 +112,24 @@ def main():
                 return 125
         else:
             last_seen = now
-            size = re.search(r'^size=(\d+)$', reply, re.M)
-            status = re.search(r'^status=(\d*)$', reply, re.M)
-            body = re.sub(r'^(size|status)=.*\n', '', reply, flags=re.M)
+            fields = dict(re.findall(r'^(status|size|take)=(\d*)$', reply, re.M))
+            body = re.sub(r'^(status|size|take)=\d*\n', '', reply, flags=re.M)
             if body.strip():
                 print(body.rstrip('\n'), flush=True)
-            if size:
-                offset = max(offset, int(size.group(1)))
-            if status and status.group(1):
-                code = int(status.group(1))
+            if fields.get('take'):
+                offset += int(fields['take'])
+            pending = offset < int(fields.get('size') or offset)
+            if fields.get('status') and not pending:
+                code = int(fields['status'])
                 print(f'vm-run: {job} exited with {code}', flush=True)
                 return code
         if now > deadline:
             print(f'vm-run: timed out; {job} may still run in the guest',
                   file=sys.stderr)
             return 124
+        if pending:
+            # More of the log is waiting: read it now.
+            continue
         time.sleep(args.poll)
 
 
