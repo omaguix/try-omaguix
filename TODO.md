@@ -202,6 +202,17 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   `release.py --resume 40207256066` in the background (log
   try-omaguix-release-5.log). Check: `gh run view 40207256066 -R
   omaguix/omaguix`.
+  CI run 40207256066 failed (both architectures, Build, after 25-38
+  min): the odin source checkout hashed 11c9czxj... instead of the recorded
+  02f292zn... Odin's tag dev-2026-10 did not move (84bc3fc, 2026-10-06);
+  its .gitattributes puts vendor binaries in Git LFS. The checkout's
+  builder is builtin:git-download, run by the daemon outside the build
+  chroot (guix perform-download, PATH with /usr/bin, host git config not
+  isolated); the GitHub runner image configures git-lfs system-wide, so
+  the fetch smudged the LFS files. Reproduced on the MacBook: a clone with
+  git-lfs active hashes to exactly 11c9czxj...; the MacBook's own checkout
+  keeps the 132-byte pointers and hashes 02f292zn... Same code on Guix
+  master. A Guix bug (t-guixlfs), and the release waits on it.
   Reviewed 2026-10-25 in consult round 20261025-154257-8595 (sol, MiMo,
   DeepSeek, Argon), after the user called it tangled: all four keep the
   running release of b0672e97; all four call manual dispatch plus
@@ -915,6 +926,25 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   the move).
 
 ## Needs a decision
+
+- [ ] Guix's builtin git download reads the host's git config [t-guixlfs]
+  How should CI get past Guix's non-hermetic builtin:git-download (host
+  git-lfs config smudges LFS files, so fixed-output checkouts such as
+  odin's mismatch on GitHub runners; t-omarelfs)?
+  Options: fork Guix with the fix and a regression test, open the upstream
+  PR, and run CI's daemon from the fork-pinned Guix | fork and upstream PR
+  only, CI waits for an upstream release | stop the release for now
+  Checked: reproduced on the MacBook (see t-omarelfs). Consult round
+  20261025-175851-0f38 (sol, MiMo, DeepSeek, Argon): all four classify setting
+  GIT_CONFIG_NOSYSTEM in our daemon unit, uninstalling git-lfs on the
+  runner, serving the checkout as a substitute, or changing the odin
+  package as local workarounds forbidden by the bug rule; the fix belongs
+  in (guix build git) or perform-download (no system or global git config,
+  and no LFS filter unless lfs? is set), with a test that defines a smudge
+  filter in a global config and checks the fetched files stay unchanged.
+  CI's downloading daemon is the 1.5.0 tarball's, not G', so the fix
+  reaches CI only if its daemon is started from the fork-pinned Guix
+  (MiMo, Argon). No upstream issue found yet.
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
