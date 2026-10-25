@@ -113,6 +113,8 @@
   Checked: consult round 20261025-124251-a485 (sol) noted that
   time-machine authenticated Guix's signed history, which the local
   file:// pull with --disable-authentication no longer does.
+  Decided by the user 2026-10-25: authenticate G's signed history too
+  (the second option), on a full Guix clone in every run.
 
 - [ ] Move Omaguix to omaguix.org [t-omaorgdm]
   The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
