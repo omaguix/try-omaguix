@@ -40,11 +40,23 @@ check, which the patch lets it skip.
    closure like the packages. Its artifact names P (`guix-profile.txt`), G'
    (`guix-patched-commit.txt`, what `P/bin/guix describe` reports) and the
    patch's SHA-256 (`guix-patch-sha256.txt`).
+   While the channel's `modules/omaguix/guix-fork` names a commit F of a
+   Guix fork (`URL COMMIT`), G' is F plus the patch: F carries a fix to
+   Guix not yet released upstream, made in a fork under the maintainer's
+   account with a regression test and offered upstream, as the
+   maintainer's rule for bugs in code we do not own requires (decided
+   2026-10-25 for Guix's builtin git download reading the host's Git
+   configuration). CI checks that F's only parent is G; Guix's
+   introduction authenticates G, and F is trusted because the signed
+   channel commit names it. The runner's daemon is switched to P's, so its
+   builtins run that fix. The file is removed once a pin that contains the
+   fix upstream is adopted, which makes G' G plus the patch again.
 3. `release.py` requires P to be a store item inside the package closure it
    checks is served, the patch's SHA-256 to be the channel's, and one G'
    for both architectures. `release.json` records P as
    `architectures.<system>.guix`, the patch (`guix-patch`: its file and
-   SHA-256) and G' (`guix-patched-commit`). A release whose G does not
+   SHA-256), F (`guix-fork`: its URL and commit, or null) and G'
+   (`guix-patched-commit`). A release whose G does not
    descend from the previous release's G is refused: a newer channel
    release never names an older Guix. When the pin changed, a Guix clone
    on the maintainer's machine (`.env`'s `GUIX_CHECKOUT`) decides it with

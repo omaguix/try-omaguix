@@ -184,10 +184,12 @@ class ManifestTests(unittest.TestCase):
                   "x86_64-linux": {"bordeaux": 7, "omaguix": 0}}
         ci_run = {"databaseId": 42, "url": "https://example/runs/42",
                   "headSha": "f" * 40}
-        document = release.manifest(COMMIT, "a" * 40, PIN, PATCH_SHA256, ci_run,
-                                    builds, served)
+        fork = {"url": "https://codeberg.org/someone/guix", "commit": "e" * 40}
+        document = release.manifest(COMMIT, "a" * 40, PIN, fork, PATCH_SHA256,
+                                    ci_run, builds, served)
         self.assertEqual(document["channel-commit"], COMMIT)
         self.assertEqual(document["guix-commit"], PIN)
+        self.assertEqual(document["guix-fork"], fork)
         self.assertEqual(document["guix-patch"],
                          {"file": release.GUIX_PATCH, "sha256": PATCH_SHA256})
         self.assertEqual(document["guix-patched-commit"], PATCHED)
@@ -420,6 +422,27 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(pin, "a" * 40)
         self.assertEqual(sha256, hashlib.sha256(b"a patch\n").hexdigest())
         self.assertEqual(try_omaguix, head)
+        self.assertIsNone(release.guix_fork(channel, commit))
+        fork_file = channel / release.FORK_FILE
+        for content, expected in (
+                ("https://codeberg.org/someone/guix " + "e" * 40 + "\n",
+                 {"url": "https://codeberg.org/someone/guix",
+                  "commit": "e" * 40}),
+                ("https://codeberg.org/someone/guix\n", None),
+                ("https://codeberg.org/someone/guix " + "e" * 40 + "\nmore\n",
+                 None)):
+            fork_file.write_text(content)
+            for command in (["add", "-A"], ["commit", "--quiet", "-m", "fork"]):
+                subprocess.run(["git", "-C", str(channel), *command], env=env,
+                               check=True, capture_output=True)
+            forked = subprocess.run(["git", "-C", str(channel), "rev-parse",
+                                     "HEAD"], text=True, capture_output=True,
+                                    check=True).stdout.strip()
+            if expected:
+                self.assertEqual(release.guix_fork(channel, forked), expected)
+            else:
+                with self.assertRaises(release.ReleaseError):
+                    release.guix_fork(channel, forked)
 
     def test_resume_takes_a_run_id(self):
         args = type("Args", (), {"resume": "latest", "channel": self.dir})

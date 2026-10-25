@@ -47,6 +47,9 @@ ARTIFACT_LISTS = ("publish.txt", "vps-fetch.txt", "vps-has.txt",
 # move to another pin with (docs/decisions/0007): its path in the channel.
 GUIX_PATCH = "modules/omaguix/guix-skip-forward-check.patch"
 PIN_FILE = "modules/omaguix/guix-commit"
+# A Guix fork commit on top of the pin, for a fix not yet in Guix: CI makes
+# G' on it (omaguix/omaguix scripts/guix-base).
+FORK_FILE = "modules/omaguix/guix-fork"
 COMMIT_ID = re.compile(r"[0-9a-f]{40}")
 # A direct store item, as Guix names one (nix-base32 hash).
 STORE_ITEM = re.compile(r"/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+")
@@ -251,11 +254,13 @@ def coverage(builds, omaguix, status=narinfo_status):
     return result
 
 
-def manifest(commit, try_omaguix, pin, patch_sha256, ci_run, builds, served):
+def manifest(commit, try_omaguix, pin, fork, patch_sha256, ci_run, builds,
+             served):
     return {
         "channel-commit": commit,
         "try-omaguix-commit": try_omaguix,
         "guix-commit": pin,
+        "guix-fork": fork,
         "guix-patch": {"file": GUIX_PATCH, "sha256": patch_sha256},
         "guix-patched-commit": next(iter(builds.values()))["guix-patched-commit"],
         "ci": {"repository": CI_REPO, "run-id": ci_run["databaseId"],
@@ -406,7 +411,8 @@ def finish(channel, commit, try_omaguix, pin, patch_sha256, ci_run, builds,
     served = coverage(builds, omaguix)
     head = publish_manifest(
         channel, commit,
-        manifest(commit, try_omaguix, pin, patch_sha256, ci_run, builds, served))
+        manifest(commit, try_omaguix, pin, guix_fork(channel, commit),
+                 patch_sha256, ci_run, builds, served))
     print(f"release: channel main is {head}, built by {ci_run['url']}")
 
 
@@ -420,6 +426,21 @@ def run_commit(directory):
         raise ReleaseError("the run's splits name no single channel commit: "
                            f"{sorted(map(str, found))}")
     return found.pop()
+
+
+def guix_fork(channel, commit):
+    """The Guix fork commit that channel commit COMMIT names, as {"url",
+    "commit"}, or None."""
+    if not git(channel, "ls-tree", "--name-only", commit, FORK_FILE).strip():
+        return None
+    # One line, as omaguix/omaguix's scripts/guix-base reads it.
+    lines = git(channel, "show", f"{commit}:{FORK_FILE}").splitlines()
+    fields = lines[0].split() if len(lines) == 1 else []
+    if (len(fields) != 2 or not COMMIT_ID.fullmatch(fields[1])
+            or not re.fullmatch(r"(https|file)://[A-Za-z0-9./_-]+", fields[0])):
+        raise ReleaseError(f"{commit}:{FORK_FILE} is not 'URL COMMIT': "
+                           f"{fields}")
+    return {"url": fields[0], "commit": fields[1]}
 
 
 def channel_inputs(channel, commit):
