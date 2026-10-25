@@ -167,6 +167,20 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   channel (t-sk47ymxd). Paused by the user's "only lang-for-ai's needs"; a
   new run publishes a new channel commit from current main (release.py),
   after a channel check (AGENTS.md "Checking a Channel Commit").
+  Decided by the user 2026-10-25: lift the pause and run the release.
+  Released commit: b0672e9714c2437582a9c6413b572d42d0dac203 itself, already
+  on release/b0672e97, checked as a channel and pinned by lang-for-ai
+  (t-sk47ymxd); guest/guix is unchanged since its try-omaguix 3c872035.
+  A plain release.py run would publish a new commit with the same tree,
+  leaving lang-for-ai's pin off the channel's main. So: `gh workflow run
+  build-desktop.yml -R omaguix/omaguix -f channel_commit=b0672e97…`, then
+  `release.py --resume RUN`, which waits for the run and does steps 3-4.
+  Running since 2026-10-25: CI run
+  https://github.com/omaguix/omaguix/actions/runs/40203328029, followed by
+  `release.py --resume 40203328029` in a background job (log
+  try-omaguix-release-3.log in the maintainer's state directory). Check:
+  `gh run view 40203328029 -R omaguix/omaguix`; if a step after CI fails,
+  run `release.py --resume 40203328029` again.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
