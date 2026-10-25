@@ -609,6 +609,19 @@ worker; everything else (docs, TODO-only and other text changes) runs in a
 headless worker. The headless sandbox is never widened by hand to make such
 an item fit.
 
+## Checking a Channel Commit
+
+A change to the guest modules is checked as a channel before a channel
+commit goes to anyone or into a release: `guix time-machine -C` with a
+channels file naming the commit (for an unsigned test commit, a local
+`file://` repository with a branch at it and `--disable-authentication`),
+then `describe` and a build. `-L guest/guix/modules`, which build.py, CI
+and quick evaluations use, hides failures that appear only while Guix
+compiles the channel: on 2026-10-25 `(omaguix system)` looked a package up
+by name when it loaded, which `-L` allowed and the channel's own
+compilation refused ("odin: unknown package"), so every pull of that
+commit failed.
+
 ## Long-Running Work
 
 Run builder VM work that takes more than a minute (image and system builds,

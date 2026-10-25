@@ -18,6 +18,7 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (omaguix integrations)
+  #:use-module (omaguix odin)
   #:use-module (omaguix omarchy)
   #:use-module (omaguix packages)
   #:use-module (omaguix services)
@@ -280,7 +281,15 @@ image's defaults."
     (packages (append (list hyprland-0.56 xdg-desktop-portal-hyprland-0.56
                             omaguix-display-sync
                             foot wofi font-dejavu mesa-utils)
-                      (map specification->package packages)
+                      ;; Names from the settings file; the reference system
+                      ;; passes package objects, since a name lookup while
+                      ;; the channel compiles cannot see the channel's own
+                      ;; packages.
+                      (map (lambda (package)
+                             (if (string? package)
+                                 (specification->package package)
+                                 package))
+                           packages)
                       %base-packages))
     (services
      (cons* ;; The same definitions for in-guest reconfigure and rollback, so they
@@ -407,8 +416,7 @@ image's defaults."
 ;; machine's settings file: what omaguix/omaguix's CI builds substitutes for,
 ;; the same derivation wherever it is evaluated. Its extra packages are those
 ;; Omaguix publishes substitutes for without putting them in the image:
-;; Odin, (omaguix odin), requested for lang-for-ai's checks on both
-;; architectures. Names, as in /etc/config.scm.
+;; Odin, requested for lang-for-ai's checks on both architectures.
 ;; Defined last: it calls the procedures above when the module loads.
 (define %omaguix-reference-system
-  (settings-operating-system '() #:packages '("odin")))
+  (settings-operating-system '() #:packages (list odin)))
