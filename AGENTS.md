@@ -529,7 +529,10 @@ A throwaway VM state root for a check is created by the app itself or with
 `cp -c` (an APFS clone) from an existing image, never with a plain copy,
 which writes the image's zeros as data (the whole disk). Check that the clone
 succeeded, and delete the state root when the check ends, also after a
-failed run.
+failed run. Between volumes, where no clone is possible, copy a qcow2 with
+`qemu-img convert -O qcow2` (add `-c` to keep it compressed) and check the
+copy with `qemu-img compare`: `rsync -S` wrote a 7.3 GB qcow2 from the pendrive
+as 53 GB (2026-10-25).
 
 The builder VM is defined by `guest/guix/builder-vm` (its disk, knobs and
 how to recreate it: "Builder VM" in `guest/guix/README.md`). It belongs to
