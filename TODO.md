@@ -415,6 +415,13 @@
   channel's introduction, `guix time-machine -C` authenticated it, and
   `shell --pure -m` with only `odin` ran `odin version`, `odin check` and
   `odin test`. Commit and introduction sent to the lang-for-ai session.
+  First x86_64 build 2026-10-25 on the Core 2 Duo P8600 (run
+  t-dopemmpz-build3): the compiler builds, but the installed check fails in
+  `odin test`: "Try using '-microarch:native' as Odin defaults to x86-64-v2
+  (close to Nehalem), and your CPU seems to be older." Odin's documented
+  default target is x86-64-v2, so on x86-64-v1 CPUs (the requester's x86_64
+  host is this MacBook) every `odin test`/`odin build` needs
+  `-microarch:native` or an explicit older microarch.
   Remaining: the x86_64 build and test (the 2010 MacBook), then substitutes
   for both architectures with a release.
 
