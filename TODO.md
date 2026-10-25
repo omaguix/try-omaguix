@@ -181,6 +181,10 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   try-omaguix-release-3.log in the maintainer's state directory). Check:
   `gh run view 40203328029 -R omaguix/omaguix`; if a step after CI fails,
   run `release.py --resume 40203328029` again.
+  The first `--resume` stopped after 13 minutes while CI still ran: `gh run
+  watch` lost api.github.com ("error connecting to api.github.com"), exit 1,
+  the channel's main did not move. CI run 40203328029 went on (in
+  progress, both guix-profile jobs at "Pull G'").
   Reviewed 2026-10-25 in consult round 20261025-154257-8595 (sol, MiMo,
   DeepSeek, Argon), after the user called it tangled: all four keep the
   running release of b0672e97; all four call manual dispatch plus
