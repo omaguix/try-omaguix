@@ -249,7 +249,7 @@ exec ~a -c check_for_update_on_startup=false \"$@\"~%"
           (delete 'configure)
           (add-before 'build 'make-environment
             (lambda* (#:key inputs outputs #:allow-other-keys)
-              (setenv "CC" "gcc")
+              (setenv "CC" #$(cc-for-target))
               (setenv "PREFIX" (assoc-ref outputs "out"))
               (setenv "LIBDIR"
                       (string-append
@@ -324,7 +324,7 @@ their own CPU detection.")
                     (shim (search-input-file
                            inputs "lib/x86-64-v2-sigill-shim.so"))
                     (target (string-append #$output "/libexec/claude")))
-                (invoke "gcc" "-O2" "-Wall" "-o" "claude-launcher"
+                (invoke #$(cc-for-target) "-O2" "-Wall" "-o" "claude-launcher"
                         (string-append "-DLDSO=\"" ldso "\"")
                         (string-append "-DLIBDIR=\"" libdir "\"")
                         (string-append "-DSHIM=\"" shim "\"")
