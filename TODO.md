@@ -945,6 +945,9 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   CI's downloading daemon is the 1.5.0 tarball's, not G', so the fix
   reaches CI only if its daemon is started from the fork-pinned Guix
   (MiMo, Argon). No upstream issue found yet.
+  Decided by the user 2026-10-25: fork Guix with the fix and a regression
+  test, open the upstream PR, and run CI's daemon from the fork-pinned
+  Guix (this approves that input change).
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
