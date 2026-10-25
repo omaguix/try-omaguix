@@ -412,7 +412,17 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   `odin check`, `odin test -microarch:x86-64` in `shell --pure`); not yet
   built on aarch64 at this commit. Sent to lang-for-ai (session
   lang-for-ai-2e), whose [t-odinguix] gate run is the first aarch64 build.
-  Remaining: their result; substitutes come with the release (paused).
+  Passed 2026-10-25 (reported by lang-for-ai-2e, at their Guix pin
+  dda91ea6): on aarch64 their gate guest built odin from source
+  (/gnu/store/51xyywz7…-odin-2026-10) and the gate passed (`odin version`,
+  check, test pass and fail, run); on the x86_64 MacBook the same smoke
+  passed (/gnu/store/bkl497n1…-odin-2026-10, `-microarch:x86-64`).
+  lang-for-ai now pins b0672e97, which is only on the channel's
+  release/b0672e97: that branch must stay until the channel's main contains
+  the commit. release.py deletes release/C only after pushing a main that
+  contains C, so do not delete it by hand, and a release of a later commit
+  leaves it in place.
+  Remaining: substitutes come with the release (paused).
 
 - [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
   Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
