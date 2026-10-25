@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("VM resource settings")
+@Suite("VM resource settings", .identity(.tryOmaguix))
 struct VMResourcePreferencesTests {
     private func limits(cpus: Int = 18, memoryGiB: UInt64 = 48) -> VMResourceLimits {
         VMResourceLimits(hostCPUCount: cpus, hostMemoryBytes: memoryGiB << 30)

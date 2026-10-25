@@ -115,6 +115,7 @@ a backslash, which Make would read as a continuation.
 | Key | Try Omaguix | Used for |
 | --- | --- | --- |
 | `APP_NAME` | `Try Omaguix` | the app bundle's file name (`build/*.noindex/NAME.app`), the production display name and the VM helper app's name and executable |
+| `GUEST_NAME` | `Omaguix` | the guest system's name in the app's windows and messages ("Reset Omaguix", "Omaguix port"), written to `Info.plist` as `OmaguixGuestName` |
 | `DEVELOPMENT_APP_NAME` | `Try Omaguix Dev` | the development display name and `make install`'s `~/Applications/NAME.app` |
 | `BUNDLE_IDENTIFIER` | `dev.tryomaguix.native` | the production bundle identifier (the VM helper adds `.vm`) |
 | `DEVELOPMENT_BUNDLE_IDENTIFIER` | `dev.tryomaguix.native.development` | the development bundle identifier |
@@ -140,7 +141,8 @@ never share VM state, logs, preferences or signing keys.
 
 The build writes what the app and its launcher need at run time into the
 bundle's `Info.plist`: `OmaguixApplicationName` (`APP_NAME`, which also names
-the VM helper app and the QEMU window), `OmaguixDevelopmentApplicationName`,
+the VM helper app and the QEMU window), `OmaguixGuestName` (`GUEST_NAME`),
+`OmaguixDevelopmentApplicationName`,
 `OmaguixApplicationSupportDirectory`, `OmaguixLogsDirectory`,
 `OmaguixNetworkHelperService` (empty without the helper) and, for the update
 check, `OmaguixReleaseRepository`, `OmaguixReleaseTagPrefix`, `OmaguixReleaseDMG`

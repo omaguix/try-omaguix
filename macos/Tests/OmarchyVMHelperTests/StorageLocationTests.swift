@@ -116,7 +116,7 @@ private func writeRecordedPersistentDisk(
     return disk
 }
 
-@Suite("Storage location policy")
+@Suite("Storage location policy", .identity(.tryOmaguix))
 struct StorageLocationPolicyTests {
     @Test("accepts an owned, empty APFS folder and uses it directly")
     func acceptsOwnedAPFSFolder() throws {
@@ -595,7 +595,7 @@ struct StorageLocationPolicyTests {
     }
 }
 
-@Suite("Storage space requirement")
+@Suite("Storage space requirement", .identity(.tryOmaguix))
 struct StorageSpaceRequirementTests {
     @Test("the floor covers the factory image plus headroom")
     func floorCoversTheFactoryImage() {
@@ -608,7 +608,7 @@ struct StorageSpaceRequirementTests {
     }
 }
 
-@Suite("Storage location preferences")
+@Suite("Storage location preferences", .identity(.tryOmaguix))
 struct StorageLocationPreferenceStoreTests {
     private func store() throws -> (StorageLocationPreferenceStore, UserDefaults, String) {
         let name = "omarchy-storage-tests-\(UUID().uuidString)"
@@ -657,7 +657,7 @@ struct StorageLocationPreferenceStoreTests {
     }
 }
 
-@Suite("Storage location launch configuration")
+@Suite("Storage location launch configuration", .identity(.tryOmaguix))
 struct StorageLocationLaunchConfigurationTests {
     @Test("the development override wins over a stored preference")
     func environmentOverrideWins() throws {
@@ -758,7 +758,7 @@ struct StorageLocationLaunchConfigurationTests {
     }
 }
 
-@Suite("Storage location effective configuration")
+@Suite("Storage location effective configuration", .identity(.tryOmaguix))
 struct StorageLocationEffectiveConfigurationTests {
     /// What the menu reports and what the launcher receives must be the same
     /// workspace. When they diverge, the reset sheet names one VM and the
@@ -846,7 +846,7 @@ struct StorageLocationEffectiveConfigurationTests {
     }
 }
 
-@Suite("Storage location menu state")
+@Suite("Storage location menu state", .identity(.tryOmaguix))
 struct StorageLocationMenuStateTests {
     @Test("the default location reports itself as default")
     func defaultLocation() {

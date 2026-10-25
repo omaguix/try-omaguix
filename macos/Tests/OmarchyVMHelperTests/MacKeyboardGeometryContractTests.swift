@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("Mac keyboard geometry native contract")
+@Suite("Mac keyboard geometry native contract", .identity(.tryOmaguix))
 struct MacKeyboardGeometryContractTests {
     @Test("Runner publishes helper geometry as a guest setting and to Cocoa")
     func runnerMapping() throws {

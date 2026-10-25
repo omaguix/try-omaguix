@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Start menu presentation")
+@Suite("Start menu presentation", .identity(.tryOmaguix))
 struct StartMenuPresentationTests {
     @Test("the reset notice describes actual compatibility failures, not app updates")
     func incompatibleWorkspaceNotice() {

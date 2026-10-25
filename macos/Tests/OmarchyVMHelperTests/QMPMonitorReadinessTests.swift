@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("QMP monitor readiness")
+@Suite("QMP monitor readiness", .identity(.tryOmaguix))
 struct QMPMonitorReadinessTests {
     @Test("refused connections retry within a bounded deadline")
     func refusedMonitor() {

@@ -8,7 +8,7 @@ import Testing
 /// detection, integration cache and size floor only read what the shell writes,
 /// so a renamed disk, kind or subdirectory on either side silently turns them
 /// into "nothing there" rather than failing.
-@Suite("Guest state layout cross-language agreement")
+@Suite("Guest state layout cross-language agreement", .identity(.tryOmaguix))
 struct GuestStateLayoutAgreementTests {
     private static let identity = String(repeating: "a", count: 64)
     private static let sourceSHA = String(repeating: "d", count: 64)

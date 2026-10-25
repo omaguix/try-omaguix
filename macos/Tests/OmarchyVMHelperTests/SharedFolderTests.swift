@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Shared folder policy")
+@Suite("Shared folder policy", .identity(.tryOmaguix))
 struct SharedFolderPolicyTests {
     private func temporaryHome() throws -> URL {
         let home = FileManager.default.temporaryDirectory
@@ -118,7 +118,7 @@ struct SharedFolderPolicyTests {
     }
 }
 
-@Suite("Shared folder guest link name")
+@Suite("Shared folder guest link name", .identity(.tryOmaguix))
 struct SharedFolderGuestLinkNameTests {
     @Test("the guest link takes the Mac folder's own name")
     func usesBasename() {
@@ -128,7 +128,7 @@ struct SharedFolderGuestLinkNameTests {
     }
 }
 
-@Suite("Shared folder preferences")
+@Suite("Shared folder preferences", .identity(.tryOmaguix))
 struct SharedFolderPreferenceStoreTests {
     @Test("a chosen folder and its switch survive a relaunch")
     func persistsSelection() {

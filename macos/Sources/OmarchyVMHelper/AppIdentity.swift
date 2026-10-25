@@ -3,10 +3,12 @@ import Foundation
 /// The app identity build-app.sh writes into Info.plist from the selected
 /// identity file (macos/README.md, "App identity"). A built app always has
 /// every key, so reading a missing one is a build bug and stops the app;
-/// nothing falls back to Try Omaguix's values. Tests construct the values
-/// they need instead of reading `main`, which in a test runner has none.
+/// nothing falls back to Try Omaguix's values. A test runner's bundle has
+/// none: tests construct the values they need, and code that names the app
+/// or its guest runs under `AppIdentity.$main.withValue(...)`, which sets
+/// `main` for that task only.
 struct AppIdentity: Equatable, Sendable {
-    static let main = AppIdentity(
+    @TaskLocal static var main = AppIdentity(
         values: (Bundle.main.infoDictionary ?? [:]).compactMapValues { $0 as? String }
     )
 
@@ -27,6 +29,7 @@ struct AppIdentity: Equatable, Sendable {
 
     init(
         applicationName: String,
+        guestName: String,
         developmentApplicationName: String,
         applicationSupportDirectory: String,
         logsDirectory: String,
@@ -38,6 +41,7 @@ struct AppIdentity: Equatable, Sendable {
     ) {
         self.init(values: [
             "OmaguixApplicationName": applicationName,
+            "OmaguixGuestName": guestName,
             "OmaguixDevelopmentApplicationName": developmentApplicationName,
             "OmaguixApplicationSupportDirectory": applicationSupportDirectory,
             "OmaguixLogsDirectory": logsDirectory,
@@ -52,6 +56,8 @@ struct AppIdentity: Equatable, Sendable {
     /// The production name, which also names the VM helper app and its
     /// executable.
     var applicationName: String { value("OmaguixApplicationName") }
+    /// The guest system's name in the app's messages ("Reset NAME").
+    var guestName: String { value("OmaguixGuestName") }
     /// The name `make install` gives the development build.
     var developmentApplicationName: String { value("OmaguixDevelopmentApplicationName") }
     /// The directory under ~/Library/Application Support that holds the VM.

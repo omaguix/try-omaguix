@@ -75,7 +75,7 @@ help:
 	  '' \
 	  'Component builds:' \
 	  '  make guix-package GUIX_IMAGE=/path/image.raw' \
-	  '                      Package an Omaguix image (guest/guix/build.py) into build/guix;' \
+	  '                      Package a guest image (guest/guix/build.py) into build/guix;' \
 	  '                      GUIX_SYSTEM and GUIX_LOAD_PATH name its sources' \
 	  '  make runtime        Ensure macos/.build/qemu-gpu-runtime is current' \
 	  '  make app            Ensure the runtime and the app (with build/guix) are current' \

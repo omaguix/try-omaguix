@@ -1030,7 +1030,7 @@ qemu_persistent_storage_fetch_compressed_source \
   "$identity_download" "file://$download_server/" 4096 \
   "$download_bytes" "$download_sha" "$source_bytes" 2>"$test_root/download.log"
 assert cmp -s "$QEMU_DOWNLOADED_COMPRESSED_DISK" "$download_payload"
-assert grep -Fq "[qemu-gpu] Downloading Omaguix: $download_bytes of $download_bytes bytes" \
+assert grep -Fq "[qemu-gpu] Downloading the guest: $download_bytes of $download_bytes bytes" \
   "$test_root/download.log"
 assert test ! -e "$(dirname "$QEMU_DOWNLOADED_COMPRESSED_DISK")/.$identity_download.download.parts"
 downloaded=$QEMU_DOWNLOADED_COMPRESSED_DISK

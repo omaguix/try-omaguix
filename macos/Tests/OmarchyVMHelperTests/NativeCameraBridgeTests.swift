@@ -4,7 +4,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Native camera bridge")
+@Suite("Native camera bridge", .identity(.tryOmaguix))
 struct NativeCameraBridgeTests {
     @Test("wire messages use the fixed little-endian virtio framing")
     func wireFraming() throws {
@@ -70,7 +70,7 @@ struct NativeCameraBridgeTests {
     }
 }
 
-@Suite("Camera launch policy")
+@Suite("Camera launch policy", .identity(.tryOmaguix))
 struct CameraLaunchDecisionTests {
     @Test("denial keeps Omaguix launchable and gives recovery instructions")
     func deniedStillLaunches() {

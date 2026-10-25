@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Launcher log")
+@Suite("Launcher log", .identity(.tryOmaguix))
 struct LauncherLogTests {
     private func temporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
@@ -83,7 +83,7 @@ struct LauncherLogTests {
     }
 }
 
-@Suite("Launcher failure report")
+@Suite("Launcher failure report", .identity(.tryOmaguix))
 struct LauncherFailureReportTests {
     @Test("The alert quotes the last lines and names the log, without reinstall advice")
     func detail() {

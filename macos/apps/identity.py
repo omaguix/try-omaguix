@@ -26,6 +26,8 @@ DMG = r"[A-Za-z0-9][A-Za-z0-9._-]*\.dmg"
 # Each key's pattern; names that become a path component exclude "/".
 KEYS = {
     "APP_NAME": NAME,
+    # The guest system's name in the app's messages ("Reset NAME").
+    "GUEST_NAME": NAME,
     "DEVELOPMENT_APP_NAME": NAME,
     "BUNDLE_IDENTIFIER": BUNDLE,
     "DEVELOPMENT_BUNDLE_IDENTIFIER": BUNDLE,

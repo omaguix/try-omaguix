@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Mac time zone wire contract")
+@Suite("Mac time zone wire contract", .identity(.tryOmaguix))
 struct TimeZoneBridgeTests {
     @Test("Only bounded zone identifiers can enter the guest boot command line")
     func identifiers() {

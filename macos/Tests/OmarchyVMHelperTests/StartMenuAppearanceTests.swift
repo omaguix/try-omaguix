@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Start menu appearance", .serialized)
+@Suite("Start menu appearance", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct StartMenuAppearanceTests {
     @Test("start menu keeps the Omaguix appearance across system themes")

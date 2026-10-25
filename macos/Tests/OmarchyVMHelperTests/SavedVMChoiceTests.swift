@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Saved VM choice")
+@Suite("Saved VM choice", .identity(.tryOmaguix))
 struct SavedVMChoiceTests {
     private let identityA = String(repeating: "a", count: 64)
     private let identityB = String(repeating: "b", count: 64)

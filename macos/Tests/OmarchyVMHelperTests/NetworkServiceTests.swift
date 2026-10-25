@@ -1,7 +1,7 @@
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Networking helper repair")
+@Suite("Networking helper repair", .identity(.tryOmaguix))
 @MainActor
 struct NetworkServiceTests {
     enum Failure: Error { case disconnected, denied }

@@ -8,6 +8,7 @@ into the build scripts.
 
 import importlib.util
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -24,6 +25,7 @@ spec.loader.exec_module(identity)
 # apps keep their VM, logs, grants, preferences and tag series under them.
 DEFAULT = {
     "APP_NAME": "Try Omaguix",
+    "GUEST_NAME": "Omaguix",
     "DEVELOPMENT_APP_NAME": "Try Omaguix Dev",
     "BUNDLE_IDENTIFIER": "dev.tryomaguix.native",
     "DEVELOPMENT_BUNDLE_IDENTIFIER": "dev.tryomaguix.native.development",
@@ -43,6 +45,7 @@ DEFAULT = {
 
 SECOND = {
     "APP_NAME": "Try Omabend",
+    "GUEST_NAME": "Omabend",
     "DEVELOPMENT_APP_NAME": "Try Omabend Dev",
     "BUNDLE_IDENTIFIER": "dev.example.omabend",
     "DEVELOPMENT_BUNDLE_IDENTIFIER": "dev.example.omabend.development",
@@ -61,6 +64,12 @@ SECOND = {
     # No bridged-networking helper: NAT only.
     "NETWORK_HELPER_SERVICE": "",
 }
+
+def as_word(value):
+    """VALUE not inside a longer name: GUEST_NAME "Omaguix" is also the prefix
+    of the Info.plist keys (OmaguixApplicationName), which are no value."""
+    return rf"(?<![A-Za-z0-9]){re.escape(value)}(?![A-Za-z0-9])"
+
 
 # Scripts that build, sign, release or clean the app: none may carry a value
 # of the default identity outside comments.
@@ -162,7 +171,7 @@ class IdentityTests(unittest.TestCase):
         for output in (install, clean, help_text):
             for value in DEFAULT.values():
                 if value:
-                    self.assertNotIn(value, output)
+                    self.assertNotRegex(output, as_word(value))
 
     def test_build_scripts_read_every_value_from_the_identity(self):
         for name in SCRIPTS:
@@ -170,7 +179,7 @@ class IdentityTests(unittest.TestCase):
                 code = line.split("#", 1)[0] if not line.lstrip().startswith("#") else ""
                 for value in DEFAULT.values():
                     if value:
-                        self.assertNotIn(value, code, f"{name}:{number}")
+                        self.assertNotRegex(code, as_word(value), f"{name}:{number}")
         build = (ROOT / "macos/build-app.sh").read_text()
         # The identity reaches the bundle for the app and the launcher to read.
         self.assertIn('value["OmaguixApplicationSupportDirectory"] = sys.argv[4]', build)
@@ -182,6 +191,7 @@ class IdentityTests(unittest.TestCase):
         self.assertIn('value["OmaguixReleaseTagPrefix"] = sys.argv[11]', build)
         self.assertIn('value["OmaguixReleaseDMG"] = sys.argv[12]', build)
         self.assertIn('value["OmaguixLegacyReleaseDMGs"] = sys.argv[13]', build)
+        self.assertIn('value["OmaguixGuestName"] = sys.argv[14]', build)
         self.assertIn('"$APPLICATION_SUPPORT_DIRECTORY" "$LOGS_DIRECTORY" "$APP_NAME" \\\n'
                       '  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" \\\n'
                       '  "$RELEASE_REPOSITORY" "$RELEASE_TAG_PREFIX" "$RELEASE_DMG" "$LEGACY_RELEASE_DMGS"',

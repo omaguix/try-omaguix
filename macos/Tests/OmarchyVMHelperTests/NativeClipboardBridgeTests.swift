@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Native clipboard bridge")
+@Suite("Native clipboard bridge", .identity(.tryOmaguix))
 struct NativeClipboardBridgeTests {
     @Test("clipboard messages round-trip through the newline-delimited JSON schema")
     func roundTrip() throws {

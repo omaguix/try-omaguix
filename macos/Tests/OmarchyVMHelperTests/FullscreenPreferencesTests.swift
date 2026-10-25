@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Full Screen preferences")
+@Suite("Full Screen preferences", .identity(.tryOmaguix))
 struct FullscreenPreferenceStoreTests {
     @Test("Immersive mode is on until the user changes it")
     func defaultsToImmersive() {
@@ -52,7 +52,7 @@ struct FullscreenPreferenceStoreTests {
     }
 }
 
-@Suite("Full Screen launch configuration")
+@Suite("Full Screen launch configuration", .identity(.tryOmaguix))
 struct FullscreenLaunchConfigurationTests {
     @Test("Publishes immersive mode and replaces inherited values")
     func publishesChoice() {

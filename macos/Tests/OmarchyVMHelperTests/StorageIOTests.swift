@@ -4,7 +4,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Storage I/O")
+@Suite("Storage I/O", .identity(.tryOmaguix))
 struct StorageIOTests {
     @Test("Streaming SHA-256 matches known digests, including multiple read buffers")
     func digests() throws {

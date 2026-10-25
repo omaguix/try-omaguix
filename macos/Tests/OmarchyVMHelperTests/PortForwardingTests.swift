@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Port forwarding policy")
+@Suite("Port forwarding policy", .identity(.tryOmaguix))
 struct PortForwardPolicyTests {
     @Test("SSH preset is an ordinary canonical TCP mapping")
     func sshPreset() throws {
@@ -88,7 +88,7 @@ struct PortForwardPolicyTests {
     }
 }
 
-@Suite("Port forwarding preferences")
+@Suite("Port forwarding preferences", .identity(.tryOmaguix))
 struct PortForwardingPreferenceStoreTests {
     @Test("an ordered mapping list survives a relaunch")
     func roundTripPreservesOrder() throws {
@@ -181,7 +181,7 @@ struct PortForwardingPreferenceStoreTests {
     }
 }
 
-@Suite("Port forwarding launch configuration")
+@Suite("Port forwarding launch configuration", .identity(.tryOmaguix))
 struct PortForwardLaunchConfigurationTests {
     @Test("valid mappings replace an inherited value with canonical encoding")
     func emitsValidatedMappings() {
@@ -230,7 +230,7 @@ struct PortForwardLaunchConfigurationTests {
     }
 }
 
-@Suite("Port forwarding startup failure")
+@Suite("Port forwarding startup failure", .identity(.tryOmaguix))
 struct PortForwardStartupFailureTests {
     private let mappings = [
         PortForwardMapping(hostPort: 8080, guestPort: 3000, protocol: .tcp),

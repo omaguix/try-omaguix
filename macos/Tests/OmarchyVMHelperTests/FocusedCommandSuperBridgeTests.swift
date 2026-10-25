@@ -4,7 +4,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Focused Command to guest Super")
+@Suite("Focused Command to guest Super", .identity(.tryOmaguix))
 struct FocusedCommandCaptureTests {
     private func event(
         _ kind: CommandBridgeEventKind,
@@ -165,7 +165,7 @@ struct FocusedCommandCaptureTests {
     }
 }
 
-@Suite("QMP Meta injection")
+@Suite("QMP Meta injection", .identity(.tryOmaguix))
 struct QMPMetaKeyClientTests {
     @Test("a closed QMP connection makes command writes throw")
     func closedSocketThrows() throws {

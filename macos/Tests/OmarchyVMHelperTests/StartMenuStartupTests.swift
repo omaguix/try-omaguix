@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Start menu automatic startup", .serialized)
+@Suite("Start menu automatic startup", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct StartMenuStartupTests {
     @Test("Enabling automatic startup requires confirmation before saving",

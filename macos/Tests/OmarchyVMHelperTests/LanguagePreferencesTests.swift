@@ -1,7 +1,7 @@
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Initial guest language")
+@Suite("Initial guest language", .identity(.tryOmaguix))
 struct LanguageLaunchConfigurationTests {
     @Test("the primary Mac language chooses a generated locale", arguments: [
         (["en-US"], "en_US.UTF-8"),
@@ -61,7 +61,7 @@ struct LanguageLaunchConfigurationTests {
     }
 }
 
-@Suite("Omaguix guest languages")
+@Suite("Omaguix guest languages", .identity(.tryOmaguix))
 struct OmaguixGuestLanguageTests {
     @Test("an Omaguix image offers the languages its launch.plist lists")
     func guestLocalesFromLaunchConfiguration() {

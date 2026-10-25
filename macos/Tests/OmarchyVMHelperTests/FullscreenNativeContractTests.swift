@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("Immersive presentation native contract")
+@Suite("Immersive presentation native contract", .identity(.tryOmaguix))
 struct FullscreenNativeContractTests {
     @Test("Runner keeps focused keyboard capture independent of presentation")
     func runnerMapping() throws {

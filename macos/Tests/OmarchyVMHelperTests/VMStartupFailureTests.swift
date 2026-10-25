@@ -1,7 +1,7 @@
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("VM startup failure recovery")
+@Suite("VM startup failure recovery", .identity(.tryOmaguix))
 struct VMStartupFailureTests {
     @Test("A failed integrity check explains replacement without erasing the VM")
     func damagedApp() {

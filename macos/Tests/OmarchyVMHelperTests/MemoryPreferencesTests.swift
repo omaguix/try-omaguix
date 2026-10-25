@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Memory policy")
+@Suite("Memory policy", .identity(.tryOmaguix))
 struct MemoryPolicyTests {
     @Test("An 8 GiB host offers only the default")
     func eightGiBHostOffersOnlyDefault() {
@@ -83,7 +83,7 @@ struct MemoryPolicyTests {
     }
 }
 
-@Suite("Memory preferences")
+@Suite("Memory preferences", .identity(.tryOmaguix))
 struct MemoryPreferenceStoreTests {
     @Test("Legacy preferences retain their original baseline for migration")
     func defaultsToRecommendedMemory() {
@@ -133,7 +133,7 @@ struct MemoryPreferenceStoreTests {
     }
 }
 
-@Suite("Memory launch configuration")
+@Suite("Memory launch configuration", .identity(.tryOmaguix))
 struct MemoryLaunchConfigurationTests {
     @Test("Publishes the resolved choice and replaces inherited values")
     func publishesChoice() {
@@ -162,7 +162,7 @@ struct MemoryLaunchConfigurationTests {
     }
 }
 
-@Suite("Memory start menu presentation")
+@Suite("Memory start menu presentation", .identity(.tryOmaguix))
 struct StartMenuMemoryPresentationTests {
     @Test("Marks the default entry and selects the stored choice")
     func marksDefaultAndSelectsChoice() {
@@ -205,7 +205,7 @@ struct StartMenuMemoryPresentationTests {
 /// exports the value, the launcher re-validates it. Pin the shared constants
 /// to the shell source so neither side can drift silently; the launcher's
 /// semantics are exercised by qemu-memory-contract.test.sh.
-@Suite("Memory cross-language contract")
+@Suite("Memory cross-language contract", .identity(.tryOmaguix))
 struct MemoryShellContractTests {
     @Test("the launcher uses the same key, default, and minimum")
     func launcherAgreesOnConstants() throws {

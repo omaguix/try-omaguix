@@ -14,13 +14,13 @@ enum NativeAuthenticationOperation: String, Equatable {
     var localizedReason: String {
         switch self {
         case .disable:
-            "Disable Touch ID for sudo in this Try Omaguix guest"
+            "Disable Touch ID for sudo in this \(AppIdentity.main.applicationName) guest"
         case .enroll:
-            "Pair this Try Omaguix guest for Touch ID sudo testing"
+            "Pair this \(AppIdentity.main.applicationName) guest for Touch ID sudo testing"
         case .sudo:
-            "Approve sudo in the focused Try Omaguix guest"
+            "Approve sudo in the focused \(AppIdentity.main.applicationName) guest"
         case .onePasswordUnlock:
-            "Unlock 1Password in the focused Try Omaguix guest"
+            "Unlock 1Password in the focused \(AppIdentity.main.applicationName) guest"
         }
     }
 }
@@ -310,7 +310,7 @@ final class SecureEnclaveAuthorizationSigner: HostAuthorizationSigning, @uncheck
 
     private func authenticate(reason: String) -> LAContext? {
         let context = LAContext()
-        context.localizedCancelTitle = "Return to Omaguix"
+        context.localizedCancelTitle = "Return to \(AppIdentity.main.guestName)"
         context.localizedFallbackTitle = ""
         context.touchIDAuthenticationAllowableReuseDuration = 0
 

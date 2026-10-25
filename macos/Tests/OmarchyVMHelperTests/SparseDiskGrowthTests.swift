@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Sparse disk growth")
+@Suite("Sparse disk growth", .identity(.tryOmaguix))
 struct SparseDiskGrowthTests {
     @Test("Growing a disk preserves data and allocates only written blocks")
     func sparseGrowth() throws {

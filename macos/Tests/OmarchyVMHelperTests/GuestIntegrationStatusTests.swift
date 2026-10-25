@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Guest integration status")
+@Suite("Guest integration status", .identity(.tryOmaguix))
 struct GuestIntegrationStatusTests {
     private let identity = String(repeating: "a", count: 64)
 

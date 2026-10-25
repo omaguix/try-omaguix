@@ -69,9 +69,9 @@ enum StartMenuPresentation {
         macOSMajorVersion >= 27 ? "Device Control and Data Access" : "Accessibility"
     }
 
-    static let incompatibleWorkspaceDetail = "The saved VM uses a storage or boot format this version can’t use, or its data folder contains multiple saved VMs. Reset Omaguix to create a compatible VM. Resetting permanently erases everything in the VM."
+    static var incompatibleWorkspaceDetail: String { "The saved VM uses a storage or boot format this version can’t use, or its data folder contains multiple saved VMs. Reset \(AppIdentity.main.guestName) to create a compatible VM. Resetting permanently erases everything in the VM." }
 
-    static let savedVMChoiceDetail = "This data folder holds more than one saved VM, so Omaguix doesn’t know which to start. Keep one to launch it: the others are moved, unchanged, to an archive folder in the same data folder, which Omaguix no longer uses or resets. Or reset Omaguix to erase all of them and start fresh."
+    static var savedVMChoiceDetail: String { "This data folder holds more than one saved VM, so \(AppIdentity.main.guestName) doesn’t know which to start. Keep one to launch it: the others are moved, unchanged, to an archive folder in the same data folder, which \(AppIdentity.main.guestName) no longer uses or resets. Or reset \(AppIdentity.main.guestName) to erase all of them and start fresh." }
 
     static func resetErasesSavedVMs(count: Int) -> String {
         " This data folder holds \(count) saved VMs, and Reset erases all of them. Choose one to keep instead if you want to keep any."
@@ -84,7 +84,7 @@ enum StartMenuPresentation {
         switch state {
         case .authorized:
             StartMenuPermissionPresentation(
-                detail: "Apps in Omaguix can record from your Mac microphone.",
+                detail: "Apps in \(AppIdentity.main.guestName) can record from your Mac microphone.",
                 isGranted: true,
                 actionTitle: nil,
                 action: nil
@@ -120,21 +120,21 @@ enum StartMenuPresentation {
         switch state {
         case .authorized:
             StartMenuPermissionPresentation(
-                detail: "Apps in Omaguix can use your Mac camera while they are recording.",
+                detail: "Apps in \(AppIdentity.main.guestName) can use your Mac camera while they are recording.",
                 isGranted: true,
                 actionTitle: nil,
                 action: nil
             )
         case .notDetermined:
             StartMenuPermissionPresentation(
-                detail: "Optional. The camera turns on only while an Omaguix app uses it.",
+                detail: "Optional. The camera turns on only while an \(AppIdentity.main.guestName) app uses it.",
                 isGranted: false,
                 actionTitle: requestInFlight ? "Waiting…" : "Allow…",
                 action: .request
             )
         case .denied:
             StartMenuPermissionPresentation(
-                detail: "The Mac camera is off inside Omaguix.",
+                detail: "The Mac camera is off inside \(AppIdentity.main.guestName).",
                 isGranted: false,
                 actionTitle: "Open Settings",
                 action: .openSettings
@@ -159,19 +159,19 @@ enum StartMenuPresentation {
             compactDetailLines = nil
         } else if let displayPath = state.displayPath, state.isEnabled {
             let guestPath = "~/\(SharedFolderPolicy.guestLinkName(state.path ?? displayPath))"
-            detail = "Mac folder: \(displayPath). In Omaguix: \(guestPath)."
+            detail = "Mac folder: \(displayPath). In \(AppIdentity.main.guestName): \(guestPath)."
             compactDetailLines = [
                 "Mac folder: \(displayPath)",
-                "In Omaguix: \(guestPath)",
+                "In \(AppIdentity.main.guestName): \(guestPath)",
             ]
         } else if let displayPath = state.displayPath {
-            detail = "Mac folder: \(displayPath). In Omaguix: Off."
+            detail = "Mac folder: \(displayPath). In \(AppIdentity.main.guestName): Off."
             compactDetailLines = [
                 "Mac folder: \(displayPath)",
-                "In Omaguix: Off",
+                "In \(AppIdentity.main.guestName): Off",
             ]
         } else {
-            detail = "Optional. Pick a Mac folder to use inside Omaguix under the same name."
+            detail = "Optional. Pick a Mac folder to use inside \(AppIdentity.main.guestName) under the same name."
             compactDetailLines = nil
         }
 
@@ -248,7 +248,7 @@ enum StartMenuPresentation {
     ) -> StartMenuPortForwardingPresentation {
         if mappings.isEmpty {
             return StartMenuPortForwardingPresentation(
-                detail: "Optional. Reach services running in Omaguix at localhost on this Mac.",
+                detail: "Optional. Reach services running in \(AppIdentity.main.guestName) at localhost on this Mac.",
                 compactDetailLines: nil,
                 isGranted: false,
                 grantedStatusLabel: "●  0 Ports"
@@ -257,10 +257,10 @@ enum StartMenuPresentation {
         if mappings.count == 1, let mapping = mappings.first {
             return StartMenuPortForwardingPresentation(
                 detail: "localhost:\(mapping.hostPort) → "
-                    + "Omaguix:\(mapping.guestPort) · \(mapping.protocol.displayName)",
+                    + "\(AppIdentity.main.guestName):\(mapping.guestPort) · \(mapping.protocol.displayName)",
                 compactDetailLines: [
                     "Mac: localhost:\(mapping.hostPort)",
-                    "Omaguix: port \(mapping.guestPort) · \(mapping.protocol.displayName)",
+                    "\(AppIdentity.main.guestName): port \(mapping.guestPort) · \(mapping.protocol.displayName)",
                 ],
                 isGranted: true,
                 grantedStatusLabel: "●  1 Port"
@@ -303,15 +303,15 @@ enum StartMenuPresentation {
 
     static func immersiveDetail(isEnabled: Bool) -> String {
         isEnabled
-            ? "Omaguix opens Full Screen with the Mac menu bar and Dock hidden."
-            : "Omaguix opens in a window with the Mac menu bar and Dock available."
+            ? "\(AppIdentity.main.guestName) opens Full Screen with the Mac menu bar and Dock hidden."
+            : "\(AppIdentity.main.guestName) opens in a window with the Mac menu bar and Dock available."
     }
 
     static let commandTabReleaseShortcut = "Control-Option"
 
     static func commandTabDetail(isEnabled: Bool) -> String {
         isEnabled
-            ? "Omaguix gets Command-Tab as Super-Tab. Press and release \(commandTabReleaseShortcut) to switch Mac apps with it."
-            : "Command-Tab switches Mac apps. When on, Omaguix gets it and \(commandTabReleaseShortcut) hands it back."
+            ? "\(AppIdentity.main.guestName) gets Command-Tab as Super-Tab. Press and release \(commandTabReleaseShortcut) to switch Mac apps with it."
+            : "Command-Tab switches Mac apps. When on, \(AppIdentity.main.guestName) gets it and \(commandTabReleaseShortcut) hands it back."
     }
 }

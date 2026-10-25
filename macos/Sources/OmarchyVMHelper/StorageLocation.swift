@@ -106,33 +106,33 @@ enum StorageLocationPolicyError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .notAbsolute:
-            "The Omaguix data folder must be an absolute path."
+            "The \(AppIdentity.main.guestName) data folder must be an absolute path."
         case .unsupportedCharacter:
             "That folder path contains a character the launcher cannot pass through."
         case .missing(let path):
             "That folder no longer exists: \(path)"
         case .symbolicLink(let path):
-            "The Omaguix data folder cannot be a symbolic link: \(path)"
+            "The \(AppIdentity.main.guestName) data folder cannot be a symbolic link: \(path)"
         case .notDirectory(let path):
             "Choose a folder rather than a file: \(path)"
         case .notOwned(let path):
-            "The Omaguix data folder must belong to you: \(path)"
+            "The \(AppIdentity.main.guestName) data folder must belong to you: \(path)"
         case .unsafeRoot(let path):
-            "That location is too broad to hold the Omaguix VM: \(path)"
+            "That location is too broad to hold the \(AppIdentity.main.guestName) VM: \(path)"
         case .isVolumeRoot(let path):
             "Choose a folder inside \(path), not the drive itself. For example, create a folder named \"\(StorageLocationPolicy.workspaceDirectoryName)\" there and pick that."
         case .notEmpty(let path):
-            "This folder already has files in it: \(path). Omaguix only uses an empty folder, so it never mixes its virtual machine with anything else stored there. Choose or create an empty folder instead."
+            "This folder already has files in it: \(path). \(AppIdentity.main.guestName) only uses an empty folder, so it never mixes its virtual machine with anything else stored there. Choose or create an empty folder instead."
         case .invalidWorkspaceMarker(let path):
-            "This folder looks like an Omaguix workspace, but its \"\(GuestStateLayout.subdirectory)/\(StorageLocationPolicy.rootMarkerName)\" file is damaged, so the VM here cannot be opened safely: \(path). Delete that file to reuse the folder as an empty one, or choose a different folder."
+            "This folder looks like an \(AppIdentity.main.guestName) workspace, but its \"\(GuestStateLayout.subdirectory)/\(StorageLocationPolicy.rootMarkerName)\" file is damaged, so the VM here cannot be opened safely: \(path). Delete that file to reuse the folder as an empty one, or choose a different folder."
         case .volumeUnreadable(let path):
-            "Try Omaguix could not read the disk that holds \(path)."
+            "\(AppIdentity.main.applicationName) could not read the disk that holds \(path)."
         case .notLocalVolume(let volume):
-            "\(volume) is a network volume. Omaguix needs a local APFS disk so it can lock the VM safely."
+            "\(volume) is a network volume. \(AppIdentity.main.guestName) needs a local APFS disk so it can lock the VM safely."
         case .unsupportedFilesystem(let filesystem, let volume):
-            "\(volume) is formatted as \(filesystem.uppercased()). Omaguix needs an APFS disk: the VM disk grows as you use it, and other formats would claim its full size right away."
+            "\(volume) is formatted as \(filesystem.uppercased()). \(AppIdentity.main.guestName) needs an APFS disk: the VM disk grows as you use it, and other formats would claim its full size right away."
         case .insufficientSpace(let volume, let needed, let available):
-            "\(volume) has \(StorageLocationPolicy.format(bytes: available)) free. Omaguix needs at least \(StorageLocationPolicy.format(bytes: needed)) to create the VM."
+            "\(volume) has \(StorageLocationPolicy.format(bytes: available)) free. \(AppIdentity.main.guestName) needs at least \(StorageLocationPolicy.format(bytes: needed)) to create the VM."
         }
     }
 }
@@ -563,6 +563,6 @@ enum StorageSpaceFailure {
         let gigabytes = { (mebibytes: Double) in mebibytes * 1_048_576 / 1_000_000_000 }
         let needed = Int(gigabytes(required).rounded(.up))
         let free = Int(gigabytes(available).rounded(.down))
-        return "Omaguix needs \(needed) GB free on this Mac to set up its disk, but only \(free) GB is free. Free up space, then try again."
+        return "\(AppIdentity.main.guestName) needs \(needed) GB free on this Mac to set up its disk, but only \(free) GB is free. Free up space, then try again."
     }
 }

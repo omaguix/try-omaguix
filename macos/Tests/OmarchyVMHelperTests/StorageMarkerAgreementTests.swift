@@ -9,7 +9,7 @@ import Testing
 /// semantics are where the two drifted: command substitution strips trailing
 /// newlines only, so a marker starting with one was accepted here and refused
 /// at launch. Executing both sides is the only check that catches that.
-@Suite("Storage marker cross-language agreement")
+@Suite("Storage marker cross-language agreement", .identity(.tryOmaguix))
 struct StorageMarkerAgreementTests {
     private static let token = StorageLocationPolicy.rootMarkerContent
 

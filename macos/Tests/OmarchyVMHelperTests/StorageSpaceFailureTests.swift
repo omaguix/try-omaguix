@@ -1,7 +1,7 @@
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Storage space failures")
+@Suite("Storage space failures", .identity(.tryOmaguix))
 struct StorageSpaceFailureTests {
     @Test("A disk-space refusal names the space needed and free")
     func spaceRefusal() throws {

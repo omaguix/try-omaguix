@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Keyboard preferences")
+@Suite("Keyboard preferences", .identity(.tryOmaguix))
 struct KeyboardPreferenceStoreTests {
     @Test("Command-Tab stays with macOS until the user changes it")
     func defaultsToMacOS() {
@@ -52,7 +52,7 @@ struct KeyboardPreferenceStoreTests {
     }
 }
 
-@Suite("Keyboard launch configuration")
+@Suite("Keyboard launch configuration", .identity(.tryOmaguix))
 struct KeyboardLaunchConfigurationTests {
     @Test("Publishes the Command-Tab choice and replaces inherited values")
     func publishesChoice() {

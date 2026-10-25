@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("Cocoa dynamic display native contract")
+@Suite("Cocoa dynamic display native contract", .identity(.tryOmaguix))
 struct CocoaDynamicDisplayContractTests {
     @Test("Windowed mode starts at 75 percent of the usable screen")
     func initialWindowFrame() throws {

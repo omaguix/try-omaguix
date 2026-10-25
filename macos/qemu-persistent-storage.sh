@@ -837,7 +837,7 @@ qemu_persistent_storage_fetch_compressed_source() {
         qps_curl_pid=$!
         while kill -0 "$qps_curl_pid" 2>/dev/null; do
           qps_have=$(_qps_size "$qps_part" 2>/dev/null || echo 0)
-          printf '[qemu-gpu] Downloading Omaguix: %s of %s bytes\n' \
+          printf '[qemu-gpu] Downloading the guest: %s of %s bytes\n' \
             "$((qps_done + ${qps_have:-0}))" "$qps_compressed_bytes" >&2
           sleep 2
         done
@@ -853,7 +853,7 @@ qemu_persistent_storage_fetch_compressed_source() {
       }
       qps_done=$((qps_done + qps_expected))
     done
-    printf '[qemu-gpu] Downloading Omaguix: %s of %s bytes\n' \
+    printf '[qemu-gpu] Downloading the guest: %s of %s bytes\n' \
       "$qps_compressed_bytes" "$qps_compressed_bytes" >&2
     ( umask 077 && : > "$qps_download" ) || return 1
     for ((qps_index = 0; qps_index < qps_count; qps_index++)); do

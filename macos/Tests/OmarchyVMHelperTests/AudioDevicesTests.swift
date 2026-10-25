@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Host audio routing")
+@Suite("Host audio routing", .identity(.tryOmaguix))
 struct AudioDevicesTests {
     @Test("guest route requests use a strict direction-aware schema")
     func guestRouteRequestSchema() throws {
@@ -255,7 +255,7 @@ struct AudioDevicesTests {
     }
 }
 
-@Suite("VM run lifecycle")
+@Suite("VM run lifecycle", .identity(.tryOmaguix))
 struct VMRunLifecycleTests {
     @Test("quit drains the child exactly once")
     func quitDrainsChild() {

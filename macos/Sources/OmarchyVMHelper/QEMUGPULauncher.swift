@@ -511,7 +511,7 @@ enum QEMUGPULauncherPath {
         guard appNames(identity).contains(standardizedBundle.lastPathComponent),
               Darwin.lstat(standardizedBundle.path, &bundleInformation) == 0,
               bundleInformation.st_mode & S_IFMT == S_IFDIR else {
-            throw HelperError.io("QEMU launch is available only from the built Omaguix app")
+            throw HelperError.io("QEMU launch is available only from the built \(AppIdentity.main.applicationName) app")
         }
 
         let canonicalBundle = standardizedBundle.resolvingSymlinksInPath()
@@ -562,7 +562,7 @@ struct AccessibilityLaunchDecision: Equatable {
         case .unavailable:
             Self(
                 allowsLaunch: true,
-                warning: "Accessibility is not active yet; Omaguix will start without Command-to-Super mapping. The mapping becomes available on a later launch after macOS recognizes the grant."
+                warning: "Accessibility is not active yet; \(AppIdentity.main.guestName) will start without Command-to-Super mapping. The mapping becomes available on a later launch after macOS recognizes the grant."
             )
         }
     }
@@ -579,12 +579,12 @@ struct MicrophoneLaunchDecision: Equatable {
         case .denied:
             Self(
                 allowsLaunch: true,
-                warning: "Microphone access is denied. Audio playback will continue, but guest recording is unavailable. Enable Try Omaguix in System Settings > Privacy & Security > Microphone, then relaunch."
+                warning: "Microphone access is denied. Audio playback will continue, but guest recording is unavailable. Enable \(AppIdentity.main.applicationName) in System Settings > Privacy & Security > Microphone, then relaunch."
             )
         case .restricted:
             Self(
                 allowsLaunch: true,
-                warning: "Microphone access is restricted by macOS policy. Audio playback will continue, but guest recording is unavailable. Ask the Mac administrator to allow microphone access for Try Omaguix."
+                warning: "Microphone access is restricted by macOS policy. Audio playback will continue, but guest recording is unavailable. Ask the Mac administrator to allow microphone access for \(AppIdentity.main.applicationName)."
             )
         case .notDetermined:
             Self(
@@ -606,17 +606,17 @@ struct CameraLaunchDecision: Equatable {
         case .denied:
             Self(
                 allowsLaunch: true,
-                warning: "Camera access is denied. Omaguix will continue without the Mac camera. Enable Try Omaguix in System Settings > Privacy & Security > Camera, then relaunch."
+                warning: "Camera access is denied. \(AppIdentity.main.guestName) will continue without the Mac camera. Enable \(AppIdentity.main.applicationName) in System Settings > Privacy & Security > Camera, then relaunch."
             )
         case .restricted:
             Self(
                 allowsLaunch: true,
-                warning: "Camera access is restricted by macOS policy. Omaguix will continue without the Mac camera. Ask the Mac administrator to allow camera access for Try Omaguix."
+                warning: "Camera access is restricted by macOS policy. \(AppIdentity.main.guestName) will continue without the Mac camera. Ask the Mac administrator to allow camera access for \(AppIdentity.main.applicationName)."
             )
         case .notDetermined:
             Self(
                 allowsLaunch: true,
-                warning: "Camera access was not requested. Omaguix will continue without the Mac camera until access is enabled."
+                warning: "Camera access was not requested. \(AppIdentity.main.guestName) will continue without the Mac camera until access is enabled."
             )
         }
     }
@@ -963,9 +963,9 @@ final class QEMUGPUProcessSupervisor: @unchecked Sendable {
 
     /// The percentage in the last complete download progress line, written by
     /// qemu_persistent_storage_fetch_compressed_source as
-    /// "[qemu-gpu] Downloading Omaguix: RECEIVED of TOTAL bytes".
+    /// "[qemu-gpu] Downloading the guest: RECEIVED of TOTAL bytes".
     static func diskDownloadPercent(in standardError: String) -> Int? {
-        let prefix = "[qemu-gpu] Downloading Omaguix: "
+        let prefix = "[qemu-gpu] Downloading the guest: "
         var percent: Int?
         for line in standardError.split(separator: "\n", omittingEmptySubsequences: true)
         where line.hasPrefix(prefix) && line.hasSuffix(" bytes") {

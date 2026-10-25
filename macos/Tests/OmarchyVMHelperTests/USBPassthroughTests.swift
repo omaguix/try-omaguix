@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("USB passthrough")
+@Suite("USB passthrough", .identity(.tryOmaguix))
 struct USBPassthroughTests {
     private let iPhone = USBDeviceIdentity(vendorId: 0x05AC, productId: 0x12A8, name: "iPhone", locationId: 0x0110_0000)
     private let drive = USBDeviceIdentity(vendorId: 0x05E3, productId: 0x0764, name: "USB Storage", locationId: 0x0120_0000)

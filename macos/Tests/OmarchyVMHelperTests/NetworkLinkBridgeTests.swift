@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Bridged network carrier recovery")
+@Suite("Bridged network carrier recovery", .identity(.tryOmaguix))
 struct NetworkLinkBridgeTests {
     @Test("only complete bounded link records are accepted")
     func parsing() throws {

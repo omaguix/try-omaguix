@@ -5,7 +5,7 @@ import Testing
 /// Every test that lays out a whole `StartMenuWindow` belongs in this one
 /// suite: `.serialized` keeps them apart, and two menus laid out at once on
 /// the main actor disturb each other's content size.
-@Suite("Start menu layout", .serialized)
+@Suite("Start menu layout", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct StartMenuWindowWidthTests {
     @Test("reset confirmation requires the exact application name")

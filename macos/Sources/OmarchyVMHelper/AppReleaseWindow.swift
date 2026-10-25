@@ -5,8 +5,8 @@ enum AppReleasePrompt {
     static func alert(for release: AppRelease) -> NSAlert {
         let alert = NSAlert()
         alert.alertStyle = .informational
-        alert.messageText = "Try Omaguix \(release.version) is available"
-        alert.informativeText = "Download opens the release page on GitHub. Shut down Omaguix before replacing the app; your VM and settings are kept.\n\nSkip hides reminders for this version."
+        alert.messageText = "\(AppIdentity.main.applicationName) \(release.version) is available"
+        alert.informativeText = "Download opens the release page on GitHub. Shut down \(AppIdentity.main.guestName) before replacing the app; your VM and settings are kept.\n\nSkip hides reminders for this version."
         alert.addButton(withTitle: "Download")
         alert.addButton(withTitle: "Skip").keyEquivalent = "\u{1b}"
         return alert
@@ -30,12 +30,12 @@ final class AppReleaseWindow: NSObject {
             styleMask: [.titled, .closable], backing: .buffered, defer: false
         )
         super.init()
-        window.title = "Try Omaguix Updates"
+        window.title = "\(AppIdentity.main.applicationName) Updates"
         window.isReleasedWhenClosed = false
 
         let installed = NSTextField(wrappingLabelWithString: checker.installed.label)
         installed.font = .systemFont(ofSize: 16, weight: .semibold)
-        let explanation = NSTextField(wrappingLabelWithString: "Updates are downloaded from GitHub and installed manually. Shut down Omaguix before replacing the Mac app. Your existing VM and settings are preserved; the guest is updated separately.")
+        let explanation = NSTextField(wrappingLabelWithString: "Updates are downloaded from GitHub and installed manually. Shut down \(AppIdentity.main.guestName) before replacing the Mac app. Your existing VM and settings are preserved; the guest is updated separately.")
         explanation.textColor = .secondaryLabelColor
         let privacy = NSTextField(wrappingLabelWithString: "When enabled, checks contact GitHub at most once a day when you open the app. App updates aren’t downloaded or installed automatically.")
         privacy.textColor = .secondaryLabelColor

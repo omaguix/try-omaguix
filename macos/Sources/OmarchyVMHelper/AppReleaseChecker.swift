@@ -95,7 +95,7 @@ final class AppReleaseChecker {
         var request = URLRequest(url: identity.latestReleaseAPIURL)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
-        request.setValue("Try-Omaguix-Release-Check", forHTTPHeaderField: "User-Agent")
+        request.setValue("\(identity.applicationName.replacingOccurrences(of: " ", with: "-"))-Release-Check", forHTTPHeaderField: "User-Agent")
         let (data, response) = try await client.data(for: request)
         guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
             throw AppReleaseError.response((response as? HTTPURLResponse)?.statusCode ?? 0)

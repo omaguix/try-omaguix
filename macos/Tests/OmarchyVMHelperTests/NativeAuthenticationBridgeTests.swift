@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Native authentication bridge")
+@Suite("Native authentication bridge", .identity(.tryOmaguix))
 struct NativeAuthenticationBridgeTests {
     private let requestID = "2a8adad0-e2e3-43a0-882f-82f64d691c86"
     private let challenge = String(repeating: "ab", count: 32)

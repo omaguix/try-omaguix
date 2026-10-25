@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("QEMU GPU app launch request")
+@Suite("QEMU GPU app launch request", .identity(.tryOmaguix))
 struct QEMUGPULaunchRequestTests {
     @Test("accepts only the launcher storage flags and an optional absolute guest directory")
     func parsesAllowedArguments() {
@@ -73,7 +73,7 @@ struct QEMUGPULaunchRequestTests {
 
 }
 
-@Suite("QEMU runtime environment")
+@Suite("QEMU runtime environment", .identity(.tryOmaguix))
 struct QEMUGPURuntimeEnvironmentTests {
     @Test("the app's disposable run controls the test title, not inherited environment",
           arguments: [false, true])
@@ -123,7 +123,7 @@ struct QEMUGPURuntimeEnvironmentTests {
     }
 }
 
-@Suite("QEMU standard-error drain")
+@Suite("QEMU standard-error drain", .identity(.tryOmaguix))
 struct QEMUStandardErrorDrainTests {
     @Test("drains a bounded tail without waiting for EOF and restores descriptor flags")
     func boundedNonblockingDrain() throws {
@@ -196,11 +196,11 @@ struct QEMUStandardErrorDrainTests {
     @Test("reports the last complete disk download line as a percentage")
     func parsesDiskDownloadProgress() {
         let output = """
-            [qemu-gpu] Downloading Omaguix: 0 of 400 bytes
-            noise [qemu-gpu] Downloading Omaguix: 399 of 400 bytes
-            [qemu-gpu] Downloading Omaguix: 100 of 400 bytes
-            [qemu-gpu] Downloading Omaguix: 500 of 400 bytes
-            [qemu-gpu] Downloading Omaguix: 2
+            [qemu-gpu] Downloading the guest: 0 of 400 bytes
+            noise [qemu-gpu] Downloading the guest: 399 of 400 bytes
+            [qemu-gpu] Downloading the guest: 100 of 400 bytes
+            [qemu-gpu] Downloading the guest: 500 of 400 bytes
+            [qemu-gpu] Downloading the guest: 2
             """
         #expect(QEMUGPUProcessSupervisor.diskDownloadPercent(in: output) == 25)
         #expect(QEMUGPUProcessSupervisor.diskDownloadPercent(in: "startup\n") == nil)
@@ -236,7 +236,7 @@ struct QEMUStandardErrorDrainTests {
     }
 }
 
-@Suite("QEMU storage-space estimate")
+@Suite("QEMU storage-space estimate", .identity(.tryOmaguix))
 struct QEMUGPUStorageSpaceEstimateTests {
     @Test("shows the app data folder while keeping the VM layout versioned")
     func displaysStorageRoot() throws {
@@ -517,7 +517,7 @@ struct QEMUGPUStorageSpaceEstimateTests {
     }
 }
 
-@Suite("Bundled QEMU GPU launcher path")
+@Suite("Bundled QEMU GPU launcher path", .identity(.tryOmaguix))
 struct QEMUGPULauncherPathTests {
     @Test(
         "resolves only the executable inside the app resources",
@@ -601,7 +601,7 @@ struct QEMUGPULauncherPathTests {
     }
 }
 
-@Suite("Microphone launch policy")
+@Suite("Microphone launch policy", .identity(.tryOmaguix))
 struct MicrophoneLaunchDecisionTests {
     @Test("denial keeps playback launchable and gives recovery instructions")
     func deniedStillLaunches() {
@@ -633,7 +633,7 @@ struct MicrophoneLaunchDecisionTests {
     }
 }
 
-@Suite("Accessibility launch policy")
+@Suite("Accessibility launch policy", .identity(.tryOmaguix))
 struct AccessibilityLaunchDecisionTests {
     @Test("an unavailable grant never blocks Omaguix startup")
     func unavailableStillLaunches() {

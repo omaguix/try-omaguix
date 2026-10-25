@@ -136,4 +136,4 @@ finally:
     os.close(fd)
 PY
 printf 'VM disk enlarged to %s GiB. Backup: %s\n' "$size_gib" "$backup"
-printf 'Launch normally, then verify inside Omaguix with: lsblk; df -h /\n'
+printf 'Launch normally, then verify inside the VM with: lsblk; df -h /\n'

@@ -4,7 +4,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("VM host sleep lifecycle")
+@Suite("VM host sleep lifecycle", .identity(.tryOmaguix))
 struct VMHostSleepCoordinatorTests {
     @Test("one successful pause owns exactly one matching resume")
     func idempotentSleepWakeCycle() throws {
@@ -170,7 +170,7 @@ struct VMHostSleepCoordinatorTests {
     }
 }
 
-@Suite("Host power notifications")
+@Suite("Host power notifications", .identity(.tryOmaguix))
 @MainActor
 struct HostPowerNotificationObserverTests {
     @Test("sleep is synchronous and wake uses the workspace notification names")
@@ -203,7 +203,7 @@ struct HostPowerNotificationObserverTests {
     }
 }
 
-@Suite("QMP host sleep control")
+@Suite("QMP host sleep control", .identity(.tryOmaguix))
 struct QMPVMHostSleepControllerTests {
     @Test("startup retries a timed-out capability negotiation on a fresh session")
     func startupNegotiationRetry() throws {

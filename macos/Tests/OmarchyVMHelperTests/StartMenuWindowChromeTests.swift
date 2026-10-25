@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Start menu window chrome", .serialized)
+@Suite("Start menu window chrome", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct StartMenuWindowChromeTests {
     @Test("the custom heading hides the duplicate native title")

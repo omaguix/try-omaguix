@@ -225,25 +225,6 @@
 
 
 
-- [ ] UI strings name the app from its identity [t-5gcnv3af]
-  Follow-up of [t-omabendl] (worker open point): windows and alerts say
-  "Try Omaguix"/"Omaguix" in any app, including the bridged-session message
-  that `macos/network-helper/supervisor.c` prints and `Networking.swift`
-  matches. Take the name from the identity; the shared QEMU runtime's Cocoa
-  menus (`patches/`) keep theirs unless that is cheap. Swift and `make test`:
-  a pane worker.
-  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
-  Also (from [t-lu4f36td]'s worker): the update messages ("Try Omaguix X is
-  available", "No stable Try Omaguix release...") and the update request's
-  User-Agent `Try-Roguix-Release-Check`.
-  Design, consult round 20261025-133052 (sol, mimo, deepseek, argon all
-  chose it): a new required identity key GUEST_NAME ("Omaguix") for the
-  guest's name next to APP_NAME for the app's; string-building code takes
-  the names as parameters (tests pass their own identity); the C helper and
-  the download progress line carry no name, matched on fixed text; a test
-  bans literal app or guest names in the Swift sources. try-omabend's
-  identity file gains GUEST_NAME in the same cutover.
-
 - [ ] The start menu guards NAT-only apps explicitly [t-3bi2zglk]
   Follow-up of [t-omabendl] (round 20261016-160156-dde6, DeepSeek): the
   start menu avoids `NetworkService`'s `preconditionFailure` in an app
@@ -522,6 +503,17 @@
   to git.
 
 ## Proposed
+
+- [ ] Pass the app identity explicitly where AppKit defers work [t-idparam]
+  From review round 20261025-133254-7c22 (deepseek) of t-5gcnv3af:
+  `AppIdentity.main` is task-local; blocks that DispatchQueue, AppKit
+  completions or Process handlers run later inherit no override, so code
+  that names the app there reads the bundle's identity. In the app that is
+  always right (one identity per process); in tests such a block stops the
+  run on the missing Info.plist key, and StartMenuWindow carries the
+  identity across its three such blocks by hand. Option: store the identity
+  in StartMenuWindow and VMApplicationController and pass it to the string
+  builders, so an omission fails to compile. Swift only; no build.
 
 - [ ] Build the shim's substitutes where its trap tests run [t-shimv1ci]
   From consult round 20261025-122507-775c (deepseek), checked against the

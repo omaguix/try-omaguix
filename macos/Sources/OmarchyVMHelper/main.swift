@@ -126,7 +126,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[audio-bridge] Host audio devices are available inside Omaguix.\n", stderr)
+        fputs("[audio-bridge] Host audio devices are available inside \(AppIdentity.main.guestName).\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -149,7 +149,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[clipboard-bridge] The Mac clipboard is shared with Omaguix.\n", stderr)
+        fputs("[clipboard-bridge] The Mac clipboard is shared with \(AppIdentity.main.guestName).\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -172,7 +172,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[authentication-bridge] Signed Touch ID sudo authentication is available inside Omaguix.\n", stderr)
+        fputs("[authentication-bridge] Signed Touch ID sudo authentication is available inside \(AppIdentity.main.guestName).\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -195,7 +195,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[camera-bridge] The Mac camera is available to Omaguix on demand.\n", stderr)
+        fputs("[camera-bridge] The Mac camera is available to \(AppIdentity.main.guestName) on demand.\n", stderr)
         try bridge.run()
         exit(0)
     }
@@ -218,7 +218,7 @@ do {
             source.resume()
             terminationSignalSources.append(source)
         }
-        fputs("[battery-bridge] The Mac battery is mirrored inside Omaguix.\n", stderr)
+        fputs("[battery-bridge] The Mac battery is mirrored inside \(AppIdentity.main.guestName).\n", stderr)
         try bridge.run()
         exit(0)
     }

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("VM operation progress")
+@Suite("VM operation progress", .identity(.tryOmaguix))
 struct VMProgressTests {
     @Test("phase markers survive arbitrary pipe-read boundaries")
     func fragmentedPhases() {

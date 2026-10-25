@@ -2,7 +2,7 @@ import Carbon
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Host keyboard geometry")
+@Suite("Host keyboard geometry", .identity(.tryOmaguix))
 struct HostKeyboardGeometryTests {
     @Test("classify maps only the three Carbon keyboard classes")
     func classifyKnownClasses() throws {

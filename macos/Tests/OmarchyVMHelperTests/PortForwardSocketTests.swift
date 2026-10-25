@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Port forwarding socket availability")
+@Suite("Port forwarding socket availability", .identity(.tryOmaguix))
 struct PortForwardSocketTests {
     @Test("TCP preflight accepts a port with a closing or closed server connection",
           arguments: [false, true])

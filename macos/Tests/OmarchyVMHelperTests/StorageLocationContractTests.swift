@@ -7,7 +7,7 @@ import Testing
 /// other's constants, so the agreement is pinned here: if one side's marker
 /// name or token changes without the other, these fail rather than shipping a
 /// picker that accepts folders the launcher then refuses.
-@Suite("Storage location native contract")
+@Suite("Storage location native contract", .identity(.tryOmaguix))
 struct StorageLocationContractTests {
     @Test("the marker filename matches the one the launcher writes")
     func markerFilename() throws {

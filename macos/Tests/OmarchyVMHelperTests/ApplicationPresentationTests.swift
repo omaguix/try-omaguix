@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Application presentation", .serialized)
+@Suite("Application presentation", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct ApplicationPresentationTests {
     @Test("the start menu behaves like a regular app before yielding to QEMU")

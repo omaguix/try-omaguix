@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Guest settings requests")
+@Suite("Guest settings requests", .identity(.tryOmaguix))
 struct NativeSettingsBridgeTests {
     @Test("Only complete requests open settings, including across read boundaries")
     func framing() {

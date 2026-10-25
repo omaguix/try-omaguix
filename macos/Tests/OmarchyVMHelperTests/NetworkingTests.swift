@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Networking policy")
+@Suite("Networking policy", .identity(.tryOmaguix))
 struct NetworkingTests {
     @Test("An unavailable adapter offers specific recovery even with a generic bridge error", arguments: [
         "[qemu-gpu] The selected bridge interface is unavailable. Choose another interface or NAT.",

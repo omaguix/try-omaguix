@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Resource editor", .serialized)
+@Suite("Resource editor", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct VMResourceEditorTests {
     private let limits = VMResourceLimits(hostCPUCount: 18, hostMemoryBytes: 48 << 30)

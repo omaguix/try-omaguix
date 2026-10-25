@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("USB device picker", .serialized)
+@Suite("USB device picker", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct USBDeviceEditorTests {
     private let first = USBDeviceIdentity(

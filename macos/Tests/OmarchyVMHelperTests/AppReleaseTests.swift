@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Mac app release checks", .serialized)
+@Suite("Mac app release checks", .serialized, .identity(.tryOmaguix))
 @MainActor
 struct AppReleaseTests {
     private func installed(_ version: String) -> InstalledAppRelease {

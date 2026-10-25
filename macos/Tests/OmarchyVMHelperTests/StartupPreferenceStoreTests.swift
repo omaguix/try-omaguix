@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Automatic startup")
+@Suite("Automatic startup", .identity(.tryOmaguix))
 struct StartupPreferenceStoreTests {
     private func temporaryRoot() throws -> URL {
         let root = FileManager.default.temporaryDirectory

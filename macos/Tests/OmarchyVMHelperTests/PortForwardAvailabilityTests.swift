@@ -1,7 +1,7 @@
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Port forwarding availability")
+@Suite("Port forwarding availability", .identity(.tryOmaguix))
 struct PortForwardAvailabilityTests {
     @Test(
         "reports the first unavailable mapping with its protocol",

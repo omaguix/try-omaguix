@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Accessibility permission repair", .serialized)
+@Suite("Accessibility permission repair", .serialized, .identity(.tryOmaguix))
 struct AccessibilityPermissionRepairTests {
     @Test("a successful scoped TCC reset is reported")
     func successfulReset() {

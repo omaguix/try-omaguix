@@ -161,12 +161,12 @@ enum AppReleaseCheckState: Equatable {
         switch self {
         case .idle: return "Check GitHub for the latest stable Mac app release."
         case .checking: return "Checking for updates…"
-        case .available(let release): return "Try Omaguix \(release.version) is available. Review its release notes and macOS requirements before downloading."
+        case .available(let release): return "\(AppIdentity.main.applicationName) \(release.version) is available. Review its release notes and macOS requirements before downloading."
         case .current: return "No newer stable release was found."
-        case .noRelease: return "No stable Try Omaguix release has been published yet."
+        case .noRelease: return "No stable \(AppIdentity.main.applicationName) release has been published yet."
         case .unknownInstalledVersion(let release):
             return "The latest stable release is \(release.version). This build does not identify its installed release reliably, so versions cannot be compared."
-        case .failed(let message): return "Couldn’t check for updates. \(message) You can still launch Omaguix."
+        case .failed(let message): return "Couldn’t check for updates. \(message) You can still launch \(AppIdentity.main.guestName)."
         }
     }
 

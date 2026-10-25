@@ -1,7 +1,7 @@
 import Testing
 @testable import OmarchyVMHelper
 
-@Suite("Port forwarding editor model")
+@Suite("Port forwarding editor model", .identity(.tryOmaguix))
 struct PortForwardingEditorModelTests {
     @Test("SSH preset is inserted as an ordinary editable mapping")
     func addsEditableSSHPreset() {
