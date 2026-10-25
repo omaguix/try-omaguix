@@ -972,6 +972,15 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
     fork guix/guix under their account, push both branches and open the
     PR. Then: write modules/omaguix/guix-fork, publish the channel, push
     1d4e8a0, rerun CI for the new channel commit and release.py --resume.
+  - 2026-10-25: the fork is https://codeberg.org/rofrol/guix (branches
+    git-fetch-ignore-host-config and git-fetch-ignore-host-config-7e74121a,
+    F = df67948e48a270a7bc5b69451f998134641777b2), named in
+    modules/omaguix/guix-fork. The upstream PR
+    https://codeberg.org/guix/guix/pulls/12107 was opened, then closed:
+    decided by the user 2026-10-25, close it and keep the fork for CI,
+    since the patch is AI-written and GNU Guix (like GCC) likely does not
+    accept such contributions. Reporting the bug upstream is left to the
+    user (an issue they write); the fork stays until Guix fixes it.
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
