@@ -185,6 +185,10 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   watch` lost api.github.com ("error connecting to api.github.com"), exit 1,
   the channel's main did not move. CI run 40203328029 went on (in
   progress, both guix-profile jobs at "Pull G'").
+  Restarted once 2026-10-25 (log try-omaguix-release-4.log), after consult
+  round 20261025-160940-92a5 (sol, MiMo, DeepSeek, Argon: all four for one new
+  `--resume` now; the first had died in the wait, before any download or
+  import, and no release.py process remained). Follow-up t-relwait.
   Reviewed 2026-10-25 in consult round 20261025-154257-8595 (sol, MiMo,
   DeepSeek, Argon), after the user called it tangled: all four keep the
   running release of b0672e97; all four call manual dispatch plus
@@ -576,6 +580,17 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   full runtime build), then merge.
 
 ## Proposed
+
+- [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
+  From t-omarelfs: `gh run watch --exit-status` exits 1 both when the run
+  fails and when api.github.com is unreachable, so a network drop stops the
+  release. All four models (round on 2026-10-25) call designed handling
+  of this external polling legitimate: read `gh run view RUN --json
+  status,conclusion` until status is completed, tell transport errors from
+  a failed run, give up after a bounded number of consecutive transport
+  errors, never retry a failed conclusion. Also asked: one release.py at a
+  time (a lock), and an idempotent VPS import if a resume restarts after
+  it. Cost: release.py and tests; no build.
 
 - [ ] release.py: release an already published channel commit [t-relcommit]
   From t-omarelfs (consult round 20261025-154257-8595): release.py always
