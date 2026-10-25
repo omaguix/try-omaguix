@@ -752,6 +752,19 @@
   `v0.5.0` and `try-roguix-v0.5.1` do not match the new prefix).
   Check: `make app` builds from a clean tree and the app launches its guest
   under the new identity.
+  Decided by the user 2026-10-25: renaming the leftovers does not wait for a
+  decision; rename them. Done 2026-10-25: `../roguix-channel` moved to
+  `../omaguix-channel` and `~/.config/roguix-channel` to
+  `~/.config/omaguix-channel` (the channel key is there), so `publish-channel`
+  runs with its defaults. Asked how the app's leftovers move, the user chose
+  "rename everything" the same day; done: `~/Library/Application Support/Try
+  Roguix`, `~/Library/Logs/Try Roguix`, `~/.config/try-roguix` and
+  `~/Library/Keychains/try-roguix-development.keychain-db` now carry the
+  Omaguix names. Still open: that keychain holds the certificate "Try Roguix
+  Development", not the identity's "Try Omaguix Development", so `make app`
+  still signs ad hoc until `make signing-identity`; the moved VM directory
+  holds only metadata for the disk archived on the MacBook; the
+  `dev.tryroguix.network` LaunchDaemon and the privacy grants are unchanged.
   May a worker delete the old Roguix host leftovers for the landed rename, and
   do you grant the macOS privacy permissions yourself?
   Options: the worker deletes the old data and log directories, the old plists
