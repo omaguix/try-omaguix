@@ -2,6 +2,161 @@
 
 ## Next, in order
 
+- [ ] First Omaguix release through release.py [t-omarelfs]
+  Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
+  path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
+  `.env`, then run guest/guix/release.py for current try-omaguix main: a
+  signed omaguix-channel commit, omaguix/omaguix's build-desktop.yml
+  dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
+  the closure check, then the signed release.json moves the channel's main.
+  Report the run ids and the release commit; on any failure, main stays.
+  Checked 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
+  DeepSeek): before running `guest/guix/release.py`:
+  1. In `omaguix/omaguix` `.github/workflows/build-desktop.yml`:
+     - Fix `sign-substitutes`'s `if:` gate (`github.actor == github.repository_owner`
+       is false when a maintainer dispatches `workflow_dispatch` in the
+       `omaguix` organization, skipping signing).
+     - Populate `split-<prefix>/release-tag.txt` when `publish.txt` is non-empty
+       (currently `: > split/release-tag.txt` is uploaded empty before
+       `sign-substitutes` computes `RELEASE_TAG`, which `release.py` rejects).
+     - Emit `split-<prefix>/guix-profile.txt` and include the Guix profile in
+       `package-closure.txt` (required by decision 0007 / `[t-omaupgrd]`).
+  2. Complete the `omaguix.org` / `substitutes.omaguix.org` cutover prerequisites
+     (`[t-omabkfil]`, `[t-omaorgdm]`, `[t-omakeyfr]` below) and switch
+     `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
+     and `substitutes.omaguix.org.pub` once signed substitute content is verified.
+  This release carries `codex-bin` 0.163.0 (5ba9227a, [t-fjlrfmnx], closed):
+  send its released channel commit to the guix-x86_64-iso-omguix session
+  (guix-x86-64-iso-omguix-86), which asked for it. Its x86_64 build was not
+  run on the aarch64 builder (no emulation), so CI builds it first here;
+  untested: the sandbox inside an Omaguix guest and `codex exec` after login.
+  Gate from [t-omaupgrd] (d-qqlris3g): omaguix/omaguix's workflow builds
+  P from upstream G plus try-roguix's forward-check patch, and the release
+  names the patched commit.
+  Both waiting coordinators rechecked it on 2026-10-18 and were answered:
+  guix-x86_64-iso-omguix (pane w6R:p6W) waits for the released channel
+  commit for its items 28 (Codex CLI) and 29 (Claude Code through the
+  shim); roguix-vps (pane w1E:p42) reports substitutes.omaguix.org serving
+  HTTPS with a valid Let's Encrypt certificate and a 404 `nix-cache-info`
+  because `/var/lib/roguix-substitutes` is empty, with the old
+  roguix.frolow.dev still serving 200 from `guix publish`. Both need main
+  to move, which this item does; nothing on the VPS changes before the
+  first release run. The substitutes public key they need is already
+  published: `guest/guix/modules/roguix/substitutes.omaguix.org.pub`
+  (SHA-256 5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a)
+  on try-omaguix main and in the signed channel branch
+  `release/cba50b560a38ac885b3d282f132793fe740345f6`.
+  x86_64 verified 2026-10-16 on the 2010 MacBook (pane worker codex-x86):
+  `codex-bin` built under the Roguix pin 7e74121a
+  (/gnu/store/wq2s2lnl...-codex-0.163.0), `codex --version` prints
+  codex-cli 0.163.0, and `codex sandbox` ran unprivileged with the store's
+  bwrap (not setuid) with writes blocked.
+  With the release, tell the guix-x86_64-iso-omguix coordinator the released
+  channel commit that carries `x86-64-v2-sigill-shim` and
+  `claude-code-x86-64-v1` (t-dopemmpz, landed 2026-10-25 as 0bbddcd2 and
+  7a70072b: built at the pin on the Core 2 Duo P8600, the shim's `make check`
+  passed with the trap tests, `bin/claude --version` printed 2.1.301; that
+  coordinator's session was not running to be told).
+  With the release, also tell roguix-vps that t-omabkfil (the store paths
+  server/publish.sh published) is closed as superseded: omaguix/omaguix
+  decision 0001 (be56772, the user 2026-10-12) has no backfill, so nothing
+  on the VPS waits on a list from here.
+  Blocked 2026-10-25 (checked against omaguix/omaguix main 09d6aa1): its
+  build-desktop.yml still has the `github.actor == github.repository_owner`
+  gate on sign-substitutes (line 203), still uploads an empty
+  release-tag.txt (line 143) and emits no guix-profile.txt. That CI change
+  is item 30c (t-guixprof) of the guix-x86_64-iso-omguix coordinator, whose
+  worker never started (usage gate, run r-7opekqf5); it waits there on the
+  user's choice of worker. t-omaorgdm waits on this release.
+  Who makes the omaguix/omaguix CI change (30c, t-guixprof) this release needs?
+  Options: this session does it in a worktree of omaguix/omaguix, with a
+  consult review of the diff, and tells that coordinator (recommended) |
+  wait for the guix-x86_64-iso-omguix coordinator's worker |
+  pi-anthropic worker there now (API credits).
+  Checked: the workflow lines above, that coordinator's TODO item 30c and
+  its "Needs a decision" entry, the never-pushed clone omaguix-w31.
+  Decided by the user 2026-10-25: this session makes the omaguix/omaguix CI
+  change (30c's design) in a worktree of omaguix/omaguix, has the models
+  review the diff, pushes it and tells the guix-x86_64-iso-omguix
+  coordinator; then the release runs.
+
+- [ ] Move Omaguix to omaguix.org [t-omaorgdm]
+  The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
+  the organization is `omaguix`, and the public domain is `omaguix.org`.
+  The repositories are now `omaguix/omaguix`, `omaguix/omaguix-channel`,
+  and `omaguix/try-omaguix`; their histories and existing tags are preserved.
+  Porkbun serves the domain's DNS, with the apex and
+  `substitutes.omaguix.org` pointing at the existing VPS. The new substitute
+  key's public half is staged as
+  `guest/guix/modules/roguix/substitutes.omaguix.org.pub`.
+  The earlier plan below uses the superseded domain and filename: current
+  implementation uses `omaguix.org` and `substitutes.omaguix.org.pub`.
+  Do not activate the new guest trust record until HTTPS, signed substitute
+  content and the matching CI signing secret have been verified. Changing
+  the substitute key does not change the independently signed channel's
+  introduction or signer.
+
+  The owner instructed the migration to leave the old MacBook alone.
+  On 2026-10-14 a replacement key was generated locally using Guix's
+  libgcrypt generation parameters and checked by signing and verifying a
+  message. Its private half was sent directly from memory to the GitHub
+  `substitute-signing/SUBSTITUTE_SIGNING_KEY` secret, without creating a
+  private file. The current public key's SHA-256 is
+  `5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`.
+  The earlier public key/checksum below is superseded; it must not be used
+  with that secret.
+
+  Verified 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
+  DeepSeek):
+  - Porkbun NS (`curitiba/fortaleza/maceio/salvador.ns.porkbun.com`) and
+    Let's Encrypt TLS certificates (`2026-10-14` to `2027-01-12`) are live on
+    `https://omaguix.org` and `https://substitutes.omaguix.org` (`A 192.255.242.95`).
+  - Remaining on the VPS (`roguix-vps`): `www.omaguix.org` has a `CNAME` to
+    `omaguix.org.` but is missing from the TLS certificate SANs; `/var/www/omaguix.org/html`
+    is empty (`403 Forbidden`); `/var/lib/roguix-substitutes` is empty
+    (`https://substitutes.omaguix.org/nix-cache-info` returns `404 Not Found`),
+    while `https://roguix.frolow.dev/nix-cache-info` still serves `200 OK`.
+  - Remaining in `omaguix/try-omaguix` (cutover order agreed in round
+    20261014-193606-be7d): once `omaguix/omaguix` CI signing gates are fixed and
+    `https://substitutes.omaguix.org` serves verified substitutes signed by the
+    `5e9b4547...` key, switch `%roguix-trust` in
+    `guest/guix/modules/roguix/trust.scm` from `"https://roguix.frolow.dev"` and
+    `roguix.frolow.dev.pub` to `"https://substitutes.omaguix.org"` and
+    `substitutes.omaguix.org.pub`, remove `guest/guix/modules/roguix/roguix.frolow.dev.pub`,
+    update `guest/guix/test_trust.py` and docs (`AGENTS.md`, `docs/architecture.md`,
+    `guest/guix/README.md`, `server/README.md`), and publish the release commit.
+
+  Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
+  models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
+  the coordinator with the models: the website at roguix.org (GitHub Pages
+  or the VPS), substitutes at substitutes.roguix.org (all three; not a path
+  under the apex, not "cache"). Decided by the user 2026-10-12, overriding the models' 12-month alias:
+  "no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
+  turned off once substitutes.roguix.org serves, and the trust record names
+  only the new URL (no overlap release). Decided by the user 2026-10-12
+  (d-2zft4rjx): the publish key change is a clean cutover too, see "Trust
+  two publish keys during the move off the serving host". Decided by the
+  user 2026-10-12 (d-j2ilgfxy, relayed by the roguix-vps coordinator): a
+  fresh key, held only in GitHub, signs substitutes.roguix.org in CI; new
+  VM images trust only it, and the old key is erased from the VPS and
+  GitHub. So the URL and the key change ship together. Roguix's maintainer
+  (the omguix coordinator) generates the key and hands try-roguix its
+  public key for the trust record. Agreed with the omguix coordinator
+  2026-10-12: roguix's CI verifies the key at roguix-channel
+  modules/roguix/substitutes.roguix.org.pub; since publish-channel
+  regenerates the channel's modules, the file is added in try-roguix as
+  guest/guix/modules/roguix/substitutes.roguix.org.pub, `(roguix trust)`
+  names https://substitutes.roguix.org with it, and roguix.frolow.dev.pub
+  is removed. TLS for both names
+  before the release; CAA limited to the issuing CA; no mail on the domain:
+  null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
+  Needs: DNS records at Porkbun (the owner, or an API key the owner
+  provides), the VPS vhost and certificate (the roguix-vps coordinator,
+  which owns the host and its static-substitutes move), then try-roguix's
+  trust record and docs. App update feeds stay where they are until checked.
+
+
+
 - [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
   Decided by the user 2026-10-12: "yes, after acceptance". Proposed
   2026-10-12 by the Metal worker (models: after end-to-end
@@ -612,157 +767,6 @@
   the move).
 
 ## Needs a decision
-
-- [ ] First Omaguix release through release.py [t-omarelfs]
-  Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
-  path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
-  `.env`, then run guest/guix/release.py for current try-omaguix main: a
-  signed omaguix-channel commit, omaguix/omaguix's build-desktop.yml
-  dispatched with `channel_commit` (aarch64 and x86_64, hours), VPS import,
-  the closure check, then the signed release.json moves the channel's main.
-  Report the run ids and the release commit; on any failure, main stays.
-  Checked 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
-  DeepSeek): before running `guest/guix/release.py`:
-  1. In `omaguix/omaguix` `.github/workflows/build-desktop.yml`:
-     - Fix `sign-substitutes`'s `if:` gate (`github.actor == github.repository_owner`
-       is false when a maintainer dispatches `workflow_dispatch` in the
-       `omaguix` organization, skipping signing).
-     - Populate `split-<prefix>/release-tag.txt` when `publish.txt` is non-empty
-       (currently `: > split/release-tag.txt` is uploaded empty before
-       `sign-substitutes` computes `RELEASE_TAG`, which `release.py` rejects).
-     - Emit `split-<prefix>/guix-profile.txt` and include the Guix profile in
-       `package-closure.txt` (required by decision 0007 / `[t-omaupgrd]`).
-  2. Complete the `omaguix.org` / `substitutes.omaguix.org` cutover prerequisites
-     (`[t-omabkfil]`, `[t-omaorgdm]`, `[t-omakeyfr]` below) and switch
-     `guest/guix/modules/roguix/trust.scm` to `https://substitutes.omaguix.org`
-     and `substitutes.omaguix.org.pub` once signed substitute content is verified.
-  This release carries `codex-bin` 0.163.0 (5ba9227a, [t-fjlrfmnx], closed):
-  send its released channel commit to the guix-x86_64-iso-omguix session
-  (guix-x86-64-iso-omguix-86), which asked for it. Its x86_64 build was not
-  run on the aarch64 builder (no emulation), so CI builds it first here;
-  untested: the sandbox inside an Omaguix guest and `codex exec` after login.
-  Gate from [t-omaupgrd] (d-qqlris3g): omaguix/omaguix's workflow builds
-  P from upstream G plus try-roguix's forward-check patch, and the release
-  names the patched commit.
-  Both waiting coordinators rechecked it on 2026-10-18 and were answered:
-  guix-x86_64-iso-omguix (pane w6R:p6W) waits for the released channel
-  commit for its items 28 (Codex CLI) and 29 (Claude Code through the
-  shim); roguix-vps (pane w1E:p42) reports substitutes.omaguix.org serving
-  HTTPS with a valid Let's Encrypt certificate and a 404 `nix-cache-info`
-  because `/var/lib/roguix-substitutes` is empty, with the old
-  roguix.frolow.dev still serving 200 from `guix publish`. Both need main
-  to move, which this item does; nothing on the VPS changes before the
-  first release run. The substitutes public key they need is already
-  published: `guest/guix/modules/roguix/substitutes.omaguix.org.pub`
-  (SHA-256 5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a)
-  on try-omaguix main and in the signed channel branch
-  `release/cba50b560a38ac885b3d282f132793fe740345f6`.
-  x86_64 verified 2026-10-16 on the 2010 MacBook (pane worker codex-x86):
-  `codex-bin` built under the Roguix pin 7e74121a
-  (/gnu/store/wq2s2lnl...-codex-0.163.0), `codex --version` prints
-  codex-cli 0.163.0, and `codex sandbox` ran unprivileged with the store's
-  bwrap (not setuid) with writes blocked.
-  With the release, tell the guix-x86_64-iso-omguix coordinator the released
-  channel commit that carries `x86-64-v2-sigill-shim` and
-  `claude-code-x86-64-v1` (t-dopemmpz, landed 2026-10-25 as 0bbddcd2 and
-  7a70072b: built at the pin on the Core 2 Duo P8600, the shim's `make check`
-  passed with the trap tests, `bin/claude --version` printed 2.1.301; that
-  coordinator's session was not running to be told).
-  With the release, also tell roguix-vps that t-omabkfil (the store paths
-  server/publish.sh published) is closed as superseded: omaguix/omaguix
-  decision 0001 (be56772, the user 2026-10-12) has no backfill, so nothing
-  on the VPS waits on a list from here.
-  Blocked 2026-10-25 (checked against omaguix/omaguix main 09d6aa1): its
-  build-desktop.yml still has the `github.actor == github.repository_owner`
-  gate on sign-substitutes (line 203), still uploads an empty
-  release-tag.txt (line 143) and emits no guix-profile.txt. That CI change
-  is item 30c (t-guixprof) of the guix-x86_64-iso-omguix coordinator, whose
-  worker never started (usage gate, run r-7opekqf5); it waits there on the
-  user's choice of worker. t-omaorgdm waits on this release.
-  Who makes the omaguix/omaguix CI change (30c, t-guixprof) this release needs?
-  Options: this session does it in a worktree of omaguix/omaguix, with a
-  consult review of the diff, and tells that coordinator (recommended) |
-  wait for the guix-x86_64-iso-omguix coordinator's worker |
-  pi-anthropic worker there now (API credits).
-  Checked: the workflow lines above, that coordinator's TODO item 30c and
-  its "Needs a decision" entry, the never-pushed clone omaguix-w31.
-
-- [ ] Move Omaguix to omaguix.org [t-omaorgdm]
-  The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,
-  the organization is `omaguix`, and the public domain is `omaguix.org`.
-  The repositories are now `omaguix/omaguix`, `omaguix/omaguix-channel`,
-  and `omaguix/try-omaguix`; their histories and existing tags are preserved.
-  Porkbun serves the domain's DNS, with the apex and
-  `substitutes.omaguix.org` pointing at the existing VPS. The new substitute
-  key's public half is staged as
-  `guest/guix/modules/roguix/substitutes.omaguix.org.pub`.
-  The earlier plan below uses the superseded domain and filename: current
-  implementation uses `omaguix.org` and `substitutes.omaguix.org.pub`.
-  Do not activate the new guest trust record until HTTPS, signed substitute
-  content and the matching CI signing secret have been verified. Changing
-  the substitute key does not change the independently signed channel's
-  introduction or signer.
-
-  The owner instructed the migration to leave the old MacBook alone.
-  On 2026-10-14 a replacement key was generated locally using Guix's
-  libgcrypt generation parameters and checked by signing and verifying a
-  message. Its private half was sent directly from memory to the GitHub
-  `substitute-signing/SUBSTITUTE_SIGNING_KEY` secret, without creating a
-  private file. The current public key's SHA-256 is
-  `5e9b4547f9a8409a42e658276deb6e3f4502f6715681a9617f8b105ea73b4f2a`.
-  The earlier public key/checksum below is superseded; it must not be used
-  with that secret.
-
-  Verified 2026-10-14 (consult round 20261014-193606-be7d with sol, MiMo,
-  DeepSeek):
-  - Porkbun NS (`curitiba/fortaleza/maceio/salvador.ns.porkbun.com`) and
-    Let's Encrypt TLS certificates (`2026-10-14` to `2027-01-12`) are live on
-    `https://omaguix.org` and `https://substitutes.omaguix.org` (`A 192.255.242.95`).
-  - Remaining on the VPS (`roguix-vps`): `www.omaguix.org` has a `CNAME` to
-    `omaguix.org.` but is missing from the TLS certificate SANs; `/var/www/omaguix.org/html`
-    is empty (`403 Forbidden`); `/var/lib/roguix-substitutes` is empty
-    (`https://substitutes.omaguix.org/nix-cache-info` returns `404 Not Found`),
-    while `https://roguix.frolow.dev/nix-cache-info` still serves `200 OK`.
-  - Remaining in `omaguix/try-omaguix` (cutover order agreed in round
-    20261014-193606-be7d): once `omaguix/omaguix` CI signing gates are fixed and
-    `https://substitutes.omaguix.org` serves verified substitutes signed by the
-    `5e9b4547...` key, switch `%roguix-trust` in
-    `guest/guix/modules/roguix/trust.scm` from `"https://roguix.frolow.dev"` and
-    `roguix.frolow.dev.pub` to `"https://substitutes.omaguix.org"` and
-    `substitutes.omaguix.org.pub`, remove `guest/guix/modules/roguix/roguix.frolow.dev.pub`,
-    update `guest/guix/test_trust.py` and docs (`AGENTS.md`, `docs/architecture.md`,
-    `guest/guix/README.md`, `server/README.md`), and publish the release commit.
-
-  Asked 2026-10-12: "I bought roguix.org at Porkbun. Move it. Ask the
-  models." Round 20261012-191411-5986 (sol, MiMo, DeepSeek), plan decided by
-  the coordinator with the models: the website at roguix.org (GitHub Pages
-  or the VPS), substitutes at substitutes.roguix.org (all three; not a path
-  under the apex, not "cache"). Decided by the user 2026-10-12, overriding the models' 12-month alias:
-  "no, nobody uses it; switch it off": a clean cutover, roguix.frolow.dev is
-  turned off once substitutes.roguix.org serves, and the trust record names
-  only the new URL (no overlap release). Decided by the user 2026-10-12
-  (d-2zft4rjx): the publish key change is a clean cutover too, see "Trust
-  two publish keys during the move off the serving host". Decided by the
-  user 2026-10-12 (d-j2ilgfxy, relayed by the roguix-vps coordinator): a
-  fresh key, held only in GitHub, signs substitutes.roguix.org in CI; new
-  VM images trust only it, and the old key is erased from the VPS and
-  GitHub. So the URL and the key change ship together. Roguix's maintainer
-  (the omguix coordinator) generates the key and hands try-roguix its
-  public key for the trust record. Agreed with the omguix coordinator
-  2026-10-12: roguix's CI verifies the key at roguix-channel
-  modules/roguix/substitutes.roguix.org.pub; since publish-channel
-  regenerates the channel's modules, the file is added in try-roguix as
-  guest/guix/modules/roguix/substitutes.roguix.org.pub, `(roguix trust)`
-  names https://substitutes.roguix.org with it, and roguix.frolow.dev.pub
-  is removed. TLS for both names
-  before the release; CAA limited to the issuing CA; no mail on the domain:
-  null MX, `v=spf1 -all`, DMARC `p=reject`; DNSSEC only once stable.
-  Needs: DNS records at Porkbun (the owner, or an API key the owner
-  provides), the VPS vhost and certificate (the roguix-vps coordinator,
-  which owns the host and its static-substitutes move), then try-roguix's
-  trust record and docs. App update feeds stay where they are until checked.
-
-
 
 ### Background: renaming to Omaguix (2026-10-12)
 
