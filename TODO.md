@@ -153,6 +153,12 @@
   step fails, `release.py --resume 40195990260`.
   Cancelled 2026-10-25 at its G' step, by the user's decision to include
   Odin's substitutes (t-sk47ymxd); release/892311c4 stays unreleased.
+  Restarted 2026-10-25 14:20 (log try-omaguix-release-2.log): channel
+  commit 9404d6d18304281a549b0abee8cd1710ac5fc400 (from try-omaguix
+  2d5a4634, with Odin), CI run
+  https://github.com/omaguix/omaguix/actions/runs/40197079209. Check:
+  `gh run view 40197079209 -R omaguix/omaguix`; if CI succeeds and a later
+  step fails, `release.py --resume 40197079209`.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
