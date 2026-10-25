@@ -478,6 +478,27 @@
 
 ## Proposed
 
+- [ ] Odin's check phase fails on x86_64 hosts without POPCNT [t-odinx86p]
+  Reported by lang-for-ai [t-odinguix] 2026-10-25; the user chose to file
+  it here. On the x86_64 Guix host (2010 MacBook, Core 2 Duo: no POPCNT,
+  no SSE4.2), with guix dda91ea6 and omaguix-channel 72b55436,
+  /gnu/store/93qj1ih6q474z94cb8sl05jxiyfnyvm5-odin-2026-10.drv builds and
+  installs, then phase `check-installed` fails: `odin test sum` exits 1
+  with "Error: Try using '-microarch:native' as Odin defaults to x86-64-v2
+  (close to Nehalem), and your CPU seems to be older." Designed upstream
+  behaviour (Odin dev-2026-10 src/main.cpp:4399-4409 and
+  src/build_cpuid.cpp:22-35: without POPCNT, `odin run` and `odin test`
+  refuse unless a non-default -microarch is given), so the package's build
+  result depends on the build machine's CPU. Suggested fix (the owner
+  decides): the check phase passes an explicit microarch on x86_64 (e.g.
+  -microarch:x86-64). lang-for-ai's own x86_64 runs pass
+  -microarch:x86-64 (decided by the user 2026-10-25). Full log:
+  ~/personal_projects/lang-for-ai/build/odinguix/x86-odin-build.log (the
+  failure is its last 6 lines). Blocks lang-for-ai [t-odinguix], whose
+  Check now runs on both architectures; it needs the new channel commit.
+  Cost: one phase change, an x86_64 build on the MacBook; part of
+  [t-sk47ymxd]'s x86_64 work.
+
 - [ ] Tell try-omabend what its identity file needs at its next pin bump [t-omabidk]
   try-omabend clones this repository at a pinned commit (its
   pins/try-roguix, 0d9d2780 on 2026-10-25), so it adopts identity changes
