@@ -236,6 +236,13 @@
   Also (from [t-lu4f36td]'s worker): the update messages ("Try Omaguix X is
   available", "No stable Try Omaguix release...") and the update request's
   User-Agent `Try-Roguix-Release-Check`.
+  Design, consult round 20261025-133052 (sol, mimo, deepseek, argon all
+  chose it): a new required identity key GUEST_NAME ("Omaguix") for the
+  guest's name next to APP_NAME for the app's; string-building code takes
+  the names as parameters (tests pass their own identity); the C helper and
+  the download progress line carry no name, matched on fixed text; a test
+  bans literal app or guest names in the Swift sources. try-omabend's
+  identity file gains GUEST_NAME in the same cutover.
 
 - [ ] The start menu guards NAT-only apps explicitly [t-3bi2zglk]
   Follow-up of [t-omabendl] (round 20261016-160156-dde6, DeepSeek): the
