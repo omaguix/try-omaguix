@@ -225,14 +225,6 @@
 
 
 
-- [ ] The start menu guards NAT-only apps explicitly [t-3bi2zglk]
-  Follow-up of [t-omabendl] (round 20261016-160156-dde6, DeepSeek): the
-  start menu avoids `NetworkService`'s `preconditionFailure` in an app
-  without the bridged helper only because `VMNetworkPreferences()` defaults
-  to NAT (`StartMenuWindow.swift:839-842`). Guard on
-  `offersBridgedNetworking` explicitly and add a test. Swift: a pane worker.
-  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
-
 - [ ] Guest selection moves into the app identity file [t-d2xuz6pd]
   Follow-up of [t-omabendl] (round 20261016-160157-dae4, DeepSeek): the
   guest's `GUIX_SYSTEM`, `GUIX_LOAD_PATH` and the credentials policy are

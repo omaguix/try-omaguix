@@ -299,7 +299,9 @@ struct StartMenuWindowWidthTests {
         accessibilityStatus: (() -> Bool)? = nil,
         microphoneStatus: (() -> MicrophoneAuthorizationState)? = nil,
         cameraStatus: (() -> CameraAuthorizationState)? = nil,
-        requestPermission: ((@escaping (Bool) -> Void) -> Void)? = nil
+        requestPermission: ((@escaping (Bool) -> Void) -> Void)? = nil,
+        offersBridgedNetworking: Bool = true,
+        networkPreferences: @escaping () -> VMNetworkPreferences = { VMNetworkPreferences() }
     ) -> StartMenuWindow {
         var requestFinished = false
         return StartMenuWindow(
@@ -347,11 +349,38 @@ struct StartMenuWindowWidthTests {
             connectedUSBDevices: { [] },
             saveUSBDevice: { _ in },
             portForwardingStatus: { [] },
-            offersBridgedNetworking: true,
+            networkPreferences: networkPreferences,
+            offersBridgedNetworking: offersBridgedNetworking,
             immersiveMode: { true },
             setImmersiveMode: { _ in },
             launch: {}
         )
+    }
+
+    @Test("an app without the networking helper shows NAT and never asks for its service")
+    func natOnlyApp() throws {
+        _ = NSApplication.shared
+        // The second identity has no helper: reading NetworkService.service
+        // there stops the run. Stored bridged preferences must not reach it.
+        try AppIdentity.$main.withValue(.second) {
+            var preferenceReads = 0
+            let menu = makeMenu(
+                storageState: { .defaultLocation },
+                offersBridgedNetworking: false,
+                networkPreferences: {
+                    preferenceReads += 1
+                    return VMNetworkPreferences(mode: .bridged, interface: "en0")
+                })
+            menu.prepareForPresentation(visibleFrame: nil)
+            defer { menu.dismiss() }
+            let content = try #require(menu.window.contentView)
+            let row = try #require(descendant(withIdentifier: "permission-row-networking", in: content))
+            let detail = try #require(
+                descendant(withIdentifier: "permission-detail-networking", in: row) as? NSTextField)
+            #expect(detail.stringValue == "Uses your Mac’s connection")
+            #expect(descendant(withIdentifier: "permission-action-networking", in: content) == nil)
+            #expect(preferenceReads == 0)
+        }
     }
 
     private func expectDetailsFit(

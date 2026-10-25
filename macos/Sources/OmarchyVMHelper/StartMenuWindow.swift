@@ -840,10 +840,11 @@ final class StartMenuWindow: NSObject, NSWindowDelegate {
         )
 
         // An app without the networking helper offers only NAT, with
-        // nothing to configure.
-        let network = offersBridgedNetworking ? networkPreferences() : VMNetworkPreferences()
+        // nothing to configure: whatever preferences are stored, it never
+        // asks for the helper's service, which it does not have.
+        let network = offersBridgedNetworking ? networkPreferences() : VMNetworkPreferences(mode: .nat)
         let bridgeAvailable = VMBridgeInterfaces.available().contains { $0.name == network.interface }
-        let networkWarning = network.mode == .bridged
+        let networkWarning = offersBridgedNetworking && network.mode == .bridged
             ? (!bridgeAvailable ? "Adapter unavailable — \(AppIdentity.main.guestName) will start offline" : NetworkService.service.status != .enabled ? "Setup required" : nil)
             : nil
         let networkingRow = permissionRow(
