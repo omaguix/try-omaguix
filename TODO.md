@@ -2,6 +2,10 @@
 
 ## Next, in order
 
+Decided by the user 2026-10-25: "for now stop and do only what lang-for-ai
+needs; ask the models". The items below wait except where lang-for-ai needs
+them (Odin on both architectures, t-sk47ymxd and its channel commit).
+
 - [ ] First Omaguix release through release.py [t-omarelfs]
   Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
   path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
