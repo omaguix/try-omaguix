@@ -7,8 +7,7 @@ identifiers, LaunchDaemon, data and log directories, signing identity,
 `Info.plist` keys and release tag prefix all say Omaguix. Only history keeps
 the old name (git history, the tags `v0.5.0` and `try-roguix-v0.5.1`, the
 channel's earlier commits), together with the channel introduction and its
-signing key, which authenticate the renamed channel unchanged, and the
-substitute server's domain `roguix.frolow.dev`, which moves separately.
+signing key, which authenticate the renamed channel unchanged.
 
 Try Omaguix packages three pieces into one macOS app:
 
@@ -222,10 +221,9 @@ The image carries no password; the first start asks for one on the console.
 In the VM, `/etc/config.scm` calls the same procedure with the owner's package
 list and `omaguix-reconfigure` applies it with the Guix that built the image.
 Omaguix's own packages have no substitutes on Guix's servers, so
-`https://roguix.frolow.dev` publishes them
-([decision 0002](decisions/0002-roguix-substitute-server.md)), built by
-`omaguix/omaguix`'s CI and the builder VM
-([decision 0005](decisions/0005-who-builds-roguix-substitutes.md)).
+`omaguix/omaguix`'s CI builds and signs them and the VPS serves them
+statically from `https://substitutes.omaguix.org`
+([decision 0008](decisions/0008-static-substitutes-at-omaguix-org.md)).
 
 ## What this project changes
 

@@ -226,7 +226,7 @@ def narinfo_status(server, item):
 
 def coverage(builds, omaguix, status=narinfo_status):
     """Per architecture, how many package items each server serves.
-    roguix.frolow.dev is asked only about items bordeaux lacks, as
+    Omaguix's server is asked only about items bordeaux lacks, as
     desktop-split does. Raises when an item is served nowhere."""
     def where(item):
         if status(BORDEAUX, item) == 200:

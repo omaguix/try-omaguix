@@ -26,10 +26,10 @@
 
 (define %omaguix-trust
   (omaguix-trust
-   ;; guix publish on the author's server, signed with this key
-   ;; (docs/decisions/0002-roguix-substitute-server.md).
-   "https://roguix.frolow.dev"
-   (local-file "roguix.frolow.dev.pub")
+   ;; Static substitutes signed in omaguix/omaguix's CI with this key and
+   ;; served from the VPS (docs/decisions/0008-static-substitutes-at-omaguix-org.md).
+   "https://substitutes.omaguix.org"
+   (local-file "substitutes.omaguix.org.pub")
    ;; Omaguix's modules, published from try-omaguix (guest/guix/publish-channel)
    ;; and signed with the channel key; Guix's channel introduction model
    ;; authenticates each commit from the first

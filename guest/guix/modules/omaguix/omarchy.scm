@@ -318,7 +318,7 @@ configuration, Quickshell desktop shell, themes and helper commands.")
 ;;; xdg-terminal-exec and the per-user seed.
 
 ;; Omaguix's commands never compile in the VM unless asked: packages come from
-;; roguix.frolow.dev and Guix's servers, and --max-jobs=0 still lets Guix
+;; substitutes.omaguix.org and Guix's servers, and --max-jobs=0 still lets Guix
 ;; build its local derivations (configuration, profiles, grafts) but refuses
 ;; any other build at once instead of compiling for hours.
 ;; OMAGUIX_ALLOW_BUILD=1 lifts it.

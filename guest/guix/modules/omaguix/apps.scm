@@ -3,7 +3,7 @@
 ;;; These install the upstream projects' own aarch64 and x86_64 release
 ;;; binaries instead of building from source
 ;;; (docs/decisions/0003-upstream-binary-packages.md). Each source is pinned by
-;;; its SHA-256; the builder signs the result and roguix.frolow.dev serves it
+;;; its SHA-256; CI signs the result and substitutes.omaguix.org serves it
 ;;; like any other Omaguix item. The x86-64-v1 pair is that decision's one
 ;;; exception: a shim built from source, and Anthropic's non-free x86_64
 ;;; binary wrapped with it, experimental, without substitutes and outside CI

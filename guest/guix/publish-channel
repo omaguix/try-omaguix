@@ -2,7 +2,7 @@
 # Make guest/guix's Omaguix definitions a signed commit of the omaguix channel
 # (docs/decisions/0004-roguix-channel.md) and push it to release/<commit>, not
 # to main: guest/guix/release.py moves main once CI has built that commit
-# and roguix.frolow.dev serves it (docs/decisions/0006-one-roguix-release-step.md).
+# and substitutes.omaguix.org serves it (docs/decisions/0006-one-roguix-release-step.md).
 # Prints "channel-commit <sha>" last, or nothing when the channel matches.
 #
 #   OMAGUIX_CHANNEL_DIR  the channel checkout (default ../omaguix-channel)

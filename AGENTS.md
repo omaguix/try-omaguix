@@ -47,7 +47,8 @@ clean; edit them only upstream. Where they differ, this repository follows:
 - The guest is Omaguix (Guix System), built from `guest/guix/` in a Guix System
   builder VM (`guest/guix/README.md`) and packaged into `build/guix` with
   `make guix-package`; there is no Arch guest, package lock or Docker build.
-- Omaguix's own packages are served from `roguix.frolow.dev` (`server/`).
+- Omaguix's own packages are signed in omaguix/omaguix's CI and served from
+  `substitutes.omaguix.org` (decision 0008).
 - Sync with Try Omarchy by rebasing `main` onto `upstream/main` and
   force-pushing it with `--force-with-lease=main:<the reviewed old SHA>`. The
   maintainer approves this standing rewrite of `main` (2026-10-01) until they

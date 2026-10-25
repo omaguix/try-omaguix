@@ -648,12 +648,11 @@ and is part of the system configuration:
   new root; `guix system roll-back` (the menu's Roll back) and a reboot
   return to the old generation and its Guix (decision 0007).
 - **Substitutes for Omaguix's own packages** come from
-  `https://roguix.frolow.dev` (decisions 0002 and 0005), after Guix's servers;
-  the guest authorizes `modules/omaguix/roguix.frolow.dev.pub`. This server,
-  its key and the signed channel `omaguix-update` follows are named in one
-  record, `%omaguix-trust` in `modules/omaguix/trust.scm`. Verified
-  2026-09-24 in a b12 guest: `guix weather --substitute-urls=https://roguix.frolow.dev`
-  finds Quickshell, Hyprland and Omarchy (3 of 3).
+  `https://substitutes.omaguix.org` (decision 0008), after Guix's servers;
+  the guest authorizes `modules/omaguix/substitutes.omaguix.org.pub`, the key
+  omaguix/omaguix's CI signs with. This server, its key and the signed
+  channel `omaguix-update` follows are named in one record, `%omaguix-trust`
+  in `modules/omaguix/trust.scm`.
 
 For CI that builds these substitutes, `(omaguix system)` exports
 `%omaguix-reference-system`: the image's system with no extra packages and the

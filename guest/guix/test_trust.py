@@ -20,7 +20,7 @@ def record_values():
 class TrustRecordTests(unittest.TestCase):
     def test_record_holds_the_published_values(self):
         substitute, key, channel, introduction, signer = record_values()
-        self.assertEqual(substitute, "https://roguix.frolow.dev")
+        self.assertEqual(substitute, "https://substitutes.omaguix.org")
         self.assertTrue((TRUST.parent / key).is_file(), key)
         self.assertEqual(channel, "https://github.com/omaguix/omaguix-channel")
         self.assertRegex(introduction, r"^[0-9a-f]{40}$")

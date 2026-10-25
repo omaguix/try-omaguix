@@ -2,8 +2,8 @@
 
 An Omaguix VM trusts two keys beyond Guix's own (`%omaguix-trust` in
 `guest/guix/modules/omaguix/trust.scm`): the omaguix channel's OpenPGP key
-(decision 0004) and the substitute server's `guix publish` key (decision
-0002). This page is the owner's procedure for both; agents prepare the
+(decision 0004) and the substitute key omaguix/omaguix's CI signs with
+(decision 0008). This page is the owner's procedure for both; agents prepare the
 repository side but never create or hold these keys.
 
 ## Channel recovery key
@@ -100,6 +100,10 @@ try-omaguix <revision>", before the rename "Roguix from try-roguix
 commit nobody made.
 
 ## Keeping the publish key off the serving host
+
+Done differently by decision 0008: the key lives only in omaguix/omaguix's
+`substitute-signing` environment secret and the VPS serves a static tree.
+The rest of this section is the earlier plan, kept as history.
 
 ### Today
 

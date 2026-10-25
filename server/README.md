@@ -1,5 +1,9 @@
 # roguix.frolow.dev
 
+Superseded by decision 0008: guests trust only `substitutes.omaguix.org`,
+whose static, CI-signed tree the roguix-vps configuration serves. These
+files describe the old `guix publish` server until it is switched off.
+
 The Omaguix substitute server (docs/decisions/0002-roguix-substitute-server.md),
 kept here until the VPS runs from its own Guix System configuration
 (docs/decisions/0005-who-builds-roguix-substitutes.md), then deleted:
@@ -19,8 +23,9 @@ is capped (one worker, `zstd:3`, `Nice=19`, idle I/O, one CPU, 700 MB).
 
 1. `apt-get install uidmap`, then Guix with `guix-install.sh`
    (`https://guix.gnu.org/guix-install.sh`; it checks the release's signature).
-2. `guix archive --generate-key`. The public key is
-   `guest/guix/modules/omaguix/roguix.frolow.dev.pub`; the secret key never
+2. `guix archive --generate-key`. The public key was
+   `guest/guix/modules/omaguix/roguix.frolow.dev.pub` (removed with decision
+   0008); the secret key never
    leaves `/etc/guix/signing-key.sec`.
 3. Install the unit and the nginx site, `nginx -t && systemctl reload nginx`,
    `systemctl enable --now guix-publish`, then
@@ -35,7 +40,7 @@ A release is one step from the Mac, `guest/guix/release.py`
 signed channel commit to `release/<commit>`, `omaguix/omaguix`'s CI builds that
 commit for aarch64 and x86_64, the VPS imports CI's releases with omaguix's
 `scripts/vps-import` over SSH (`VPS_IMPORT` in `.env`), every package item is
-checked on bordeaux or roguix.frolow.dev, and a signed `release.json` on top
+checked on bordeaux or substitutes.omaguix.org, and a signed `release.json` on top
 of the commit moves the channel's `main`. `--dry-run` prints the steps.
 
 Only ungrafted items are published: grafts are built with

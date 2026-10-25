@@ -115,6 +115,13 @@
   file:// pull with --disable-authentication no longer does.
   Decided by the user 2026-10-25: authenticate G's signed history too
   (the second option), on a full Guix clone in every run.
+  Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
+  roguix.frolow.dev.pub removed, decision 0008 records it (consult round
+  20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
+  made before this release cannot update across it (its daemon trusts only
+  the old key, --max-jobs=0). Decided by the user 2026-10-25: by hand,
+  as decision 0008 describes (authorize the new key or use a new image); no
+  updater change.
 
 - [ ] Move Omaguix to omaguix.org [t-omaorgdm]
   The owner superseded the names on 2026-10-14: Roguix becomes Omaguix,

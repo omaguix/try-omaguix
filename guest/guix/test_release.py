@@ -162,7 +162,7 @@ class CoverageTests(unittest.TestCase):
             return 200 if (server == release.BORDEAUX) == (path == item(1)) else 404
         served = release.coverage(self.builds(item(1), item(2)), self.OMAGUIX, status)
         self.assertEqual(served, {"aarch64-linux": {"bordeaux": 1, "omaguix": 1}})
-        # roguix.frolow.dev is not asked about what bordeaux serves.
+        # Omaguix's server is not asked about what bordeaux serves.
         self.assertNotIn((self.OMAGUIX, item(1)), asked)
 
     def test_an_item_served_nowhere_stops_the_release(self):
