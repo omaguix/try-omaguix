@@ -115,6 +115,8 @@
   file:// pull with --disable-authentication no longer does.
   Decided by the user 2026-10-25: authenticate G's signed history too
   (the second option), on a full Guix clone in every run.
+  Done 2026-10-25: omaguix/omaguix a199f54 (clone, `guix git authenticate`
+  up to G with Guix's introduction; checked on the 2010 MacBook).
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
