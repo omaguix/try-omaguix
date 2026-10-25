@@ -225,22 +225,6 @@
 
 
 
-- [ ] The storage helper's messages name "Reset Omaguix" [t-imgr6n4p]
-  Follow-up of the app rename (61d00144; review rounds 20261016-144822-3e03,
-  20261016-144944-b189, 20261016-145303-b71d): `macos/qemu-persistent-storage.sh`
-  still tells users to "use Reset Roguix" (lines 1142, 1288, 1371, 1566), but
-  the button is "Reset Omaguix" (`StartMenuPresentation.swift:72`). Rename the
-  messages and any test that matches them.
-  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
-
-- [ ] Correct two stale sentences in `guest/guix/README.md` [t-icmqmryc]
-  Follow-up of 8839313d (same review): it still says the logo shows "GUIX in
-  the same lettering" (line 449), but the new logo is OMAGUIX in different
-  lettering; and "its old Omaguix `hyprland.lua`" (under "Substitutes for
-  Omaguix's own packages") describes the pre-Omarchy Roguix image, so it
-  should say Roguix.
-  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
-
 - [ ] UI strings name the app from its identity [t-5gcnv3af]
   Follow-up of [t-omabendl] (worker open point): windows and alerts say
   "Try Omaguix"/"Omaguix" in any app, including the bridged-session message

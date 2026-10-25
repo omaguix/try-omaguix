@@ -492,7 +492,7 @@ commands, build fixes) is described in the sections below, not here.
 | Screensaver | Omarchy's default: on, at 120 fps, through Try Omarchy's own `omarchy-screensaver`. | Off until Trigger → Toggle → Screensaver turns it on; 30 fps; `ttfx` built from source ([`ttfx.scm`](modules/omaguix/ttfx.scm)). | macOS has its own screensaver and lock, and every frame costs the Mac's CPU and battery ([measurements](#the-omarchy-4-desktop)). | Omaguix's choice: the `omarchy-screensaver` substitution in [`omarchy.scm`](modules/omaguix/omarchy.scm) and [`omarchy-seed`](modules/omaguix/omarchy-seed). |
 | Packages and updates | pacman, the AUR and Omarchy's update channels in the menu's Install, Remove and Update; the Mac app's Update review fixes existing VMs ([`docs/integration-updates.md`](../../docs/integration-updates.md)). | Guix: `/etc/config.scm`, `omaguix-pkg`, Update → Guix System, `omaguix-update` from the signed channel ([packages](#packages-etcconfigscm)). | The guest is Guix System. | Omaguix's own: [`omarchy-menu.py`](modules/omaguix/omarchy-menu.py) and the `use-guix-packages` phase in [`omarchy.scm`](modules/omaguix/omarchy.scm). |
 | Default applications | Omarchy's list, with Chromium; web apps open as Chromium `--app` windows. | LibreWolf; web apps open in a new browser window. LibreOffice, Pinta, LocalSend, Signal and Obsidian are not installed. | Not in Guix, or no Chromium-family browser by default ([`docs/omarchy-packages.md`](../../docs/omarchy-packages.md)). | Omaguix's own: `%omarchy-applications` and `omarchy-launch-webapp` in [`omarchy.scm`](modules/omaguix/omarchy.scm). |
-| Logo | OMARCHY in Omarchy's block lettering (`omarchy-show-logo`, About, the screensaver). | GUIX in the same lettering. | The guest is Guix. | Omaguix's own: [`omaguix-logo.txt`](modules/omaguix/omaguix-logo.txt). |
+| Logo | OMARCHY in Omarchy's block lettering (`omarchy-show-logo`, About, the screensaver). | OMAGUIX in a lettering of its own. | The guest is Guix. | Omaguix's own: [`omaguix-logo.txt`](modules/omaguix/omaguix-logo.txt). |
 | Documents in `docs/` | Describe its Arch guest. | [`ghostty.md`](../../docs/ghostty.md), [`alacritty-migration.md`](../../docs/alacritty-migration.md), [`integration-updates.md`](../../docs/integration-updates.md), the guest side of [`host-timezone.md`](../../docs/host-timezone.md) and [`legacy-try-omarchy.md`](../../docs/legacy-try-omarchy.md) apply only to Try Omarchy; [`host-battery.md`](../../docs/host-battery.md), `integration-updates.md` and [`performance.md`](../../docs/performance.md) say so in a note at the top. | They are Try Omarchy's, kept as they are so rebases stay clean. | Omaguix's own; this README describes the Guix guest. |
 
 Not differences: the language is taken from the Mac once, at the first start,
@@ -523,7 +523,7 @@ power panel's charge state and the microphone helper are Try Omarchy's.
   `OMARCHY_THEME_HEADLESS=1 omarchy-theme-set "Tokyo Night"`; first-run,
   user provisioning and shipped migrations marked done, since they install
   Arch packages and systemd units. An account from the pre-Omarchy image gets
-  its old Omaguix `hyprland.lua` replaced.
+  its old Roguix `hyprland.lua` replaced.
 - **The VM additions** live in `/etc/omaguix-hypr-vm.lua`, which the seed
   appends to `~/.config/hypr/monitors.lua` as the Arch guest appends its QEMU
   fragment: Hyprland's cursor is hidden when the launcher reports VirGL (Cocoa
