@@ -225,14 +225,6 @@
 
 
 
-- [ ] Guest selection moves into the app identity file [t-d2xuz6pd]
-  Follow-up of [t-omabendl] (round 20261016-160157-dae4, DeepSeek): the
-  guest's `GUIX_SYSTEM`, `GUIX_LOAD_PATH` and the credentials policy are
-  separate make variables, so a second app must set them consistently by
-  hand. Put them in the identity file and have `make guix-package` read them
-  there (and pass `--credentials`). Python and Make: a headless worker.
-  Decided by the user 2026-10-16 (d-6spz6nsu): approved.
-
 - [ ] `build.py --check` evaluates the whole system [t-fxujivca]
   Follow-up of [t-omamanif] (builder check 2026-10-16): `build.py --check`
   exits 0 after Guix's dry run stops at the first graft build needed during
@@ -495,6 +487,17 @@
   to git.
 
 ## Proposed
+
+- [ ] Tell try-omabend what its identity file needs at its next pin bump [t-omabidk]
+  try-omabend clones this repository at a pinned commit (its
+  pins/try-roguix, 0d9d2780 on 2026-10-25), so it adopts identity changes
+  only when it moves that pin. Past 4111a399 its identity file needs
+  GUEST_NAME=Omabend (t-5gcnv3af), and GUEST_SYSTEM=system/image.scm,
+  GUEST_LOAD_PATH=system and GUEST_CREDENTIALS=preset (t-d2xuz6pd), and its
+  scripts/app can call `make guix-package` instead of package.py with its
+  own arguments. A GUEST_NAME added before the bump breaks its build (the
+  old validator refuses unknown keys), which this session found and undid.
+  No try-omabend session was running to be told. Cost: a message; no build.
 
 - [ ] Pass the app identity explicitly where AppKit defers work [t-idparam]
   From review round 20261025-133254-7c22 (deepseek) of t-5gcnv3af:

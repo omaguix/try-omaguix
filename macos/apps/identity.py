@@ -10,12 +10,15 @@ quotes, `$`, `#`, backslashes or surrounding whitespace in a value.
   identity.py shell   print the values as bash assignments, for eval
   identity.py keys    print the key names, for the Makefile's override guard
   identity.py icon    print the icon's path (ICON, beside the identity file)
+  identity.py guest   print package.py's --system, --load-path and
+                      --credentials for the guest, shell-quoted
 """
 
 import os
 from pathlib import Path
 import re
 import shlex
+import subprocess
 import sys
 
 DEFAULT = Path(__file__).resolve().parent / "try-omaguix.env"
@@ -23,6 +26,8 @@ DEFAULT = Path(__file__).resolve().parent / "try-omaguix.env"
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]*")
 BUNDLE = re.compile(r"[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
 DMG = r"[A-Za-z0-9][A-Za-z0-9._-]*\.dmg"
+# A path inside the repository that holds the identity file.
+REPOSITORY_PATH = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*")
 # Each key's pattern; names that become a path component exclude "/".
 KEYS = {
     "APP_NAME": NAME,
@@ -50,6 +55,14 @@ KEYS = {
     # The bridged-networking helper's launchd service; empty for an app
     # that ships no helper and offers only NAT.
     "NETWORK_HELPER_SERVICE": re.compile(r"(|[A-Za-z0-9]+(\.[A-Za-z0-9-]+)+)"),
+    # The guest image's sources, which build.py and package.py take as
+    # --system and --load-path, relative to the root of the Git repository
+    # that holds the identity file (see guest()).
+    "GUEST_SYSTEM": REPOSITORY_PATH,
+    "GUEST_LOAD_PATH": REPOSITORY_PATH,
+    # How the guest gets its account's password: package.py's --credentials
+    # (guest/guix/artifact.py CREDENTIALS).
+    "GUEST_CREDENTIALS": re.compile(r"first-boot|preset"),
 }
 
 
@@ -101,6 +114,37 @@ def icon(values, path=None):
     return path.resolve().parent / values["ICON"]
 
 
+def guest_paths(values, path=None):
+    """GUEST_SYSTEM and GUEST_LOAD_PATH resolved against the root of the Git
+    repository that tracks the identity file, which must exist as a file and
+    a directory there."""
+    path = (Path(path) if path is not None else selected()).resolve()
+    found = subprocess.run(["git", "-C", str(path.parent), "rev-parse", "--show-toplevel"],
+                           capture_output=True, text=True)
+    if found.returncode != 0:
+        raise IdentityError(f"{path}: not in a Git repository, which GUEST_SYSTEM "
+                            "and GUEST_LOAD_PATH are relative to")
+    root = Path(found.stdout.strip()).resolve()
+    # An untracked file inside another repository is not that repository's.
+    if subprocess.run(["git", "--literal-pathspecs", "-C", str(root), "ls-files",
+                       "--error-unmatch", "--",
+                       str(path.relative_to(root))], capture_output=True).returncode != 0:
+        raise IdentityError(f"{path}: not tracked by the Git repository at {root}")
+    system, load_path = root / values["GUEST_SYSTEM"], root / values["GUEST_LOAD_PATH"]
+    if not system.is_file():
+        raise IdentityError(f"{path}: GUEST_SYSTEM {system} is not a file")
+    if not load_path.is_dir():
+        raise IdentityError(f"{path}: GUEST_LOAD_PATH {load_path} is not a directory")
+    return system, load_path
+
+
+def guest(values, path=None):
+    """package.py's arguments for the guest."""
+    system, load_path = guest_paths(values, path)
+    return ["--system", str(system), "--load-path", str(load_path),
+            "--credentials", values["GUEST_CREDENTIALS"]]
+
+
 def main(argv):
     if argv == ["keys"]:
         print(" ".join(KEYS))
@@ -114,11 +158,17 @@ def main(argv):
     if argv == ["icon"]:
         print(icon(values))
         return
+    if argv == ["guest"]:
+        try:
+            print(shlex.join(guest(values)))
+        except IdentityError as error:
+            sys.exit(f"app-identity: {error}")
+        return
     if argv == ["shell"]:
         for key, value in values.items():
             print(f"{key}={shlex.quote(value)}")
         return
-    sys.exit("usage: identity.py check | shell | keys | icon")
+    sys.exit("usage: identity.py check | shell | keys | icon | guest")
 
 
 if __name__ == "__main__":

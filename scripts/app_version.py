@@ -12,13 +12,17 @@ import subprocess
 import sys
 
 
-def release_tag_prefix() -> str:
-    """The app identity's release tags: this prefix plus X.Y.Z (docs/releasing.md)."""
+def app_identity():
     path = Path(__file__).resolve().parents[1] / "macos/apps/identity.py"
     spec = importlib.util.spec_from_file_location("app_identity", path)
     identity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(identity)
-    return identity.load()["RELEASE_TAG_PREFIX"]
+    return identity
+
+
+def release_tag_prefix() -> str:
+    """The app identity's release tags: this prefix plus X.Y.Z (docs/releasing.md)."""
+    return app_identity().load()["RELEASE_TAG_PREFIX"]
 
 
 def build_version(root: Path) -> dict[str, str] | None:
@@ -63,14 +67,20 @@ def upstream_bases(root: Path, git) -> dict[str, str]:
         )
     except subprocess.CalledProcessError:
         pass
-    modules = root / "guest/guix/modules/omaguix"
+    # The guest's modules, as the identity names them; its one */guix-commit
+    # is the Guix pin, as for build.py.
+    identity = app_identity()
     try:
+        _, load_path = identity.guest_paths(identity.load())
+        omarchy = sorted(load_path.glob("*/omarchy.scm"))
         version = re.search(r'\(name "omarchy"\)\s*\(version "([^"]+)"\)',
-                            (modules / "omarchy.scm").read_text())
+                            omarchy[0].read_text()) if len(omarchy) == 1 else None
         if version:
             bases["OmaguixOmarchyVersion"] = version.group(1)
-        bases["OmaguixGuixCommit"] = (modules / "guix-commit").read_text().strip()
-    except OSError:
+        pins = sorted(load_path.glob("*/guix-commit"))
+        if len(pins) == 1:
+            bases["OmaguixGuixCommit"] = pins[0].read_text().strip()
+    except (OSError, identity.IdentityError):
         pass
     return bases
 

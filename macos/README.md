@@ -116,6 +116,9 @@ a backslash, which Make would read as a continuation.
 | --- | --- | --- |
 | `APP_NAME` | `Try Omaguix` | the app bundle's file name (`build/*.noindex/NAME.app`), the production display name and the VM helper app's name and executable |
 | `GUEST_NAME` | `Omaguix` | the guest system's name in the app's windows and messages ("Reset Omaguix", "Omaguix port"), written to `Info.plist` as `OmaguixGuestName` |
+| `GUEST_SYSTEM` | `guest/guix/system.scm` | the guest's system definition, relative to the root of the Git repository that tracks the identity file; `make guix-package` passes it to `package.py --system` |
+| `GUEST_LOAD_PATH` | `guest/guix/modules` | the guest's module directory, relative to the same root; `package.py --load-path` |
+| `GUEST_CREDENTIALS` | `first-boot` | how the guest gets its account's password, `first-boot` or `preset`; `package.py --credentials` |
 | `DEVELOPMENT_APP_NAME` | `Try Omaguix Dev` | the development display name and `make install`'s `~/Applications/NAME.app` |
 | `BUNDLE_IDENTIFIER` | `dev.tryomaguix.native` | the production bundle identifier (the VM helper adds `.vm`) |
 | `DEVELOPMENT_BUNDLE_IDENTIFIER` | `dev.tryomaguix.native.development` | the development bundle identifier |

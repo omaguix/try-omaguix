@@ -9,6 +9,7 @@ into the build scripts.
 import importlib.util
 import os
 import re
+import shlex
 from pathlib import Path
 import subprocess
 import sys
@@ -41,6 +42,9 @@ DEFAULT = {
     "RELEASE_REPOSITORY": "omaguix/try-omaguix",
     "ICON": "TryOmaguix.svg",
     "NETWORK_HELPER_SERVICE": "dev.tryomaguix.network",
+    "GUEST_SYSTEM": "guest/guix/system.scm",
+    "GUEST_LOAD_PATH": "guest/guix/modules",
+    "GUEST_CREDENTIALS": "first-boot",
 }
 
 SECOND = {
@@ -63,6 +67,9 @@ SECOND = {
     "ICON": "TryOmabend.svg",
     # No bridged-networking helper: NAT only.
     "NETWORK_HELPER_SERVICE": "",
+    "GUEST_SYSTEM": "system/image.scm",
+    "GUEST_LOAD_PATH": "system",
+    "GUEST_CREDENTIALS": "preset",
 }
 
 def as_word(value):
@@ -196,6 +203,58 @@ class IdentityTests(unittest.TestCase):
                       '  "$DEVELOPMENT_APP_NAME" "$NETWORK_HELPER_SERVICE" "$app_icon_name.icns" \\\n'
                       '  "$RELEASE_REPOSITORY" "$RELEASE_TAG_PREFIX" "$RELEASE_DMG" "$LEGACY_RELEASE_DMGS"',
                       build)
+
+    def guest_repository(self, track=True, system=True):
+        """A repository like another app's: its identity file in app/, its
+        guest in system/."""
+        repository = self.directory / "omabend-repo"
+        (repository / "app").mkdir(parents=True)
+        (repository / "system").mkdir()
+        if system:
+            (repository / "system/image.scm").write_text("(operating-system)\n")
+        path = write_identity(repository / "app/try-omabend.env", SECOND)
+        git = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        subprocess.run(["git", "init", "--quiet", str(repository)], check=True, env=git)
+        if track:
+            subprocess.run(["git", "-C", str(repository), "add", "app"], check=True, env=git)
+        return repository.resolve(), path
+
+    def test_guest_sources_are_relative_to_the_identity_files_repository(self):
+        repository, path = self.guest_repository()
+        arguments = ["--system", f"{repository}/system/image.scm",
+                     "--load-path", f"{repository}/system", "--credentials", "preset"]
+        self.assertEqual(identity.guest(SECOND, path), arguments)
+        package = self.make(path, "guix-package", "GUIX_IMAGE=/images/image.raw",
+                            "GUEST_PACKAGE_ARGUMENTS=--system /other.scm")
+        self.assertIn(shlex.join(arguments), package)
+        stale = subprocess.run(["make", "-C", str(ROOT), "-n", "guix-package",
+                                "GUIX_IMAGE=/images/image.raw", "GUIX_SYSTEM=/other.scm"],
+                               capture_output=True, text=True, env=self.environment())
+        self.assertNotEqual(stale.returncode, 0)
+        self.assertIn("GUIX_SYSTEM is gone", stale.stderr)
+
+    def test_guest_sources_need_a_repository_that_tracks_the_identity(self):
+        outside = write_identity(self.directory / "loose.env", SECOND)
+        repository, untracked = self.guest_repository(track=False)
+        # A tracked a.env does not vouch for an untracked [a].env.
+        subprocess.run(["git", "-C", str(repository), "add", "app"], check=True)
+        wildcard = write_identity(repository / "app/[t]ry-omabend.env", SECOND)
+        for path, message in ((outside, "not in a Git repository"),
+                              (wildcard, "not tracked")):
+            with self.subTest(path=path), self.assertRaises(identity.IdentityError) as caught:
+                identity.guest(SECOND, path)
+            self.assertIn(message, str(caught.exception))
+
+    def test_guest_sources_must_exist(self):
+        _, path = self.guest_repository(system=False)
+        with self.assertRaises(identity.IdentityError) as caught:
+            identity.guest(SECOND, path)
+        self.assertIn("GUEST_SYSTEM", str(caught.exception))
+        # Outside the repository is not expressible.
+        for value in ("../system/image.scm", "/system/image.scm"):
+            with self.subTest(value=value), self.assertRaises(identity.IdentityError):
+                identity.load(write_identity(self.directory / "escape.env",
+                                             {**SECOND, "GUEST_SYSTEM": value}))
 
     def test_legacy_release_disk_images_may_be_one_several_or_none(self):
         for value in ("", "TryOmaguix.dmg", "TryOmaguix.dmg,Try.Old-1.dmg"):

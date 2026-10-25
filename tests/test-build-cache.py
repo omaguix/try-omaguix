@@ -146,12 +146,11 @@ class BuildCacheTests(unittest.TestCase):
                 ["make", "-n", "guix-package", "GUIX_IMAGE=/images/image.raw", *variables],
                 cwd=REPOSITORY, check=True, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT, text=True).stdout
+        # The identity file names them (tests/test-app-identity.py covers
+        # another app's file).
         self.assertIn(
-            f'--system "{REPOSITORY}/guest/guix/system.scm" '
-            f'--load-path "{REPOSITORY}/guest/guix/modules"', package())
-        self.assertIn('--system "/other/system.scm" --load-path "/other/modules"',
-                      package("GUIX_SYSTEM=/other/system.scm",
-                              "GUIX_LOAD_PATH=/other/modules"))
+            f'--system {REPOSITORY}/guest/guix/system.scm '
+            f'--load-path {REPOSITORY}/guest/guix/modules --credentials first-boot', package())
 
     def test_development_app_is_excluded_from_spotlight(self) -> None:
         build_script = (REPOSITORY / "macos/build-app.sh").read_text()
