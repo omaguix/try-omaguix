@@ -948,6 +948,30 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   Decided by the user 2026-10-25: fork Guix with the fix and a regression
   test, open the upstream PR, and run CI's daemon from the fork-pinned
   Guix (this approves that input change).
+  Progress 2026-10-25:
+  - The fix: Guix commit "build: git: Ignore the host's Git configuration"
+    (guix/build/git.scm: an empty HOME and XDG_CONFIG_HOME inside the
+    checkout, GIT_CONFIG_NOSYSTEM, GIT_ATTR_NOSYSTEM, no GIT_CONFIG_GLOBAL,
+    GIT_CONFIG_PARAMETERS or GIT_CONFIG_COUNT), with six tests in
+    tests/git.scm, one per configuration source; all six fail without the
+    fix and pass with it, and the other twelve tests pass (guix repl -L on
+    the x86_64 MacBook; a full make check not run). Branches in a local
+    Guix clone: git-fetch-ignore-host-config on master (for the upstream
+    PR) and git-fetch-ignore-host-config-7e74121a, the same commit on the
+    pin (F, its only parent 7e74121a). Reviewed in consult rounds
+    20261025-200030-8583 (diff; sol, DeepSeek, Argon).
+  - CI: omaguix/omaguix commit 1d4e8a0 (local, not pushed): scripts/
+    guix-base makes G' on F while the channel's modules/omaguix/guix-fork
+    names it, scripts/ci-guix-daemon switches the build job's daemon to
+    P's through socket activation (replacing ci-install-guix's socket poll
+    loop). try-omaguix commit 4ada197f (branch guix-fork, not merged):
+    release.json records guix-fork, decision 0007 says when the file
+    exists. Design round 20261025-195532-b4c7 chose this (option 2: sol,
+    MiMo, DeepSeek; Argon conditional).
+  - Waiting on the user: a Codeberg token (in the maintainer's config) to
+    fork guix/guix under their account, push both branches and open the
+    PR. Then: write modules/omaguix/guix-fork, publish the channel, push
+    1d4e8a0, rerun CI for the new channel commit and release.py --resume.
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
