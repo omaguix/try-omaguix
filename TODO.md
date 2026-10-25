@@ -223,14 +223,6 @@
 
 
 
-- [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
-  Decided by the user 2026-10-12: "yes, after acceptance". Proposed
-  2026-10-12 by the Metal worker (models: after end-to-end
-  acceptance, to startergo/homebrew-virglrenderer first): offer
-  macos/patches/virgl-angle-multisample.patch upstream once Metal is the
-  default and LibreWolf and Chromium pass (Metal became the default
-  2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
-
 - [ ] release.py resumes from an existing CI run [t-omaresum]
   Follow-up of the release step, decided by the user 2026-10-12
   (d-6ff4fe5q). An option to resume guest/guix/release.py from a finished
@@ -833,6 +825,20 @@
   the move).
 
 ## Needs a decision
+
+- [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
+  Decided by the user 2026-10-12: "yes, after acceptance". Proposed
+  2026-10-12 by the Metal worker (models: after end-to-end
+  acceptance, to startergo/homebrew-virglrenderer first): offer
+  macos/patches/virgl-angle-multisample.patch upstream once Metal is the
+  default and LibreWolf and Chromium pass (Metal became the default
+  2026-10-12, commit "macos: run guests on ANGLE/Metal by default"). Cost: a short PR; no build.
+  Checked 2026-10-25: the condition is not met. LibreWolf passed, but
+  Chromium on Metal is [t-wgeohswx] in "Proposed", waiting for CI to build
+  ungoogled-chromium for aarch64.
+  Offer the patch upstream now on LibreWolf's evidence, or wait for Chromium?
+  Options: wait until [t-wgeohswx] passes, as decided (recommended) | offer
+  it now, saying Chromium is unchecked | drop the offer.
 
 ### Background: renaming to Omaguix (2026-10-12)
 
