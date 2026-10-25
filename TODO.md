@@ -988,6 +988,16 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
     with omaguix/omaguix 1d4e8a0. Check: `gh run view 40226841921 -R
     omaguix/omaguix`; if a step after CI fails, `release.py --resume
     40226841921`. lang-for-ai's pin b0672e97 stays on its release branch.
+    Result: both builds passed, so the Odin checkout matched with P's daemon
+    and ci-guix-daemon worked. The split failed: "per-machine item to
+    publish: ...-guix-system", the (guix self) node in P's closure, which is
+    no longer bordeaux's since the fork patches a core module. Fixed in
+    omaguix/omaguix f165d29: desktop-split exempts items in P's closure
+    (consult rounds 20261025-224541-3068 and 20261025-224853-a63b).
+    Rebuilt by the dispatched run
+    https://github.com/omaguix/omaguix/actions/runs/40237431387 for the same
+    channel commit (log try-omaguix-release-7.log), followed by
+    `release.py --resume 40237431387`.
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
