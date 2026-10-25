@@ -144,6 +144,13 @@
   /usr/local/sbin/omaguix-release-import TAG, which is vps-import in static
   mode with the substitutes.omaguix.org key and never prunes; installed from
   omaguix/omaguix a199f54. The local .env names it as VPS_IMPORT.
+  Running since 2026-10-25 13:58 (this session's background job; log in
+  the maintainer's state directory, try-omaguix-release-1.log): channel
+  commit 892311c4f4d23cf29f985545ed14a64dd3083856 on release/892311c4
+  (from try-omaguix 0342093b), CI run
+  https://github.com/omaguix/omaguix/actions/runs/40195990260. Check:
+  `gh run view 40195990260 -R omaguix/omaguix`; if CI succeeds and a later
+  step fails, `release.py --resume 40195990260`.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
