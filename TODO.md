@@ -449,6 +449,15 @@
   one is installed, and also deletes the old "Try Roguix Development"
   certificate from the renamed keychain with `security`; the user clicks the
   Screen Recording and Accessibility prompts once the app is installed.
+  Done 2026-10-25: no `dev.tryroguix.network` LaunchDaemon exists (no plist
+  in /Library/LaunchDaemons, launchd knows no such service). The renamed
+  keychain held exactly the old key and its "Try Roguix Development"
+  certificate (and its password file no longer opened it); it was deleted
+  and `make signing-identity` created "Try Omaguix Development"
+  (BA4AA633...) in a new try-omaguix-development keychain. Still open: the
+  check (`make app` from a clean tree, launch under the new identity), which
+  waits on [t-u6g6m27m]; then the user's privacy prompts and the Karabiner
+  check while the app runs.
 
 - [ ] Fetch the virglrenderer tap with git at a fixed commit [t-u6g6m27m]
   Found 2026-10-19 while verifying the landed rename. `make app` on a clean
