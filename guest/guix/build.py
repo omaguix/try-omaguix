@@ -147,7 +147,9 @@ def build(args):
     ]
     if args.check:
         command.remove(f"--root={output}")
-        command.insert(-1, "--dry-run")
+        # Without grafts the dry run evaluates the whole system; with them it
+        # stops at the first graft it would have to build to go on.
+        command[-1:-1] = ["--dry-run", "--no-grafts"]
     if args.dry_run:
         print(f"Authenticated local channel: {source} at {commit}")
         print(f"Keyring: {keyring}; official Guix introduction retained")

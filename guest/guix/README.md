@@ -74,7 +74,11 @@ build or check without it, and only `--dry-run` goes without.
 
 Unlike `--dry-run`, `--check` actually runs Guix and needs Linux, network access
 and a daemon. It can download/build Guix itself and instantiate derivations,
-but does not build the guest image or publish an output/GC root. An existing
+but does not build the guest image or publish an output/GC root. It evaluates
+the system without grafts (`--dry-run --no-grafts`): with grafts Guix's dry run
+stops at the first graft it would have to build and never reaches most of the
+system, so the check proves that the whole ungrafted system evaluates, not that
+its grafts build. An existing
 image is left alone during checks. A failing Guix command propagates a nonzero
 exit status, and the temporary channel repository is removed on either outcome.
 

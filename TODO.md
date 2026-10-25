@@ -225,16 +225,6 @@
 
 
 
-- [ ] `build.py --check` evaluates the whole system [t-fxujivca]
-  Follow-up of [t-omamanif] (builder check 2026-10-16): `build.py --check`
-  exits 0 after Guix's dry run stops at the first graft build needed during
-  evaluation, so it never reaches most of the system (here, the new
-  `computed-file`). A full `system image --dry-run --no-grafts` did evaluate
-  it. Make `--check` evaluate everything, for example by adding
-  `--no-grafts` to the check; it changes what `--check` proves, so say so in
-  the README.
-  Decided by the user 2026-10-16 (d-pzltgwuu): approved, moved to Next.
-
 - [ ] `vm-run` drops lines of the guest log [t-gmgkzhns]
   Found 2026-10-16 by the [t-omamanif] worker: the host-side log lacked lines
   24-40 of the guest's own log, and a short grep through `vm-run` exited 0

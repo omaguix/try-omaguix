@@ -134,7 +134,7 @@ class BuildTests(unittest.TestCase):
         output = io.StringIO()
         with self.git(), contextlib.redirect_stdout(output):
             builder.build(self.args)
-        self.assertIn("--dry-run", output.getvalue())
+        self.assertIn("--dry-run --no-grafts", output.getvalue())
         self.assertNotIn("--root=", output.getvalue())
         self.assertEqual(self.args.output.read_text(), "existing image")
 
