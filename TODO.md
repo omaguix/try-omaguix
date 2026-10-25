@@ -244,16 +244,6 @@
   (d610bc0c) lacks %roguix-reference-system, so the first run must be a
   release.py run with a channel commit from current try-omaguix.
 
-- [ ] Tagline and topics: "Omaguix: Omarchy on Guix System" [t-omatagln]
-  Asked 2026-10-12 (round 20261012-191411-5986; updated for the 2026-10-14
-  Omaguix rename): put "Omaguix: Omarchy on Guix System" in README and in
-  the descriptions of omaguix/try-omaguix, omaguix/omaguix and
-  omaguix/omaguix-channel, with a short "independent, not affiliated with
-  Omarchy" line in README (nominative use, no endorsement implied). Topics:
-  omarchy, guix, guix-system, hyprland on all three; macos and
-  virtual-machine on try-omaguix. Repository descriptions and topics are
-  GitHub settings (gh repo edit); README is a docs commit.
-
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
   shell suites create scratch directories under `/private/tmp`

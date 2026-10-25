@@ -4,6 +4,9 @@
 
 <h1 align="center">Try Omaguix</h1>
 
+<p align="center"><strong>Omaguix: Omarchy on Guix System.</strong><br>
+An independent project, not affiliated with or endorsed by Omarchy.</p>
+
 Run a [Guix System](https://guix.gnu.org) desktop with the
 [Omarchy](https://omarchy.org) 4 look (Hyprland, its Quickshell bar, menu and
 themes) as a native, hardware-accelerated app on an Apple Silicon Mac.
