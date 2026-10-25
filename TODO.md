@@ -138,6 +138,8 @@
   Decided by the user 2026-10-25: a roguix-vps session the user starts
   prepares it; this item waits for its report (the wrapper's path for
   VPS_IMPORT), then runs release.py.
+  Sent 2026-10-25 to the omaguix-vps space's session (omaguix-vps-0a,
+  a roguix-vps checkout), with the t-omabkfil closure and decision 0008.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
