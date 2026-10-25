@@ -519,6 +519,25 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
 
 ## Proposed
 
+- [ ] omaguix-channel 9404d6d1 does not build: `odin: unknown package` [t-odinsysld]
+  Reported by lang-for-ai [t-odinguix] 2026-10-25 (same route the user
+  chose for t-odinx86p). With channel commit
+  9404d6d18304281a549b0abee8cd1710ac5fc400, the channel derivation itself
+  fails while compiling the modules: its build log is only
+  `guix repl: error: odin: unknown package`. Seen on aarch64 (lang-for-ai's
+  gate guest, guix dda91ea6, /gnu/store/4ylk1n8b8vmj5s743hh2wczabcci65zj-omaguix.drv)
+  and on the x86_64 MacBook (run /root/runs/lfa-9404, guix 7e74121a,
+  /gnu/store/andn2z7l4774wr2061lynms9wh155r0v-omaguix.drv). Likely cause:
+  modules/omaguix/system.scm:413-414 defines `%omaguix-reference-system`
+  as `(settings-operating-system '() #:packages '("odin"))`, evaluated when
+  the module loads, so `specification->package "odin"` runs while the
+  channel is compiled, before (omaguix odin) is in the package cache.
+  72b55436 built (it had no such line). Blocks lang-for-ai [t-odinguix],
+  which the user approved to pin the fixed odin of 9404d6d1. Logs:
+  ~/personal_projects/lang-for-ai/build/odinguix/prepare4.log and
+  x86-omaguix-channel-build.log. Cost: a module-level change, rebuild on
+  both architectures.
+
 - [ ] static-tree: a prune without downloads, and a free-space check [t-stprune]
   Asked 2026-10-25 by omaguix-vps (its consult round
   20261025-135551-7597, sol, MiMo, DeepSeek, Argon): in omaguix/omaguix's
