@@ -399,6 +399,37 @@
     (commit and OpenPGP fingerprint).
   - No fixed date; it is next in their queue and blocks their items
     [t-odinguix], [t-c22a5by], [t-n77zk7ia] and later [t-fcarzsiy].
+  Started 2026-10-25 by the user's go ("tak"). Done in this repository:
+  `(omaguix odin)` (`guest/guix/modules/omaguix/odin.scm`) packages Odin
+  dev-2026-10 from its git tag against llvm-22 (Odin 2026-10 supports LLVM
+  17-22, Guix 7e74121a has 14-23 with llvm-22 the default), so no pin choice
+  was needed. `bin/odin` wraps the compiler with clang-toolchain-22's `bin`
+  first on PATH: the first version patched clang's path into `linker.cpp`
+  and passed its in-build test, but `odin test` failed in `guix shell --pure`
+  ("posix_spawn failed": clang found no `ld`); the in-build check now runs
+  with an empty PATH and asserts `odin version`. The compiler finds its root
+  through `/proc/self/exe`, so no ODIN_ROOT. The source snippet drops the
+  prebuilt Windows tools and the whole `vendor/` collection (prebuilt
+  libraries, bundled third-party sources under other licenses); an empty
+  `vendor/` is installed because the compiler refuses to start without it.
+  Verified on aarch64-linux in the builder: build, `guix build --check`
+  identical, `guix lint` clean, and in `guix shell --pure` with only odin:
+  `odin version` (dev-2026-10), `odin check` of a `core` package, a type
+  error rejected, `odin test` passing with 1 and 2 threads. Consult round
+  20261025-103958-6e61 (sol, deepseek, argon) reviewed the diff; acted on:
+  scope the empty PATH to the check (sol, deepseek), assert the version
+  (deepseek), empty `vendor/` for licensing (sol), `file-append` for the
+  toolchain path and drop a no-op LLVM_CONFIG (deepseek); dismissed as
+  false after checking: argon's claims that `wrap-program` follows the
+  link, that the build mixes gcc and clang, and that the release build uses
+  `-march=native`.
+  Limits of this package, informational: `vendor:` imports do not resolve,
+  so `core:sys/wasm/js` (which imports `vendor:`) cannot be checked; on
+  x86_64 `-no-crt` programs need `nasm` for Odin's amd64 entry assembly,
+  which the package does not provide (`odin test` never uses it).
+  Remaining: publish a channel commit for the requester (outward: a signed
+  push to the channel repository, asked of the user), then the x86_64 build
+  and test, then substitutes.
 
 ## Proposed
 
@@ -1474,3 +1505,9 @@ mounted by the time the copy started, so the first copy wrote a non-sparse
 This note is here because the move was done by the lang-for-ai coordinator, not by
 this repository's; nothing else about this project changed. After the move the M1
 has 77 GB free instead of 27 GB.
+Builder disk back on the M1 2026-10-25: the pendrive slipped out while the
+builder ran from it (guest I/O errors, ext4 remounted read-only; the boot fsck
+repaired it, only `/var/log/messages` lost writes, and `guix gc
+--verify=contents` found the store intact). The pendrive copy is untouched; the
+builder now runs from `.build/guix-validation/builder.qcow2`, a compressed
+`qemu-img convert` of it (6.5 GB, `qemu-img compare` identical).

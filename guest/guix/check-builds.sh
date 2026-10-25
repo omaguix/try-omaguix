@@ -26,8 +26,8 @@ ${GUIX:-guix} repl -L "$modules/.." -- /dev/stdin > "$names" <<'SCHEME'
           (format #t "~a-~a~%" (package-name package)
                   (package-version package)))))
     (resolve-module name)))
- '((omaguix packages) (omaguix apps) (omaguix omarchy) (omaguix integrations)
-   (omaguix services) (omaguix system) (omaguix ttfx)))
+ '((omaguix packages) (omaguix apps) (omaguix odin) (omaguix omarchy)
+   (omaguix integrations) (omaguix services) (omaguix system) (omaguix ttfx)))
 SCHEME
 ours=$(sort -u "$names")
 [[ -n $ours ]] || { echo "check-builds: found no Omaguix packages" >&2; exit 2; }
