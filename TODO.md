@@ -315,7 +315,7 @@
   Requested by the user 2026-10-24, relayed by the lang-for-ai coordinator
   (pane wDC:pJ2): "Omaguix needs this odin package, with substitutes for both
   architectures. Ask the models."
-  Why it is wanted: lang-for-ai's task set (its item 0A.10, [t-rxiq9hvl])
+  Why it is wanted: lang-for-ai's task set (its item 0A.10, [t-n77zk7ia])
   needs `odin check` and `odin test` in a pinned Guix environment on aarch64
   (its gate guest) and x86_64 (the 2010 MacBook). Upstream Guix has no odin
   package (`guix show: error: odin: package not found` at Guix dda91ea6).
@@ -381,6 +381,24 @@
   - Both clones still use the old names (`(roguix system)`), so
     `omaguix/omaguix`'s workflow and scripts must move to the renamed modules
     before any of this can be released ([t-omarelfs]).
+  Requirements from the lang-for-ai coordinator 2026-10-25 (asked at the
+  user's request; they narrow the first slice):
+  - Release: the newest `dev-YYYY-MM` whose LLVM major matches llvm at Guix
+    7e74121a; if none matches, the user's choice above stands. A release with
+    Odin's flow-based escape analysis (upstream master since 2026-10-07, after
+    dev-2026-10) is wanted later; nothing waits on it.
+  - Scope: `odin check` and `odin test` on one-file and small packages using
+    `core` only, so clang, lld and libc on PATH; no vendor libraries, no
+    `odin build` beyond what `odin test` does. Layout and check phase as in 1.
+  - aarch64-linux first; x86_64-linux later, for a measurement on an x86_64
+    Guix host.
+  - A channel commit with the package and no substitutes is already useful:
+    they build it in their guest, through a channels file pinning Guix
+    7e74121a plus this channel, so the package only has to build at this
+    repository's Guix pin. Send them the channel commit and its introduction
+    (commit and OpenPGP fingerprint).
+  - No fixed date; it is next in their queue and blocks their items
+    [t-odinguix], [t-c22a5by], [t-n77zk7ia] and later [t-fcarzsiy].
 
 ## Proposed
 
