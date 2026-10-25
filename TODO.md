@@ -981,6 +981,13 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
     since the patch is AI-written and GNU Guix (like GCC) likely does not
     accept such contributions. Reporting the bug upstream is left to the
     user (an issue they write); the fork stays until Guix fixes it.
+  - Release run since 2026-10-25 (log try-omaguix-release-6.log): channel
+    commit 3306d683143068b09ae844b7761d79c9ef22cb1e on release/3306d683
+    (from try-omaguix 5689e27d, with guix-fork), CI run
+    https://github.com/omaguix/omaguix/actions/runs/40226841921, the first
+    with omaguix/omaguix 1d4e8a0. Check: `gh run view 40226841921 -R
+    omaguix/omaguix`; if a step after CI fails, `release.py --resume
+    40226841921`. lang-for-ai's pin b0672e97 stays on its release branch.
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
