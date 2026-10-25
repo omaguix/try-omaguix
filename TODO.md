@@ -427,9 +427,15 @@
   so `core:sys/wasm/js` (which imports `vendor:`) cannot be checked; on
   x86_64 `-no-crt` programs need `nasm` for Odin's amd64 entry assembly,
   which the package does not provide (`odin test` never uses it).
-  Remaining: publish a channel commit for the requester (outward: a signed
-  push to the channel repository, asked of the user), then the x86_64 build
-  and test, then substitutes.
+  Published 2026-10-25 with the user's go: channel commit
+  `72b55436467cb2677777d81259d46b968b386461` (branch `release/<commit>`, not
+  on the channel's `main`). Checked as the requester will use it, in the
+  builder: a channels file pinning Guix 7e74121a and this commit with the
+  channel's introduction, `guix time-machine -C` authenticated it, and
+  `shell --pure -m` with only `odin` ran `odin version`, `odin check` and
+  `odin test`. Commit and introduction sent to the lang-for-ai session.
+  Remaining: the x86_64 build and test (the 2010 MacBook), then substitutes
+  for both architectures with a release.
 
 ## Proposed
 
