@@ -225,15 +225,6 @@
 
 
 
-- [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
-  Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
-  shell suites create scratch directories under `/private/tmp`
-  (`macos/Tests/qemu-monitor-ready.test.sh:10`, `network-helper.test.sh:4`,
-  `runtime-relocation.test.sh:26`, `qemu-memory-contract.test.sh:35`), which a
-  headless worker's sandbox cannot write and which collide in parallel runs.
-  Use `TMPDIR`; sockets, `ps` and `codesign` still need a pane worker.
-  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
-
 - [ ] The storage helper's messages name "Reset Omaguix" [t-imgr6n4p]
   Follow-up of the app rename (61d00144; review rounds 20261016-144822-3e03,
   20261016-144944-b189, 20261016-145303-b71d): `macos/qemu-persistent-storage.sh`
@@ -798,6 +789,25 @@
   the move).
 
 ## Needs a decision
+
+- [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
+  Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
+  shell suites create scratch directories under `/private/tmp`
+  (`macos/Tests/qemu-monitor-ready.test.sh:10`, `network-helper.test.sh:4`,
+  `runtime-relocation.test.sh:26`, `qemu-memory-contract.test.sh:35`), which a
+  headless worker's sandbox cannot write and which collide in parallel runs.
+  Use `TMPDIR`; sockets, `ps` and `codesign` still need a pane worker.
+  Decided by the user 2026-10-16 (d-nma3lspc): approved, moved to Next.
+  Checked 2026-10-25: every listed suite still needs a pane worker
+  (network-helper and runtime-relocation run codesign; qemu-monitor-ready
+  and qemu-memory-contract use Unix sockets whose paths the launcher and
+  QMPConnection accept only under /tmp, kept short for the 104-byte limit;
+  TMPDIR here is 49 characters). `mktemp -d ...XXXXXX` already makes unique
+  names, so parallel runs do not collide. The four files are Try Omarchy's
+  (upstream), so a change costs a conflict on every rebase.
+  Drop the item, since it frees no suite for a headless worker?
+  Options: drop it (recommended) | move only the codesign suites to TMPDIR
+  anyway | offer the change to Try Omarchy upstream.
 
 - [ ] Offer the ANGLE multisample fix to startergo's virglrenderer tap [t-omaangle]
   Decided by the user 2026-10-12: "yes, after acceptance". Proposed
