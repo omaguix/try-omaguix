@@ -225,25 +225,6 @@
 
 
 
-- [ ] release.py resumes from an existing CI run [t-omaresum]
-  Follow-up of the release step, decided by the user 2026-10-12
-  (d-6ff4fe5q). An option to resume guest/guix/release.py from a finished
-  CI run of the same channel commit, so a failed VPS import or closure
-  check does not need a new multi-hour CI build. No build.
-
-  Note for both: the release step works only after omaguix/omaguix adds the
-  `channel_commit` workflow input and the `split-*` artifacts (sent to the
-  guix-x86_64-iso-omguix coordinator 2026-10-12) and `.env` gets
-  `VPS_IMPORT` (the roguix-vps coordinator, 2026-10-12: installed at
-  `/usr/local/sbin/vps-import` on root@vps.frolow.dev port 1027, roguix
-  e1e2d64, also on root's PATH as vps-import; the release.py-resume worker
-  sets it in the local `.env`). omaguix/omaguix's side is done (the
-  guix-x86_64-iso-omguix coordinator, 2026-10-12, roguix commit 356d2db1):
-  build-desktop.yml takes `channel_commit`, authenticates the channel,
-  uploads the `split-*` artifacts; not run in CI yet. The channel's main
-  (d610bc0c) lacks %roguix-reference-system, so the first run must be a
-  release.py run with a channel commit from current try-omaguix.
-
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
   shell suites create scratch directories under `/private/tmp`

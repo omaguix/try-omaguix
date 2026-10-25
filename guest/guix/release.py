@@ -5,7 +5,9 @@ docs/decisions/0006-one-roguix-release-step.md: publish-channel pushes the
 channel commit C to release/C, omaguix/omaguix's CI builds C for every
 architecture, the VPS imports CI's releases, every package item is checked on
 a server, and only then a signed release.json on top of C moves the channel's
-main. Any failure stops before main moves.
+main. Any failure stops before main moves. `--resume RUN` finishes from a
+CI run of a commit already on release/C, so a failed VPS import or coverage
+check does not need another build.
 
 A release must not name an older Guix than the previous one
 (docs/decisions/0007): when the pin changed, .env's GUIX_CHECKOUT, a Git
@@ -32,6 +34,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 CI_REPO = "omaguix/omaguix"
 WORKFLOW = "build-desktop.yml"
+WORKFLOW_NAME = "build-desktop"
 # Matrix system -> artifact and release prefix in CI's workflow.
 ARCHITECTURES = {"aarch64-linux": "aarch64-desktop",
                  "x86_64-linux": "x86_64-desktop"}
@@ -43,6 +46,7 @@ ARTIFACT_LISTS = ("publish.txt", "vps-fetch.txt", "vps-has.txt",
 # The patch CI applies to the pinned Guix before building the Guix that VMs
 # move to another pin with (docs/decisions/0007): its path in the channel.
 GUIX_PATCH = "modules/omaguix/guix-skip-forward-check.patch"
+PIN_FILE = "modules/omaguix/guix-commit"
 COMMIT_ID = re.compile(r"[0-9a-f]{40}")
 # A direct store item, as Guix names one (nix-base32 hash).
 STORE_ITEM = re.compile(r"/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+")
@@ -63,7 +67,7 @@ def omaguix_server():
 
 
 def guix_pin():
-    return (HERE / "modules" / "omaguix" / "guix-commit").read_text().strip()
+    return (HERE / PIN_FILE).read_text().strip()
 
 
 def guix_patch_sha256():
@@ -324,12 +328,21 @@ def plan(try_omaguix, pin, channel, env, omaguix):
         f"3. for each architecture's CI release: {ssh};"
         f" every package item served by {BORDEAUX} or {omaguix}",
         f"4. {MANIFEST} signed on C, pushed to main; release/C deleted",
+        "--resume RUN: steps 3 and 4 from finished CI run RUN of a published"
+        " C, with the pin, patch and try-omaguix commit C carries",
     ])
 
 
 def release(args):
     channel = args.channel.resolve()
     omaguix = omaguix_server()
+    if args.resume:
+        env = read_env(ROOT / ".env") if (ROOT / ".env").is_file() else {}
+        if args.dry_run:
+            print(plan("(from C)", "(from C)", channel, env, omaguix))
+            return
+        resume(args, env, omaguix)
+        return
     pin = guix_pin()
     patch_sha256 = guix_patch_sha256()
     if run(["git", "-C", str(ROOT), "status", "--porcelain", "--",
@@ -351,17 +364,42 @@ def release(args):
                              env.get("GUIX_CHECKOUT"))
     number = run_id(run(["gh", "workflow", "run", WORKFLOW, "-R", CI_REPO,
                          "-f", f"channel_commit={commit}"]))
+    ci_run = wait_for_run(number)
+    with tempfile.TemporaryDirectory(prefix="omaguix-release-") as tmp:
+        download_splits(number, tmp)
+        builds = read_builds(Path(tmp), commit, pin, patch_sha256)
+    finish(channel, commit, try_omaguix, pin, patch_sha256, ci_run, builds,
+           env, omaguix)
+
+
+def wait_for_run(number):
+    """CI run NUMBER of WORKFLOW once it ended successfully."""
+    view = ["gh", "run", "view", number, "-R", CI_REPO, "--json",
+            "databaseId,url,headSha,conclusion,workflowName"]
+    # Before hours of watching: a run of another workflow is refused at once.
+    workflow = json.loads(run(view))["workflowName"]
+    if workflow != WORKFLOW_NAME:
+        raise ReleaseError(f"CI run {number} is {workflow!r}, "
+                           f"not {WORKFLOW_NAME!r}")
     # gh polls GitHub's API until the run ends (external polling).
     # delay: GitHub API polling, one request a minute for a run of hours.
     run(["gh", "run", "watch", number, "-R", CI_REPO, "--exit-status",
          "--compact", "--interval", "60"], capture=False)
-    ci_run = json.loads(run(["gh", "run", "view", number, "-R", CI_REPO,
-                             "--json", "databaseId,url,headSha,conclusion"]))
+    ci_run = json.loads(run(view))
     if ci_run["conclusion"] != "success":
         raise ReleaseError(f"CI run {number} ended {ci_run['conclusion']}")
-    with tempfile.TemporaryDirectory(prefix="omaguix-release-") as tmp:
-        run(["gh", "run", "download", number, "-R", CI_REPO, "-D", tmp])
-        builds = read_builds(Path(tmp), commit, pin, patch_sha256)
+    return ci_run
+
+
+def download_splits(number, directory):
+    """Only the split-PREFIX lists: the run's other artifacts hold archives."""
+    run(["gh", "run", "download", number, "-R", CI_REPO, "-D", str(directory),
+         "--pattern", "split-*"])
+
+
+def finish(channel, commit, try_omaguix, pin, patch_sha256, ci_run, builds,
+           env, omaguix):
+    """The VPS imports, the coverage check and the manifest that moves main."""
     for build in builds.values():
         if build["release"]:
             vps_import(env, build["release"])
@@ -370,6 +408,64 @@ def release(args):
         channel, commit,
         manifest(commit, try_omaguix, pin, patch_sha256, ci_run, builds, served))
     print(f"release: channel main is {head}, built by {ci_run['url']}")
+
+
+def run_commit(directory):
+    """The one channel commit the downloaded splits were built from."""
+    found = set()
+    for prefix in ARCHITECTURES.values():
+        path = Path(directory) / f"split-{prefix}" / "channel-commit.txt"
+        found.add(path.read_text().strip() if path.is_file() else None)
+    if len(found) != 1 or not COMMIT_ID.fullmatch(next(iter(found)) or ""):
+        raise ReleaseError("the run's splits name no single channel commit: "
+                           f"{sorted(map(str, found))}")
+    return found.pop()
+
+
+def channel_inputs(channel, commit):
+    """The Guix pin, the patch's SHA-256 and the full try-omaguix commit that
+    channel commit COMMIT carries, as publish-channel made it."""
+    pin = git(channel, "show", f"{commit}:{PIN_FILE}").strip()
+    if not COMMIT_ID.fullmatch(pin):
+        raise ReleaseError(f"{commit}:{PIN_FILE} is {pin!r}")
+    patch = subprocess.run(["git", "-C", str(channel), "show",
+                            f"{commit}:{GUIX_PATCH}"], capture_output=True)
+    if patch.returncode != 0:
+        raise ReleaseError(f"channel commit {commit} has no {GUIX_PATCH}")
+    subject = git(channel, "log", "-1", "--format=%s", commit).strip()
+    found = re.fullmatch(r"Omaguix from try-omaguix ([0-9a-f]{7,40})", subject)
+    if not found:
+        raise ReleaseError(f"channel commit {commit} names no try-omaguix "
+                           f"commit: {subject!r}")
+    try_omaguix = run(["git", "-C", str(ROOT), "rev-parse", "--verify",
+                       f"{found.group(1)}^{{commit}}"]).strip()
+    return pin, hashlib.sha256(patch.stdout).hexdigest(), try_omaguix
+
+
+def resume(args, env, omaguix):
+    """Finish a release from CI run args.resume of a published channel
+    commit, without publishing or building again."""
+    if not args.resume.isdigit():
+        raise ReleaseError(f"--resume takes a run id, not {args.resume!r}")
+    channel = args.channel.resolve()
+    ci_run = wait_for_run(args.resume)
+    with tempfile.TemporaryDirectory(prefix="omaguix-release-") as tmp:
+        download_splits(args.resume, tmp)
+        commit = run_commit(tmp)
+        # release/C points at C until C is released: a released run, or a
+        # branch that moved, is not resumed.
+        remote = git(channel, "ls-remote", "origin",
+                     f"refs/heads/release/{commit}").split()
+        if remote[:1] != [commit]:
+            raise ReleaseError(f"the channel's release/{commit} is "
+                               f"{remote[:1] or 'absent'}, not {commit}")
+        git(channel, "fetch", "--quiet", "origin", "main", f"release/{commit}")
+        pin, patch_sha256, try_omaguix = channel_inputs(channel, commit)
+        check_guix_moves_forward(previous_pin(channel, commit), pin,
+                                 env.get("GUIX_CHECKOUT"))
+        builds = read_builds(Path(tmp), commit, pin, patch_sha256)
+    finish(channel, commit, try_omaguix, pin, patch_sha256, ci_run, builds,
+           env, omaguix)
 
 
 def main():
@@ -381,6 +477,9 @@ def main():
         help="the omaguix channel checkout (OMAGUIX_CHANNEL_DIR)")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the steps and change nothing")
+    parser.add_argument("--resume", metavar="RUN",
+                        help="finish from CI run RUN of a published channel "
+                        "commit: no new channel commit or build")
     args = parser.parse_args()
     try:
         release(args)

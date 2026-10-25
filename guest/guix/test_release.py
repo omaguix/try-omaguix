@@ -1,6 +1,7 @@
 """The release step moves the channel's main only for a fully served build
 of the commit it published (docs/decisions/0006-one-roguix-release-step.md)."""
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -372,6 +373,60 @@ class PublishManifestTests(unittest.TestCase):
                          self.commit)
 
 
+class ResumeTests(unittest.TestCase):
+    """--resume takes the channel commit from the run and the rest from it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = Path(self.tmp.name)
+
+    def test_the_run_names_one_channel_commit(self):
+        for system in release.ARCHITECTURES:
+            write_artifact(self.dir / "same", system)
+        self.assertEqual(release.run_commit(self.dir / "same"), COMMIT)
+
+    def test_splits_of_different_or_missing_commits_are_refused(self):
+        systems = list(release.ARCHITECTURES)
+        write_artifact(self.dir / "mixed", systems[0])
+        write_artifact(self.dir / "mixed", systems[1], commit="d" * 40)
+        write_artifact(self.dir / "half", systems[0])
+        for name in ("mixed", "half"):
+            with self.assertRaises(release.ReleaseError):
+                release.run_commit(self.dir / name)
+
+    def test_pin_patch_and_try_omaguix_come_from_the_channel_commit(self):
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+                   GIT_AUTHOR_NAME="T", GIT_AUTHOR_EMAIL="t@example.com",
+                   GIT_COMMITTER_NAME="T", GIT_COMMITTER_EMAIL="t@example.com")
+        channel = self.dir / "channel"
+        pin_file = channel / release.PIN_FILE
+        pin_file.parent.mkdir(parents=True)
+        pin_file.write_text("a" * 40 + "\n")
+        (channel / release.GUIX_PATCH).write_bytes(b"a patch\n")
+        head = subprocess.run(["git", "-C", str(release.ROOT), "rev-parse",
+                               "HEAD"], text=True, capture_output=True,
+                              check=True).stdout.strip()
+        for command in (["init", "--quiet"], ["add", "-A"],
+                        ["commit", "--quiet", "-m",
+                         f"Omaguix from try-omaguix {head[:9]}"]):
+            subprocess.run(["git", "-C", str(channel), *command], env=env,
+                           check=True, capture_output=True)
+        commit = subprocess.run(["git", "-C", str(channel), "rev-parse", "HEAD"],
+                                text=True, capture_output=True,
+                                check=True).stdout.strip()
+        pin, sha256, try_omaguix = release.channel_inputs(channel, commit)
+        self.assertEqual(pin, "a" * 40)
+        self.assertEqual(sha256, hashlib.sha256(b"a patch\n").hexdigest())
+        self.assertEqual(try_omaguix, head)
+
+    def test_resume_takes_a_run_id(self):
+        args = type("Args", (), {"resume": "latest", "channel": self.dir})
+        with self.assertRaises(release.ReleaseError):
+            release.resume(args, {}, "https://omaguix.example")
+
+
 class DryRunTests(unittest.TestCase):
     def test_names_the_steps_and_changes_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -383,6 +438,17 @@ class DryRunTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("channel_commit=C", result.stdout)
             self.assertIn(release.omaguix_server(), result.stdout)
+            self.assertEqual(os.listdir(tmp), [])
+
+    def test_a_resume_dry_run_changes_nothing_either(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [sys.executable, str(HERE / "release.py"), "--dry-run",
+                 "--resume", "123", "--channel", tmp],
+                text=True, capture_output=True,
+                env={**os.environ, "PATH": tmp})  # no gh, git or ssh to run
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("--resume RUN", result.stdout)
             self.assertEqual(os.listdir(tmp), [])
 
 
