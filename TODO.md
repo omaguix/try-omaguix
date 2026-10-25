@@ -140,6 +140,10 @@
   VPS_IMPORT), then runs release.py.
   Sent 2026-10-25 to the omaguix-vps space's session (omaguix-vps-0a,
   a roguix-vps checkout), with the t-omabkfil closure and decision 0008.
+  Answered 2026-10-25 by omaguix-vps (its dfe7a3c, owner-run): the VPS runs
+  /usr/local/sbin/omaguix-release-import TAG, which is vps-import in static
+  mode with the substitutes.omaguix.org key and never prunes; installed from
+  omaguix/omaguix a199f54. The local .env names it as VPS_IMPORT.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
@@ -469,6 +473,20 @@
   to git.
 
 ## Proposed
+
+- [ ] static-tree: a prune without downloads, and a free-space check [t-stprune]
+  Asked 2026-10-25 by omaguix-vps (its consult round
+  20261025-135551-7597, sol, MiMo, DeepSeek, Argon): in omaguix/omaguix's
+  scripts/static-tree, (1) `static-tree prune --directory DIR --key KEY
+  --keep N`, the existing prune() under DIR/.roguix/lock with no network,
+  verifying the live set before deleting and reporting the tags kept and
+  bytes freed (run by the owner after both architectures of a release are
+  imported, never on a timer); (2) a check in `pull` and `install` before
+  any download that the assets, the unpacked tree and a reserve
+  (`--min-free BYTES`) fit, since the VPS also hosts databases. `pull
+  --keep N` re-downloads before it deletes, so it needs the most disk when
+  disk is short. omaguix-vps waits for the commit. Cost: Python and tests in
+  omaguix/omaguix; no build.
 
 - [ ] Odin's check phase fails on x86_64 hosts without POPCNT [t-odinx86p]
   Reported by lang-for-ai [t-odinguix] 2026-10-25; the user chose to file
