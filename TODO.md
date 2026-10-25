@@ -117,6 +117,24 @@
   (the second option), on a full Guix clone in every run.
   Done 2026-10-25: omaguix/omaguix a199f54 (clone, `guix git authenticate`
   up to G with Guix's introduction; checked on the 2010 MacBook).
+  Blocked 2026-10-25 on the VPS (checked read-only over ssh): the
+  installed importer is from roguix e1e2d64 (2026-10-12):
+  /usr/local/sbin/vps-import execs it with no --static-dir or --key, so
+  release.py's `VPS_IMPORT TAG` would run the legacy guix publish import;
+  its static-tree fetches from roguixos/roguix and verify-substitutes.scm
+  checks the host substitutes.roguix.org. The release would build for hours
+  and then stop at the coverage check against substitutes.omaguix.org.
+  roguix-vps needs: the omaguix gitlink at a199f54 reinstalled with
+  scripts/mac/vps-install-import, substitutes.omaguix.org.pub on the VPS,
+  and a command at a fixed path that runs static mode
+  (`--static-dir /var/lib/roguix-substitutes --key <that .pub>`), which
+  this repository's `.env` then names as VPS_IMPORT (release.py passes one
+  path and the tag). No roguix-vps session is running.
+  Who prepares the VPS importer for the first release?
+  Options: you start a roguix-vps session with this text (recommended; the
+  production writes stay with that repository and your OK there) | this
+  session does it in roguix-vps with its scripts, as a production change
+  you approve here | park the release.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
