@@ -163,6 +163,10 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   https://github.com/omaguix/omaguix/actions/runs/40197079209. Check:
   `gh run view 40197079209 -R omaguix/omaguix`; if CI succeeds and a later
   step fails, `release.py --resume 40197079209`.
+  Cancelled 2026-10-25: its channel commit 9404d6d1 does not compile as a
+  channel (t-sk47ymxd). Paused by the user's "only lang-for-ai's needs"; a
+  new run publishes a new channel commit from current main (release.py),
+  after a channel check (AGENTS.md "Checking a Channel Commit").
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
@@ -401,6 +405,14 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   channel on the MacBook (a local unsigned commit): describe, `build odin`
   on x86_64, and the x86_64 reference system. AGENTS.md now says how to
   check a channel commit.
+  Published 2026-10-25: channel commit
+  b0672e9714c2437582a9c6413b572d42d0dac203 (release/<commit>, from
+  try-omaguix 3c872035), checked from GitHub with the introductions at
+  Guix 7e74121a on the x86_64 MacBook (describe, build, `odin version`,
+  `odin check`, `odin test -microarch:x86-64` in `shell --pure`); not yet
+  built on aarch64 at this commit. Sent to lang-for-ai (session
+  lang-for-ai-2e), whose [t-odinguix] gate run is the first aarch64 build.
+  Remaining: their result; substitutes come with the release (paused).
 
 - [ ] Finish the Omaguix rename on the host [t-n53t7ns3]
   Follow-up to the landed rename (d5eb244b on main, pushed 2026-10-19), for
