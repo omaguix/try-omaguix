@@ -511,6 +511,11 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   fetch the tap with git at a fixed commit instead of GitHub's generated
   tarball, and verify the checked-out tree; the runtime build script changes
   to git.
+  Paused 2026-10-25 (the user: only lang-for-ai's needs for now): the change
+  is commit 240044e0 on branch virgl-tap-git, in the worktree
+  ../try-omaguix-tap, not merged; its runtime build was stopped before the
+  tap step, so it is unverified. Resume: `make app` in that worktree (a
+  full runtime build), then merge.
 
 ## Proposed
 
