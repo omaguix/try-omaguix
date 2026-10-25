@@ -135,6 +135,9 @@
   production writes stay with that repository and your OK there) | this
   session does it in roguix-vps with its scripts, as a production change
   you approve here | park the release.
+  Decided by the user 2026-10-25: a roguix-vps session the user starts
+  prepares it; this item waits for its report (the wrapper's path for
+  VPS_IMPORT), then runs release.py.
   Done 2026-10-25: trust.scm names substitutes.omaguix.org and its key,
   roguix.frolow.dev.pub removed, decision 0008 records it (consult round
   20261025-125554-cd3c: sol, deepseek, argon). The round found that a guest
