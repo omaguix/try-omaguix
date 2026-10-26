@@ -6,7 +6,19 @@ Decided by the user 2026-10-25: "for now stop and do only what lang-for-ai
 needs; ask the models". The items below wait except where lang-for-ai needs
 them (Odin on both architectures, t-sk47ymxd and its channel commit).
 
-- [ ] First Omaguix release through release.py [t-omarelfs]
+- [x] First Omaguix release through release.py [t-omarelfs]
+  Done 2026-10-26: channel main c4b028a868c2ca1da60b93c4328db2b83368bc9a
+  ("Release 3306d6831430", release.json on channel commit 3306d683 from
+  try-omaguix 5689e27d), built by
+  https://github.com/omaguix/omaguix/actions/runs/40248492447 (both
+  architectures, signed, imported on the VPS, coverage checked). Fixes on
+  the way: omaguix/omaguix f165d29 (split) and de97e98 (signing), the VPS
+  import helpers redeployed from de97e98 (omaguix-vps becf539, approved by
+  the user 2026-10-26), and 56c32107 here (the manifest commit uses the
+  channel key). lang-for-ai's b0672e97 is not in main and stays on its
+  release branch; lang-for-ai was told. Not done: sending the release's
+  channel commit to the guix-x86_64-iso-omguix session (no such session
+  is running now).
   Decided by the user 2026-10-12 (d-evsasl4e): "yes, after the upgrade
   path" item. Set `VPS_IMPORT=/usr/local/sbin/vps-import` in the local
   `.env`, then run guest/guix/release.py for current try-omaguix main: a
@@ -946,7 +958,11 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
 
 ## Needs a decision
 
-- [ ] Guix's builtin git download reads the host's git config [t-guixlfs]
+- [x] Guix's builtin git download reads the host's git config [t-guixlfs]
+  Done 2026-10-26: CI builds on the fork commit with P's daemon, and the
+  release built that way landed (t-omarelfs). The fork and
+  modules/omaguix/guix-fork stay until Guix itself fixes the bug; the
+  upstream issue is the user's to write.
   How should CI get past Guix's non-hermetic builtin:git-download (host
   git-lfs config smudges LFS files, so fixed-output checkouts such as
   odin's mismatch on GitHub runners; t-omarelfs)?
