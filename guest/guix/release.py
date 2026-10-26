@@ -51,6 +51,10 @@ PIN_FILE = "modules/omaguix/guix-commit"
 # G' on it (omaguix/omaguix scripts/guix-base).
 FORK_FILE = "modules/omaguix/guix-fork"
 COMMIT_ID = re.compile(r"[0-9a-f]{40}")
+# The channel key under HOME, which signs both the channel commit
+# (publish-channel) and the manifest commit; publish-channel has the same
+# default, also for an empty GNUPGHOME.
+CHANNEL_GNUPGHOME = ".config/omaguix-channel/gnupg"
 # A direct store item, as Guix names one (nix-base32 hash).
 STORE_ITEM = re.compile(r"/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+")
 # delay: external deadline, a substitute server that accepts the connection
@@ -502,6 +506,8 @@ def main():
                         help="finish from CI run RUN of a published channel "
                         "commit: no new channel commit or build")
     args = parser.parse_args()
+    if not os.environ.get("GNUPGHOME"):
+        os.environ["GNUPGHOME"] = str(Path.home() / CHANNEL_GNUPGHOME)
     try:
         release(args)
     except ReleaseError as error:

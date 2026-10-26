@@ -475,5 +475,34 @@ class DryRunTests(unittest.TestCase):
             self.assertEqual(os.listdir(tmp), [])
 
 
+
+class ChannelKeyTests(unittest.TestCase):
+    """Both signed commits use the channel key unless GNUPGHOME names another."""
+
+    def gnupghome_seen(self, environ):
+        seen = []
+        old_environ, old_release, old_argv = dict(os.environ), release.release, sys.argv
+        try:
+            os.environ.clear()
+            os.environ.update(environ)
+            release.release = lambda args: seen.append(os.environ.get("GNUPGHOME"))
+            sys.argv = ["release.py", "--dry-run"]
+            release.main()
+        finally:
+            os.environ.clear()
+            os.environ.update(old_environ)
+            release.release, sys.argv = old_release, old_argv
+        return seen
+
+    def test_the_channel_key_is_the_default(self):
+        default = [str(Path.home() / release.CHANNEL_GNUPGHOME)]
+        environ = {k: v for k, v in os.environ.items() if k != "GNUPGHOME"}
+        self.assertEqual(self.gnupghome_seen(environ), default)
+        self.assertEqual(self.gnupghome_seen({**environ, "GNUPGHOME": ""}), default)
+
+    def test_a_given_gnupghome_is_kept(self):
+        self.assertEqual(self.gnupghome_seen({**os.environ, "GNUPGHOME": "/k"}), ["/k"])
+
+
 if __name__ == "__main__":
     unittest.main()
