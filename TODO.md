@@ -997,7 +997,15 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
     Rebuilt by the dispatched run
     https://github.com/omaguix/omaguix/actions/runs/40237431387 for the same
     channel commit (log try-omaguix-release-7.log), followed by
-    `release.py --resume 40237431387`.
+    `release.py --resume 40237431387`. That run's builds and split passed;
+    the sign job, the first ever to reach its tests, failed in the Guix
+    integration test of static-substitutes: verify-substitutes.scm used
+    read-canonical-sexp, which (guix pki) does not export, and the test's
+    key had other parameters than `guix archive --generate-key`. Both
+    reproduced on an x86_64 Guix System and fixed in omaguix/omaguix
+    de97e98 (consult round 20261026-011449-5a5f). Rebuilt by
+    https://github.com/omaguix/omaguix/actions/runs/40248492447 (log
+    try-omaguix-release-8.log), then `release.py --resume 40248492447`.
 
 - [ ] Shell contract tests keep their scratch files under `TMPDIR` [t-ruyb3h22]
   Follow-up of `[t-omabendl]` (consult round 20261016-144120-c88a): the
