@@ -640,6 +640,11 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   dev-2026-10 fix branch. Master still supports LLVM 22. lang-for-ai
   validates that build on both architectures first and says when the
   channel commit is wanted.
+  Decided by the user 2026-10-26: the package's version names the
+  commit (e.g. `git-version` of 2026-10 with a revision and dcfd9d27),
+  so `odin version` / `odin report` no longer say plain dev-2026-10
+  for a master build (the pin-version phase writes the version into
+  build_odin.sh today).
 
 ## Proposed
 
