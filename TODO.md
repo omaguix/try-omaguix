@@ -603,6 +603,25 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   tap step, so it is unverified. Resume: `make app` in that worktree (a
   full runtime build), then merge.
 
+- [ ] Odin built from our fork with upstream's fix for the compiler's crash [t-odfork7862]
+  Needed by lang-for-ai (its 0C.28b2, [t-odsegv]). The pinned Odin
+  dev-2026-10 dies with SIGSEGV in builds with several packages: upstream
+  https://github.com/odin-lang/Odin/issues/7862, fixed by
+  https://github.com/odin-lang/Odin/pull/7874 after dev-2026-10. Decided
+  by the user 2026-10-26 (lang-for-ai d-odfix): our fork carries the fix,
+  branch `dev-2026-10-fix-7862` of https://github.com/rofrol/Odin, commit
+  ee02f7f95ed9f1ab78902bee74622b99962664ca (dev-2026-10 = 84bc3fc2 with
+  3c6fe188 cherry-picked, tag `pin/ee02f7f95ed9`); retired when
+  dev-2026-11 is adopted. Change guest/guix/modules/omaguix/odin.scm's
+  source to that commit (git-fetch, the new sha256; the version stays
+  2026-10 plus a revision, e.g. via git-version), keep the snippet, and
+  publish the channel commit with substitutes for both architectures as
+  for [t-sk47ymxd]. Evidence (lang-for-ai build/c28b2/): upstream's
+  reproducer gives 23 SIGSEGV in 200 builds on dev-2026-10 (repro2.log)
+  and 0 in 200 on the fork's source (fixed.log), aarch64 guest.
+  Check: `odin report` from the channel names the fork's build, and
+  lang-for-ai's build/c28b2/repro.py gives 0 crashes in 200 builds.
+
 ## Proposed
 
 - [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
