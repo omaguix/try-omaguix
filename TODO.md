@@ -633,6 +633,13 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   and 0 in 200 on the fork's source (fixed.log), aarch64 guest.
   Check: `odin report` from the channel names the fork's build, and
   lang-for-ai's build/c28b2/repro.py gives 0 crashes in 200 builds.
+  Changed by the user 2026-10-26 (lang-for-ai t-odmaster, "pin master
+  now"): build instead from upstream master, the fork's master at
+  dcfd9d274dee17bda8db319eefbe9f32b4f18503 (tag `pin/dcfd9d274dee` on
+  https://github.com/rofrol/Odin; it contains the fix), not the
+  dev-2026-10 fix branch. Master still supports LLVM 22. lang-for-ai
+  validates that build on both architectures first and says when the
+  channel commit is wanted.
 
 ## Proposed
 
