@@ -716,10 +716,18 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   signed once would carry into later releases until G' changes (argon,
   deepseek); the user accepted this trust change here.
 
-- [ ] A progress bar for a running release [t-relprogress]
+- [x] A progress bar for a running release [t-relprogress]
   Asked by the user 2026-10-27 ("a progress bar would help; ask the
   agents"): a release takes about 2.5 h and today shows only `gh run watch`'s
   job list in release.py's log. Design from a consult round first.
+  Done in 2263bf92: `release.py --status` (server/README.md, Publishing).
+  Round 20261027-052001-a0f0 (sol, deepseek, argon) chose a status file
+  replaced at each stage, read on demand, with stage k/5 and each CI job's
+  duration next to the previous release's, and no percentage, since the
+  stages differ too much in length. The diff review (round
+  20261027-052322-fe80) found that the first write could add to an older
+  release's record, the shared temporary name, skipped jobs' year-1 times
+  and a failed release shown as running; all fixed and tested.
 
 ## Proposed
 
