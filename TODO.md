@@ -671,6 +671,33 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
 
 ## Proposed
 
+- [ ] Measure where sign-substitutes spends its 45-50 minutes [t-cisigntime]
+  From the user's question (2026-10-27) whether building locally would be
+  faster; consult round 20261027-041528-1712 (sol, deepseek, argon): all
+  three reject local release builds (the 2010 MacBook is slower, and
+  signing locally would move the key off CI) and say to measure
+  sign-substitutes first. The last release (run 40408371213) took about
+  2 h 25 min: guix-profile 45-58 min, build ~35 min, sign-substitutes
+  45-50 min, VPS import and coverage minutes. Add timings to the job's steps
+  in omaguix/omaguix's build-desktop.yml (Guix install, `guix time-machine
+  --commit=<pin>` bootstrap, fetching from bordeaux and
+  substitutes.omaguix.org, import, signing, mirroring) and report the
+  split. Cost: one workflow edit; the numbers come with the next release.
+
+- [ ] guix-profile substitutes P from substitutes.omaguix.org [t-ciprofsub]
+  Same round. guix-profile compiles G' (the pinned Guix plus the fork's
+  patch to a core module, so bordeaux has no substitutes for it) in every
+  run, 45-58 min. That happens even when G' did not change, although the
+  previous release's P is served by substitutes.omaguix.org (its narinfo
+  answers 200), because the job authorizes only bordeaux's and ci.guix's
+  keys. Authorizing our key there would let the pull substitute P. This
+  changes the trust chain: our release key becomes an authority over the
+  Guix CI builds with, so a bad P signed once would carry into later
+  releases. The models suggest keeping an independent rebuild of P (for
+  example when G' changes, or periodically) and checking that P's whole
+  closure is served, not just its narinfo. Needs the user's decision
+  (trust boundary).
+
 - [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
   From t-omarelfs: `gh run watch --exit-status` exits 1 both when the run
   fails and when api.github.com is unreachable, so a network drop stops the
