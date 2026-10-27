@@ -1,11 +1,14 @@
 ;;; Omaguix — the Odin compiler, which the pinned Guix does not package.
 ;;;
 ;;; Built from source against the pinned Guix's LLVM 22, the newest major
-;;; Odin's build_odin.sh supports. The source is upstream master after
-;;; dev-2026-10, which fixes the compiler's crash with SIGSEGV in builds with
-;;; several packages (https://github.com/odin-lang/Odin/issues/7862), fetched
-;;; from our fork, whose tag pin/dcfd9d274dee keeps the commit reachable; back
-;;; to a dev- tag of odin-lang/Odin once one has the fix.
+;;; Odin's build_odin.sh supports. The source is a commit of our fork: upstream
+;;; master after dev-2026-10, which fixes the compiler's crash with SIGSEGV
+;;; in builds with several packages
+;;; (https://github.com/odin-lang/Odin/issues/7862), plus our fix of its
+;;; crash on `return' or `or_return' inside `defer'
+;;; (https://github.com/odin-lang/Odin/issues/8074). The fork's tag
+;;; pin/410b2faed66e keeps the commit reachable; back to a dev- tag of
+;;; odin-lang/Odin once one has both fixes.
 ;;;
 ;;; `odin check' and `odin test' work out of the box: the compiler finds its
 ;;; `base' and `core' collections next to its own executable, and links
@@ -26,8 +29,8 @@
 (define odin
   ;; base is the dev- release the commit follows, the version Odin reports.
   (let ((base "2026-10")
-        (commit "dcfd9d274dee17bda8db319eefbe9f32b4f18503")
-        (revision "1"))
+        (commit "410b2faed66e27ca2301077270da148280397a97")
+        (revision "2"))
     (package
       (name "odin")
       (version (git-version base revision commit))
@@ -39,7 +42,7 @@
                (commit commit)))
          (file-name (git-file-name name version))
          (sha256
-          (base32 "1vr01byg8gqriyalmz8wkq1b1j5s28iwhmkdicy97whwrabkbfjp"))
+          (base32 "1m8x5lf5m7kny87l5s72395yplsaixghip5pyl6f17zdg1w7dzmc"))
          (modules '((guix build utils)))
          ;; Drop the prebuilt Windows toolchain and the vendor collection:
          ;; bindings to third-party libraries, with their prebuilt binaries and
@@ -118,6 +121,34 @@ adds :: proc(t: ^testing.T) {
   testing.expect_value(t, add(2, 3), 5)
 }
 " port)))
+                    ;; The fork's fix of
+                    ;; https://github.com/odin-lang/Odin/issues/8074: with
+                    ;; tests/issues/run.sh's flags, the checker reports the
+                    ;; 34 errors run.sh expects and exits with status 1
+                    ;; instead of crashing.
+                    (let* ((errors (string-append dir "/issue-8074.txt"))
+                           (port (open-pipe*
+                                  OPEN_READ "sh" "-c"
+                                  (string-append
+                                   odin " check tests/issues/test_issue_8074"
+                                   " -no-entry-point"
+                                   " -define:ODIN_TEST_FANCY=false -vet"
+                                   " -strict-style -ignore-unused-defineables"
+                                   " >/dev/null 2>" errors "; echo $?")))
+                           (status (read-line port))
+                           (count (call-with-input-file errors
+                                    (lambda (port)
+                                      (let loop ((count 0))
+                                        (let ((line (read-line port)))
+                                          (cond
+                                           ((eof-object? line) count)
+                                           ((string-contains line "Error:")
+                                            (loop (+ count 1)))
+                                           (else (loop count)))))))))
+                      (close-pipe port)
+                      (unless (and (equal? status "1") (= count 34))
+                        (error "issue 8074: unexpected check result"
+                               status count)))
                     ;; Nothing from the build environment: the wrapper alone
                     ;; must provide the linker.
                     (dynamic-wind
