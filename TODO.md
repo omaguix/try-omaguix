@@ -726,6 +726,12 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   codeberg as guix-profile does, or give the job the pinned Guix some other
   way that keeps its authentication. Needs a design and a consult round;
   workflow change only.
+  Round 20261027-044411-3524 on its effect on the project (sol, deepseek, argon):
+  worth doing if the job still authenticates G from Guix's introduction
+  (a mirror changes the transport, not the trust); the measured saving is
+  the 9-13 min clone and authentication, not 15-20; never run a Guix the
+  builder job hands over in the signing job, since it runs before the key
+  is exposed.
 
 - [ ] Does the fresh signing store need the whole closure? [t-cisignfetch]
   From [t-cisigntime]: sign-substitutes fetches 860-990 closure items from
@@ -735,6 +741,13 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   the fresh signing store) and whether fewer items, or one bulk fetch,
   would do. Touches the signing trust boundary: the user decides any
   change.
+  Same round: `guix archive --import` needs every reference of the export
+  in the store, so pruning would mean bypassing the daemon and could sign
+  substitutes that fail on users' machines (deepseek, argon); the fetch is
+  already one `guix build` call per list (xargs), so bulk fetching saves
+  little. sol and deepseek: investigate at most (what the import needs,
+  what is fetched only for the tests), change nothing without proof of
+  equivalence.
 
 - [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
   From t-omarelfs: `gh run watch --exit-status` exits 1 both when the run
