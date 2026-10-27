@@ -669,8 +669,6 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   dev-2026-10:410b2fa. Check as for [t-odfork7862]; then message
   lang-for-ai the channel's new main.
 
-## Proposed
-
 - [ ] Measure where sign-substitutes spends its 45-50 minutes [t-cisigntime]
   From the user's question (2026-10-27) whether building locally would be
   faster; consult round 20261027-041528-1712 (sol, deepseek, argon): all
@@ -683,6 +681,7 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   --commit=<pin>` bootstrap, fetching from bordeaux and
   substitutes.omaguix.org, import, signing, mirroring) and report the
   split. Cost: one workflow edit; the numbers come with the next release.
+  Decided by the user 2026-10-27: approved.
 
 - [ ] guix-profile substitutes P from substitutes.omaguix.org [t-ciprofsub]
   Same round. guix-profile compiles G' (the pinned Guix plus the fork's
@@ -695,8 +694,10 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   Guix CI builds with, so a bad P signed once would carry into later
   releases. The models suggest keeping an independent rebuild of P (for
   example when G' changes, or periodically) and checking that P's whole
-  closure is served, not just its narinfo. Needs the user's decision
-  (trust boundary).
+  closure is served, not just its narinfo. Decided by the user 2026-10-27: approved, P substituted from
+  substitutes.omaguix.org in the guix-profile job.
+
+## Proposed
 
 - [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
   From t-omarelfs: `gh run watch --exit-status` exits 1 both when the run
