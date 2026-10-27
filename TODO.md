@@ -655,6 +655,20 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   it ([t-relwait] covers such drops). lang-for-ai runs its 200-build
   reproducer after moving its pin.
 
+- [ ] Odin from our fork's fix for the crash on return inside defer [t-odfix8074]
+  Asked by lang-for-ai (2026-10-27): on dcfd9d27, `return` or `or_return`
+  inside `defer` crashes odin (the escape analysis recurses forever),
+  https://github.com/odin-lang/Odin/issues/8074, open, no upstream fix.
+  Decided by the user 2026-10-27: build odin from fork commit
+  410b2faed66e27ca2301077270da148280397a97 of https://github.com/rofrol/Odin
+  (tag `pin/410b2faed66e`: dcfd9d27 plus our fix with a test in
+  tests/issues/test_issue_8074) and release it for both architectures.
+  lang-for-ai checked it in both its environments with --with-source:
+  crash before, the 34 expected errors after, its 31 Odin tests and ~150
+  probes unchanged. Version 2026-10-2.410b2fa, `odin version` says
+  dev-2026-10:410b2fa. Check as for [t-odfork7862]; then message
+  lang-for-ai the channel's new main.
+
 ## Proposed
 
 - [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
