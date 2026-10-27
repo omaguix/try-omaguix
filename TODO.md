@@ -669,7 +669,7 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   dev-2026-10:410b2fa. Check as for [t-odfork7862]; then message
   lang-for-ai the channel's new main.
 
-- [ ] Measure where sign-substitutes spends its 45-50 minutes [t-cisigntime]
+- [x] Measure where sign-substitutes spends its 45-50 minutes [t-cisigntime]
   From the user's question (2026-10-27) whether building locally would be
   faster; consult round 20261027-041528-1712 (sol, deepseek, argon): all
   three reject local release builds (the 2010 MacBook is slower, and
@@ -682,8 +682,18 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   substitutes.omaguix.org, import, signing, mirroring) and report the
   split. Cost: one workflow edit; the numbers come with the next release.
   Decided by the user 2026-10-27: approved.
+  Done 2026-10-27 without a workflow edit: the step timings and log
+  timestamps of run 40408371213 already give the split. All of the job's
+  time is in "Verify input and prepare the fresh signing store"; signing,
+  mirroring and the release take seconds. x86_64 / aarch64:
+  `guix time-machine --commit=<pin>` cloning and authenticating Guix from
+  git.guix.gnu.org (17,291 commits) 13 / 9 min; computing and fetching G
+  (115.8 MB) and building its modules 10 / 5 min; fetching the closure into
+  the fresh store (861 / 986 downloads from bordeaux and
+  substitutes.omaguix.org), importing CI's export and the tests 28 / 30
+  min. Follow-ups: [t-cisignguix], [t-cisignfetch].
 
-- [ ] guix-profile substitutes P from substitutes.omaguix.org [t-ciprofsub]
+- [x] guix-profile substitutes P from substitutes.omaguix.org [t-ciprofsub]
   Same round. guix-profile compiles G' (the pinned Guix plus the fork's
   patch to a core module, so bordeaux has no substitutes for it) in every
   run, 45-58 min. That happens even when G' did not change, although the
@@ -694,10 +704,37 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   Guix CI builds with, so a bad P signed once would carry into later
   releases. The models suggest keeping an independent rebuild of P (for
   example when G' changes, or periodically) and checking that P's whole
-  closure is served, not just its narinfo. Decided by the user 2026-10-27: approved, P substituted from
+  closure is served, not just its narinfo.
+  Decided by the user 2026-10-27: approved, P substituted from
   substitutes.omaguix.org in the guix-profile job.
+  Done 2026-10-27 in omaguix/omaguix 6a2311d (pushed): the job authorizes
+  the key from the authenticated channel before the pull, like the build
+  job. The last two releases had the same P store path for both
+  architectures, so the next release with an unchanged G' should
+  substitute it; check guix-profile's duration then. Review round
+  20261027-042646-5c3e (sol, deepseek, argon): wording fixed. A bad P
+  signed once would carry into later releases until G' changes (argon,
+  deepseek); the user accepted this trust change here.
 
 ## Proposed
+
+- [ ] The signing job's Guix without a full clone from git.guix.gnu.org [t-cisignguix]
+  From [t-cisigntime]: `guix time-machine --commit=<pin>` in
+  sign-substitutes spends 9-13 min cloning and authenticating all of Guix
+  from git.guix.gnu.org, and 5-10 more fetching G and building its modules,
+  on every release, for both architectures. Options to weigh: clone from
+  codeberg as guix-profile does, or give the job the pinned Guix some other
+  way that keeps its authentication. Needs a design and a consult round;
+  workflow change only.
+
+- [ ] Does the fresh signing store need the whole closure? [t-cisignfetch]
+  From [t-cisigntime]: sign-substitutes fetches 860-990 closure items from
+  bordeaux and substitutes.omaguix.org into its fresh store (28-30 min)
+  before importing CI's export and signing only the publish items. Check
+  what the signing and verification need (omaguix/omaguix decision 0001,
+  the fresh signing store) and whether fewer items, or one bulk fetch,
+  would do. Touches the signing trust boundary: the user decides any
+  change.
 
 - [ ] release.py: a CI wait that survives a lost GitHub connection [t-relwait]
   From t-omarelfs: `gh run watch --exit-status` exits 1 both when the run
