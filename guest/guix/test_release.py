@@ -1,7 +1,9 @@
 """The release step moves the channel's main only for a fully served build
 of the commit it published (docs/decisions/0006-one-roguix-release-step.md)."""
 
+import contextlib
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -13,6 +15,10 @@ import unittest
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
 import release  # noqa: E402
+
+# No test writes the maintainer's own release status.
+STATE = tempfile.TemporaryDirectory()
+release.STATUS = Path(STATE.name) / "status.json"
 
 COMMIT = "c" * 40
 PIN = release.guix_pin()
@@ -474,6 +480,94 @@ class DryRunTests(unittest.TestCase):
             self.assertIn("--resume RUN", result.stdout)
             self.assertEqual(os.listdir(tmp), [])
 
+
+class StatusTests(unittest.TestCase):
+    """--status reads what the release recorded at its last stage."""
+
+    def setUp(self):
+        release.recording = False
+        release.STATUS.unlink(missing_ok=True)
+        self.addCleanup(setattr, release, "recording", False)
+
+    def read(self):
+        return json.loads(release.STATUS.read_text())
+
+    def test_a_stage_replaces_the_last_and_keeps_the_rest(self):
+        release.record(fresh=True, stage="CI", run="7")
+        release.record(stage="coverage")
+        status = self.read()
+        self.assertEqual((status["stage"], status["run"]), ("coverage", "7"))
+        self.assertIn("stage-started", status)
+        self.assertEqual(os.listdir(release.STATUS.parent), ["status.json"])
+
+    def test_only_a_release_that_started_a_record_writes_one(self):
+        release.record(failed="before any stage")
+        self.assertFalse(release.STATUS.exists())
+        release.record(fresh=True, stage="CI")
+        release.record(fresh=True, stage="channel commit")
+        self.assertNotIn("run", self.read())
+
+    def test_a_failed_fresh_write_leaves_an_older_record_alone(self):
+        release.STATUS.write_text(json.dumps({"stage": "manifest"}))
+        old_status = release.STATUS
+        try:
+            # The record's directory cannot be made: a file is in the way.
+            release.STATUS = old_status / "status.json"
+            with self.assertRaises(OSError):
+                release.record(fresh=True, stage="CI")
+            release.record(failed="the write failed")
+        finally:
+            release.STATUS = old_status
+        self.assertEqual(self.read(), {"stage": "manifest"})
+
+    def test_a_failure_is_shown_as_where_the_release_stopped(self):
+        release.record(fresh=True, stage="coverage")
+        release.record(failed="a package item is not served",
+                       **{"failed-at": "2026-10-27T05:00:00+00:00"})
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            release.show_status(Path("."))
+        self.assertEqual(out.getvalue().splitlines(), [
+            "release: failed at stage 4/5: coverage, at 2026-10-27T05:00:00+00:00",
+            "  failed: a package item is not served"])
+
+    def test_previous_durations_count_only_jobs_that_ran_to_success(self):
+        never = "0001-01-01T00:00:00Z"
+        self.assertEqual(release.durations([
+            {"name": "a", "conclusion": "success",
+             "startedAt": "2026-10-27T04:00:00Z",
+             "completedAt": "2026-10-27T04:45:00Z"},
+            {"name": "b", "conclusion": "skipped", "startedAt": never,
+             "completedAt": never},
+            {"name": "c", "conclusion": "success", "startedAt": never,
+             "completedAt": "2026-10-27T04:45:00Z"},
+            {"name": "d", "conclusion": "failure",
+             "startedAt": "2026-10-27T04:00:00Z",
+             "completedAt": "2026-10-27T04:05:00Z"}]), {"a": "45 min"})
+
+    def test_job_lines_label_the_previous_releases_durations(self):
+        at = release.datetime.datetime.fromisoformat("2026-10-27T05:00:00Z")
+        jobs = [
+            {"name": "build (x)", "status": "completed", "conclusion": "success",
+             "startedAt": "2026-10-27T04:00:00Z",
+             "completedAt": "2026-10-27T04:35:00Z"},
+            {"name": "sign (x)", "status": "in_progress", "conclusion": "",
+             "startedAt": "2026-10-27T04:36:00Z",
+             "completedAt": "0001-01-01T00:00:00Z"},
+            {"name": "sign (y)", "status": "queued", "conclusion": "",
+             "startedAt": "0001-01-01T00:00:00Z",
+             "completedAt": "0001-01-01T00:00:00Z"}]
+        self.assertEqual(
+            release.job_lines(jobs, {"sign (x)": "48 min"}, at),
+            ["  build (x): completed success, 35 min",
+             "  sign (x): in_progress, 24 min (previous release: 48 min)",
+             "  sign (y): queued"])
+
+    def test_no_record_is_said_so(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            release.show_status(Path("."))
+        self.assertEqual(out.getvalue(), "release: no release recorded\n")
 
 
 class ChannelKeyTests(unittest.TestCase):

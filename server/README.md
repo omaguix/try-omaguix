@@ -42,6 +42,13 @@ commit for aarch64 and x86_64, the VPS imports CI's releases with omaguix's
 `scripts/vps-import` over SSH (`VPS_IMPORT` in `.env`), every package item is
 checked on bordeaux or substitutes.omaguix.org, and a signed `release.json` on top
 of the commit moves the channel's `main`. `--dry-run` prints the steps.
+`--status` prints how far the running (or last) release got: its stage out
+of five, since when, the CI run's link, and during CI each job's state and
+duration next to that job's duration in the previous release's run. The
+release records its stage in `$XDG_STATE_HOME/omaguix-release/status.json`
+(default `~/.local/state`) whenever it starts one; `--status` only reads it
+and asks GitHub for the jobs, so it is the answer to "how is it going?"
+while a release runs in the background.
 
 Do not push a change to `omaguix/omaguix`'s `.github/workflows/` while a
 release's CI run is in progress, not even with `[skip ci]`. The signing jobs

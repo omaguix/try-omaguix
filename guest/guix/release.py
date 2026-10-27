@@ -17,6 +17,8 @@ the previous release's.
 
 import argparse
 import concurrent.futures
+import contextlib
+import datetime
 import hashlib
 import json
 import os
@@ -60,6 +62,13 @@ STORE_ITEM = re.compile(r"/gnu/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+
 # delay: external deadline, a substitute server that accepts the connection
 # but never answers a narinfo request.
 NARINFO_TIMEOUT = 60
+
+# What a release is doing, for `--status`: release.py replaces it at each
+# stage, and whoever wants to know reads it then.
+STATUS = (Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state")
+          / "omaguix-release" / "status.json")
+STAGES = ("channel commit", "CI", "VPS import", "coverage", "manifest")
+recording = False
 
 
 class ReleaseError(Exception):
@@ -299,6 +308,108 @@ def vps_import(env, tag):
          shlex.join([env["VPS_IMPORT"], tag])], capture=False)
 
 
+def now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def record(fresh=False, **fields):
+    """Merge FIELDS into the status file (into an empty one when FRESH),
+    replacing it atomically; a new stage starts now. Only a release whose
+    own fresh record was written adds to it."""
+    global recording
+    if not (fresh or recording):
+        return
+    status = {}
+    if not fresh:
+        status = json.loads(STATUS.read_text())
+    if "stage" in fields:
+        fields["stage-started"] = now().isoformat(timespec="seconds")
+    status.update(fields)
+    STATUS.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=STATUS.parent, delete=False,
+                                     prefix=STATUS.name + ".") as partial:
+        partial.write(json.dumps(status, indent=2) + "\n")
+    os.replace(partial.name, STATUS)
+    recording = True
+
+
+def minutes(start, end):
+    return f"{round((end - start).total_seconds() / 60)} min"
+
+
+def started(job):
+    """When JOB started, or None: GitHub gives a job that never started
+    year 1."""
+    value = job.get("startedAt")
+    if not value or value.startswith("0001-"):
+        return None
+    return datetime.datetime.fromisoformat(value)
+
+
+def durations(jobs):
+    """Name -> duration of the JOBS that ran to success."""
+    return {job["name"]: minutes(
+                started(job), datetime.datetime.fromisoformat(job["completedAt"]))
+            for job in jobs
+            if job.get("conclusion") == "success" and started(job)}
+
+
+def job_lines(jobs, previous, at):
+    """One line per CI job: its state, how long it ran or has been running
+    at AT, and how long the job of that name took in the previous release's
+    run (PREVIOUS: name -> duration), labelled as such."""
+    lines = []
+    for job in jobs:
+        state = " ".join(x for x in (job["status"], job.get("conclusion")) if x)
+        line = f"  {job['name']}: {state}"
+        if started(job):
+            end = (datetime.datetime.fromisoformat(job["completedAt"])
+                   if job["status"] == "completed" else at)
+            line += f", {minutes(started(job), end)}"
+        if job["name"] in previous:
+            line += f" (previous release: {previous[job['name']]})"
+        lines.append(line)
+    return lines
+
+
+def run_jobs(number):
+    return json.loads(run(["gh", "run", "view", str(number), "-R", CI_REPO,
+                           "--json", "jobs"]))["jobs"]
+
+
+def previous_durations(channel):
+    """Each job's duration in the CI run of the channel's current release,
+    or {} when that cannot be read."""
+    try:
+        document = json.loads(git(channel, "show", f"origin/main:{MANIFEST}"))
+        number = document.get("ci", {}).get("run-id")
+        return durations(run_jobs(number)) if number else {}
+    except (ReleaseError, json.JSONDecodeError):
+        return {}
+
+
+def show_status(channel):
+    if not STATUS.is_file():
+        print("release: no release recorded")
+        return
+    status = json.loads(STATUS.read_text())
+    stage = status["stage"]
+    position = (f"stage {STAGES.index(stage) + 1}/{len(STAGES)}: "
+                if stage in STAGES else "")
+    if "failed" in status:
+        print(f"release: failed at {position}{stage}, at {status['failed-at']}")
+    else:
+        started_at = datetime.datetime.fromisoformat(status["stage-started"])
+        print(f"release: {position}{stage}, since {status['stage-started']} "
+              f"({minutes(started_at, now())})")
+    for key in ("commit", "run-url", "main", "failed"):
+        if key in status:
+            print(f"  {key}: {status[key]}")
+    if stage == "CI" and "run" in status and "failed" not in status:
+        print("\n".join(job_lines(run_jobs(status["run"]),
+                                   previous_durations(channel), now())))
+
+
 def git(channel, *args, capture=True):
     return run(["git", "-C", str(channel), *args], capture=capture)
 
@@ -363,16 +474,21 @@ def release(args):
         print(plan(try_omaguix, pin, channel, env, omaguix))
         return
 
+    record(fresh=True, stage="channel commit", **{"try-omaguix": try_omaguix})
     output = run([str(HERE / "publish-channel")],
                  env={**os.environ, "OMAGUIX_CHANNEL_DIR": str(channel)})
     commit = channel_commit(output)
     if commit is None:
+        record(stage="done", main="unchanged: the channel matches try-omaguix")
         print("release: the channel already matches try-omaguix")
         return
+    record(commit=commit)
     check_guix_moves_forward(previous_pin(channel, commit), pin,
                              env.get("GUIX_CHECKOUT"))
     number = run_id(run(["gh", "workflow", "run", WORKFLOW, "-R", CI_REPO,
                          "-f", f"channel_commit={commit}"]))
+    record(stage="CI", run=number,
+           **{"run-url": f"https://github.com/{CI_REPO}/actions/runs/{number}"})
     ci_run = wait_for_run(number)
     with tempfile.TemporaryDirectory(prefix="omaguix-release-") as tmp:
         download_splits(number, tmp)
@@ -409,14 +525,18 @@ def download_splits(number, directory):
 def finish(channel, commit, try_omaguix, pin, patch_sha256, ci_run, builds,
            env, omaguix):
     """The VPS imports, the coverage check and the manifest that moves main."""
+    record(stage="VPS import")
     for build in builds.values():
         if build["release"]:
             vps_import(env, build["release"])
+    record(stage="coverage")
     served = coverage(builds, omaguix)
+    record(stage="manifest")
     head = publish_manifest(
         channel, commit,
         manifest(commit, try_omaguix, pin, guix_fork(channel, commit),
                  patch_sha256, ci_run, builds, served))
+    record(stage="done", main=head)
     print(f"release: channel main is {head}, built by {ci_run['url']}")
 
 
@@ -473,6 +593,8 @@ def resume(args, env, omaguix):
     if not args.resume.isdigit():
         raise ReleaseError(f"--resume takes a run id, not {args.resume!r}")
     channel = args.channel.resolve()
+    record(fresh=True, stage="CI", run=args.resume, **{
+        "run-url": f"https://github.com/{CI_REPO}/actions/runs/{args.resume}"})
     ci_run = wait_for_run(args.resume)
     with tempfile.TemporaryDirectory(prefix="omaguix-release-") as tmp:
         download_splits(args.resume, tmp)
@@ -505,13 +627,25 @@ def main():
     parser.add_argument("--resume", metavar="RUN",
                         help="finish from CI run RUN of a published channel "
                         "commit: no new channel commit or build")
+    parser.add_argument("--status", action="store_true",
+                        help="print the running or last release's stage and, "
+                        "during CI, each job's state")
     args = parser.parse_args()
     if not os.environ.get("GNUPGHOME"):
         os.environ["GNUPGHOME"] = str(Path.home() / CHANNEL_GNUPGHOME)
+    if args.status:
+        show_status(args.channel.resolve())
+        return
     try:
         release(args)
-    except ReleaseError as error:
-        sys.exit(f"release: {error}; the channel's main did not move")
+    except (Exception, KeyboardInterrupt) as error:
+        # The record must not hide why the release stopped.
+        with contextlib.suppress(OSError, ValueError):
+            record(failed=str(error) or type(error).__name__,
+                   **{"failed-at": now().isoformat(timespec="seconds")})
+        if isinstance(error, ReleaseError):
+            sys.exit(f"release: {error}; the channel's main did not move")
+        raise
 
 
 if __name__ == "__main__":
