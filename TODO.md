@@ -615,7 +615,7 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   tap step, so it is unverified. Resume: `make app` in that worktree (a
   full runtime build), then merge.
 
-- [ ] Odin built from our fork with upstream's fix for the compiler's crash [t-odfork7862]
+- [x] Odin built from our fork with upstream's fix for the compiler's crash [t-odfork7862]
   Needed by lang-for-ai (its 0C.28b2, [t-odsegv]). The pinned Odin
   dev-2026-10 dies with SIGSEGV in builds with several packages: upstream
   https://github.com/odin-lang/Odin/issues/7862, fixed by
@@ -645,6 +645,15 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   so `odin version` / `odin report` no longer say plain dev-2026-10
   for a master build (the pin-version phase writes the version into
   build_odin.sh today).
+  Done 2026-10-27 in 97586b75, after lang-for-ai's go (both architectures):
+  version 2026-10-1.dcfd9d2, built with GIT_SHA, so `odin version` and
+  `odin report` say dev-2026-10:dcfd9d2. Checked as a channel on x86_64
+  (guix time-machine, file:// test commit). Released: channel commit
+  7d07a0ca04650eed238a0b806f7aa9300b6b399e, main 8c962bcfc591, built by
+  https://github.com/omaguix/omaguix/actions/runs/40408371213. The first
+  release.py run lost DNS during the coverage check; `--resume` finished
+  it ([t-relwait] covers such drops). lang-for-ai runs its 200-build
+  reproducer after moving its pin.
 
 ## Proposed
 
