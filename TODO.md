@@ -655,7 +655,7 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   it ([t-relwait] covers such drops). lang-for-ai runs its 200-build
   reproducer after moving its pin.
 
-- [ ] Odin from our fork's fix for the crash on return inside defer [t-odfix8074]
+- [x] Odin from our fork's fix for the crash on return inside defer [t-odfix8074]
   Asked by lang-for-ai (2026-10-27): on dcfd9d27, `return` or `or_return`
   inside `defer` crashes odin (the escape analysis recurses forever),
   https://github.com/odin-lang/Odin/issues/8074, open, no upstream fix.
@@ -668,6 +668,16 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   probes unchanged. Version 2026-10-2.410b2fa, `odin version` says
   dev-2026-10:410b2fa. Check as for [t-odfork7862]; then message
   lang-for-ai the channel's new main.
+  Done 2026-10-27 in 61b9742e: check-installed runs the fork's
+  test_issue_8074 and needs status 1 with 34 errors (on the dcfd9d2 build
+  the same check dies with SIGSEGV, 139). Checked as a channel on x86_64.
+  Released: channel commit 46fab3569810c1c67f8d0102b9695ede02aa0fe9, main
+  ada1280ad91a, built by
+  https://github.com/omaguix/omaguix/actions/runs/40448290787. The first
+  run, https://github.com/omaguix/omaguix/actions/runs/40438258076, failed
+  at `gh release create` (403) because a workflow change was pushed to
+  omaguix's main while it ran (server/README.md, Publishing). The fix is
+  not offered upstream; the fork stays until Odin has it.
 
 - [x] Measure where sign-substitutes spends its 45-50 minutes [t-cisigntime]
   From the user's question (2026-10-27) whether building locally would be
@@ -715,6 +725,15 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   20261027-042646-5c3e (sol, deepseek, argon): wording fixed. A bad P
   signed once would carry into later releases until G' changes (argon,
   deepseek); the user accepted this trust change here.
+  Checked in run 40448290787 (x86_64): the pull now substitutes P, its
+  "Computing Guix derivation" phase took 3 min against 12 min of building
+  (guix-core-modules and the like) in run 40408371213. But the job did not
+  get shorter (50 min against 45): the measurement above was wrong, most of
+  the pull is a silent phase before "channel authentication disabled", 26
+  and 37 min in those two runs, while `guix pull` fetches the local
+  file:// clone of Guix, and "Commit G plus the channel's patch as G'"
+  takes 5-8 min more (clone from codeberg, authentication). Follow-up:
+  [t-ciprofclone].
 
 - [x] A progress bar for a running release [t-relprogress]
   Asked by the user 2026-10-27 ("a progress bar would help; ask the
@@ -730,6 +749,16 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   and a failed release shown as running; all fixed and tested.
 
 ## Proposed
+
+- [ ] guix-profile without the slow local clone of Guix [t-ciprofclone]
+  From [t-ciprofsub]: `guix pull` of the file:// G' clone spends 26-37 min
+  silent before it even computes the Guix derivation, and making G' (clone
+  from codeberg, authenticating 17,291 commits) 5-8 min more; now that P is
+  substituted, this is nearly all of the job's 45-50 min. Find where the
+  silent phase goes (likely Guix copying the whole local repository into
+  its checkout cache) and whether a smaller repository with G' (or a
+  cache of the clone keyed by G') keeps the same authentication. Workflow
+  change; needs a measurement and a consult round.
 
 - [ ] The signing job's Guix without a full clone from git.guix.gnu.org [t-cisignguix]
   From [t-cisigntime]: `guix time-machine --commit=<pin>` in
