@@ -43,6 +43,17 @@ commit for aarch64 and x86_64, the VPS imports CI's releases with omaguix's
 checked on bordeaux or substitutes.omaguix.org, and a signed `release.json` on top
 of the commit moves the channel's `main`. `--dry-run` prints the steps.
 
+Do not push a change to `omaguix/omaguix`'s `.github/workflows/` while a
+release's CI run is in progress, not even with `[skip ci]`. The signing jobs
+create their release tags at the run's own commit, and once `main` has a
+different workflow file, GitHub refuses the job's token
+(`HTTP 403: Resource not accessible by integration` at `gh release create`),
+since that token cannot have the `workflows` permission. Seen 2026-10-27.
+Rerunning the failed jobs keeps the old commit and fails the same way;
+dispatch a new run for the same channel commit
+(`gh workflow run build-desktop.yml -R omaguix/omaguix -f channel_commit=<C>`)
+and finish with `release.py --resume <run>`.
+
 Only ungrafted items are published: grafts are built with
 `#:substitutable? #f` (`guix/grafts.scm`), so a guest never asks a server for
 them and grafts locally, which copies without compiling.
