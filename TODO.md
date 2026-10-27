@@ -716,6 +716,11 @@ them (Odin on both architectures, t-sk47ymxd and its channel commit).
   signed once would carry into later releases until G' changes (argon,
   deepseek); the user accepted this trust change here.
 
+- [ ] A progress bar for a running release [t-relprogress]
+  Asked by the user 2026-10-27 ("a progress bar would help; ask the
+  agents"): a release takes about 2.5 h and today shows only `gh run watch`'s
+  job list in release.py's log. Design from a consult round first.
+
 ## Proposed
 
 - [ ] The signing job's Guix without a full clone from git.guix.gnu.org [t-cisignguix]
